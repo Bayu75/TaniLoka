@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="max-w-5xl mx-auto px-4 py-6" x-data="{
-    tab: 'semua',
+    tab: (location.hash || '').replace('#', '') || 'semua',
     pesan: '',
     orders: [
         { nomor: 'TL-0012', pembeli: 'Warung Bu Komang', tanggal: '2 Nov 2026', status: 'menunggu', pengiriman: 'Kendaraan Sendiri', alamat: 'Denpasar Barat', produk: [{ nama: 'Bayam Hijau Organik', jumlah: 10, harga: 8500 }], total: 85000 },
