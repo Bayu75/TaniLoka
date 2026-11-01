@@ -1,13 +1,16 @@
 <?php
 
+use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
-
-// Route::get('/', function () {
-//     return view('welcome');
-// });
 
 Route::view('/', 'auth.landing')->name('landing');
 
-// Sementara placeholder, nanti diganti saat feat/auth
-Route::view('/masuk', 'auth.masuk')->name('masuk');
-Route::view('/daftar', 'auth.daftar')->name('daftar');
+Route::get('/masuk', [AuthController::class, 'masuk'])->name('masuk');
+Route::post('/masuk', [AuthController::class, 'prosesMasuk'])->name('masuk.proses');
+Route::get('/daftar', [AuthController::class, 'daftar'])->name('daftar');
+Route::post('/daftar', [AuthController::class, 'prosesDaftar'])->name('daftar.proses');
+Route::post('/keluar', [AuthController::class, 'keluar'])->name('keluar');
+
+// Placeholder, nanti diisi tim
+Route::view('/petani', 'petani.dashboard')->name('petani.dashboard');
+Route::view('/pengusaha', 'pengusaha.beranda')->name('pengusaha.beranda');
