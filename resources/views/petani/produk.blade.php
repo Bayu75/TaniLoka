@@ -14,7 +14,7 @@
             kabupaten: 'Tabanan',
             periode: 'Tersedia sepanjang tahun, panen tiap 3 minggu',
             tersedia: true,
-            gambar: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=600&h=400&fit=crop'
+            gambar: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=200&h=200&fit=crop'
         },
         {
             id: 2,
