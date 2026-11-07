@@ -17,6 +17,11 @@ Route::middleware('peran:pengusaha')->prefix('pengusaha')->name('pengusaha.')->g
     Route::view('/pesan', 'pengusaha.pesan')->name('pesan');
     Route::view('/keranjang', 'pengusaha.keranjang')->name('keranjang');
     Route::view('/pesanan', 'pengusaha.pesanan')->name('pesanan');
+
+    Route::get('/pesanan/{id}', function ($id) {
+    return view('pengusaha.detail-pesanan', ['id' => $id]);
+    })->name('pesanan.detail');
+
     Route::view('/akun', 'pengusaha.akun')->name('akun');
 });
 
