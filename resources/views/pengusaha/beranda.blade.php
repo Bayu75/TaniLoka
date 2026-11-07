@@ -79,7 +79,7 @@
 <div class="pb-10">
 
     {{-- BAGIAN SAMBUTAN DAN PENCARIAN --}}
-    <section class="-mx-4 -mt-4 bg-gradient-to-r from-[#1E5F3E] to-[#2E7D32] px-4 pb-16 pt-6 md:-mx-6 md:px-6">
+   <section class="-mx-4 -mt-4 bg-gradient-to-r from-[#1E5F3E] to-[#2E7D32] px-4 pb-16 pt-6 md:-mx-6 md:px-6 lg:relative lg:left-1/2 lg:right-1/2 lg:ml-[-50vw] lg:mr-[-50vw] lg:w-screen">
         <div class="mx-auto max-w-6xl">
 
             <div class="mb-5 flex items-center justify-between gap-3">
