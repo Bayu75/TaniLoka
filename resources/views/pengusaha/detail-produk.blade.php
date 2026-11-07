@@ -230,7 +230,9 @@
 </div>
 
 {{-- TOMBOL KUNJUNGI TOKO --}}
-<a href="{{ route('pengusaha.katalog', ['q' => $produk['petani']]) }}"
+<a href="{{ route('pengusaha.toko', [
+    'petani' => \Illuminate\Support\Str::slug($produk['petani'])
+]) }}"
    class="shrink-0 text-xs font-bold text-[#2E7D32] hover:underline">
     Kunjungi Toko →
 </a>
@@ -303,16 +305,16 @@
                         </button>
 
                         <input
-                            type="number"
-                            id="jumlah"
-                            name="jumlah"
-                            min="{{ $produk['minimal'] }}"
-                            max="{{ $produk['stok'] }}"
-                            value="{{ $produk['minimal'] }}"
-                            required
-                            oninput="hitungTotal()"
-                            class="h-10 w-20 rounded-xl border border-[#D4E8D0] text-center font-bold text-[#1A2A1A]"
-                        >
+                        type="number"
+                        id="jumlah"
+                        name="jumlah"
+                        min="{{ $produk['minimal'] }}"
+                        max="{{ $produk['stok'] }}"
+                        value="{{ $produk['minimal'] }}"
+                        required
+                        oninput="hitungTotal(); this.setCustomValidity('')"
+                        class="h-10 w-20 rounded-xl border border-[#D4E8D0] text-center font-bold text-[#1A2A1A]"
+                    >
 
                         <span class="text-sm text-[#5A7A5A]">kg</span>
 
@@ -387,10 +389,10 @@
     const minimalProduk = {{ $produk['minimal'] }};
     const stokProduk = {{ $produk['stok'] }};
 
-    function ubahJumlah(perubahan) {
-        const input = document.getElementById('jumlah');
+    const inputJumlah = document.getElementById('jumlah');
 
-        let jumlah = parseInt(input.value) || minimalProduk;
+    function ubahJumlah(perubahan) {
+        let jumlah = parseInt(inputJumlah.value) || minimalProduk;
 
         jumlah += perubahan;
 
@@ -399,21 +401,55 @@
             Math.min(stokProduk, jumlah)
         );
 
-        input.value = jumlah;
+        inputJumlah.value = jumlah;
+
+        inputJumlah.setCustomValidity('');
 
         hitungTotal();
     }
 
     function hitungTotal() {
-        const input = document.getElementById('jumlah');
-
-        let jumlah = parseInt(input.value) || 0;
+        let jumlah = parseInt(inputJumlah.value) || 0;
 
         jumlah = Math.max(0, Math.min(stokProduk, jumlah));
 
         document.getElementById('totalHarga').textContent =
             'Rp' + (hargaProduk * jumlah).toLocaleString('id-ID');
     }
+
+    // VALIDASI JUMLAH PEMBELIAN
+    inputJumlah.addEventListener('invalid', function () {
+
+        if (this.validity.valueMissing) {
+            this.setCustomValidity(
+                'Silakan masukkan jumlah pembelian.'
+            );
+
+        } else if (this.validity.rangeUnderflow) {
+            this.setCustomValidity(
+                'Jumlah minimal pembelian adalah ' +
+                minimalProduk + ' kg.'
+            );
+
+        } else if (this.validity.rangeOverflow) {
+            this.setCustomValidity(
+                'Jumlah pembelian melebihi stok yang tersedia. ' +
+                'Maksimal pembelian adalah ' + stokProduk + ' kg.'
+            );
+
+        } else if (this.validity.badInput) {
+            this.setCustomValidity(
+                'Silakan masukkan jumlah pembelian yang valid.'
+            );
+        }
+
+    });
+
+    // HAPUS PESAN ERROR KETIKA INPUT DIPERBAIKI
+    inputJumlah.addEventListener('input', function () {
+        this.setCustomValidity('');
+    });
+
 </script>
 @endif
 

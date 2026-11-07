@@ -21,6 +21,23 @@ Route::middleware('peran:pengusaha')->prefix('pengusaha')->name('pengusaha.')->g
         return view('pengusaha.detail-produk', compact('slug'));
     })->name('produk.detail');
 
+  // Halaman toko petani
+    Route::get('/toko/{petani}', function ($petani) {
+
+    $daftarPetani = [
+        'pak-made-sukartha',
+        'ibu-wayan-sari',
+        'pak-ketut-wirasa',
+        'ibu-nyoman-dewi',
+        'pak-gede-setiawan',
+    ];
+
+    abort_unless(in_array($petani, $daftarPetani), 404);
+
+    return view('pengusaha.toko-petani', compact('petani'));
+
+    })->name('toko');
+
     Route::view('/pesan', 'pengusaha.pesan')->name('pesan');
 
     // Menambahkan produk ke keranjang dengan validasi stok
