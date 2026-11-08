@@ -200,11 +200,42 @@ Route::post('/keranjang/update', function (\Illuminate\Http\Request $request) {
     Route::view('/akun', 'pengusaha.akun')->name('akun');
 });
 
-Route::middleware('peran:petani')->prefix('petani')->name('petani.')->group(function () {
-    Route::view('/', 'petani.dashboard')->name('dashboard');
-    Route::view('/produk', 'petani.produk')->name('produk');
-    Route::view('/katalog', 'petani.katalog')->name('katalog');
-    Route::view('/pesan', 'petani.pesan')->name('pesan');
-    Route::view('/pesanan', 'petani.pesanan')->name('pesanan');
-    Route::view('/akun', 'petani.akun')->name('akun');
-});
+Route::middleware('peran:petani')
+    ->prefix('petani')
+    ->name('petani.')
+    ->group(function () {
+        Route::view('/', 'petani.dashboard')->name('dashboard');
+        Route::view('/produk', 'petani.produk')->name('produk');
+        Route::view('/katalog', 'petani.katalog')->name('katalog');
+        Route::view('/pesan', 'petani.pesan')->name('pesan');
+        Route::view('/pesanan', 'petani.pesanan')->name('pesanan');
+        Route::view('/akun', 'petani.akun')->name('akun');
+        Route::view('/alamat', 'petani.alamat')->name('alamat');
+        Route::view('/bantuan', 'petani.bantuan')->name('bantuan');
+
+        Route::post('/akun', function (\Illuminate\Http\Request $request) {
+            $aksi = $request->input('aksi');
+
+            if ($aksi === 'profil') {
+                return redirect()->route('petani.akun')
+                    ->with('pesan_akun', 'Profil disimpan (simulasi)');
+            }
+
+            if ($aksi === 'tambah_alamat') {
+                return redirect(route('petani.akun') . '#tambah-alamat')
+                    ->with('pesan_akun', 'Alamat ditambahkan (simulasi)');
+            }
+
+            if ($aksi === 'utama') {
+                return redirect()->route('petani.akun')
+                    ->with('pesan_akun', 'Alamat utama diperbarui (simulasi)');
+            }
+
+            if ($aksi === 'hapus_alamat') {
+                return redirect()->route('petani.akun')
+                    ->with('pesan_akun', 'Alamat dihapus (simulasi)');
+            }
+
+            return redirect()->route('petani.akun');
+        })->name('akun.simpan');
+    });
