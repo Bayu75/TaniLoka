@@ -90,7 +90,8 @@ class PesananController extends Controller
         ]);
 
         return redirect()
-            ->route('pengusaha.pesanan.detail', $id);
+            ->route('pengusaha.pesanan.detail', $id)
+            ->with('success', 'Pesanan berhasil dibatalkan.');
     }
 
 

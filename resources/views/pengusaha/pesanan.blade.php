@@ -5,75 +5,79 @@
 
 @section('content')
 
-<div class="mx-auto max-w-[760px] space-y-4" x-data="{ filter: 'semua', detailPesanan: null }">    <div>
-        <h1 class="text-2xl font-extrabold text-gray-900">
-            Pesanan
-        </h1>
-        <p class="mt-1 text-sm text-gray-500">
-            Pantau dan kelola pesanan produk pertanianmu.
-        </p>
+<div class="mx-auto max-w-[760px] space-y-4" x-data="{ filter: 'semua', detailPesanan: null }">
+
+    {{-- Bagian Judul dan Filter --}}
+    <div class="relative left-1/2 -mt-4 w-screen -translate-x-1/2 border-b border-green-200 bg-white">
+        <div class="mx-auto max-w-[760px] space-y-4 px-4 py-5">
+
+            {{-- Judul --}}
+            <div>
+                <h1 class="text-2xl font-extrabold text-gray-900">
+                    Pesanan
+                </h1>
+            </div>
+
+            {{-- Filter Status --}}
+            <div class="flex w-full items-center gap-3 overflow-x-auto pb-3">
+
+                <button
+                    @click="filter = 'semua'"
+                    :class="filter === 'semua'
+                        ? 'bg-green-800 text-white border-green-800'
+                        : 'bg-white text-gray-800 border-green-200'"
+                    class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
+                    Semua ({{ $jumlahPesanan['semua'] }})
+                </button>
+
+                <button
+                    @click="filter = 'menunggu'"
+                    :class="filter === 'menunggu'
+                        ? 'bg-green-800 text-white border-green-800'
+                        : 'bg-white text-gray-800 border-green-200'"
+                    class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
+                    Menunggu ({{ $jumlahPesanan['menunggu'] }})
+                </button>
+
+                <button
+                    @click="filter = 'diproses'"
+                    :class="filter === 'diproses'
+                        ? 'bg-green-800 text-white border-green-800'
+                        : 'bg-white text-gray-800 border-green-200'"
+                    class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
+                    Diproses ({{ $jumlahPesanan['diproses'] }})
+                </button>
+
+                <button
+                    @click="filter = 'dikirim'"
+                    :class="filter === 'dikirim'
+                        ? 'bg-green-800 text-white border-green-800'
+                        : 'bg-white text-gray-800 border-green-200'"
+                    class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
+                    Dikirim ({{ $jumlahPesanan['dikirim'] }})
+                </button>
+
+                <button
+                    @click="filter = 'selesai'"
+                    :class="filter === 'selesai'
+                        ? 'bg-green-800 text-white border-green-800'
+                        : 'bg-white text-gray-800 border-green-200'"
+                    class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
+                    Selesai ({{ $jumlahPesanan['selesai'] }})
+                </button>
+
+                <button
+                    @click="filter = 'dibatalkan'"
+                    :class="filter === 'dibatalkan'
+                        ? 'bg-green-800 text-white border-green-800'
+                        : 'bg-white text-gray-800 border-green-200'"
+                    class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
+                    Dibatalkan ({{ $jumlahPesanan['dibatalkan'] }})
+                </button>
+
+            </div>
+        </div>
     </div>
-
-
-
-    {{-- Filter Status --}}
-<div class="flex w-full items-center gap-3 overflow-x-auto pb-3">        <button
-            @click="filter = 'semua'"
-            :class="filter === 'semua'
-                ? 'bg-green-800 text-white border-green-800'
-                : 'bg-white text-gray-800 border-green-200'"
-            class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
-            Semua ({{ $jumlahPesanan['semua'] }})
-        </button>
-
-        <button
-            @click="filter = 'menunggu'"
-            :class="filter === 'menunggu'
-                ? 'bg-green-800 text-white border-green-800'
-                : 'bg-white text-gray-800 border-green-200'"
-            class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
-            Menunggu ({{ $jumlahPesanan['menunggu'] }})
-        </button>
-
-        <button
-            @click="filter = 'diproses'"
-            :class="filter === 'diproses'
-                ? 'bg-green-800 text-white border-green-800'
-                : 'bg-white text-gray-800 border-green-200'"
-            class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
-            Diproses ({{ $jumlahPesanan['diproses'] }})
-        </button>
-
-        <button
-            @click="filter = 'dikirim'"
-            :class="filter === 'dikirim'
-                ? 'bg-green-800 text-white border-green-800'
-                : 'bg-white text-gray-800 border-green-200'"
-            class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
-            Dikirim ({{ $jumlahPesanan['dikirim'] }})
-        </button>
-
-        <button
-            @click="filter = 'selesai'"
-            :class="filter === 'selesai'
-                ? 'bg-green-800 text-white border-green-800'
-                : 'bg-white text-gray-800 border-green-200'"
-            class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
-            Selesai ({{ $jumlahPesanan['selesai'] }})
-        </button>
-
-        <button
-            @click="filter = 'dibatalkan'"
-            :class="filter === 'dibatalkan'
-                ? 'bg-green-800 text-white border-green-800'
-                : 'bg-white text-gray-800 border-green-200'"
-            class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
-            Dibatalkan ({{ $jumlahPesanan['dibatalkan'] }})
-        </button>
-
-    </div>
-
-
 
     {{-- Daftar Pesanan --}}
     <div class="flex flex-col gap-5">
@@ -97,7 +101,7 @@
                         'menunggu_pembayaran' => 'bg-orange-100',
                         'dikirim' => 'bg-green-100',
                         'selesai' => 'bg-emerald-100',
-                        'dibatalkan' => 'bg-red-50',
+                        'dibatalkan' => 'bg-red-100',
                         default => 'bg-white',
                     } }}">
 

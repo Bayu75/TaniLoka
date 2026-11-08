@@ -7,8 +7,9 @@
 <div class="mx-auto flex w-full max-w-[760px] flex-col gap-5">
 
 
-    {{-- Judul Detail Pesanan --}}
-    <div class="flex items-center gap-4 border-b border-green-200 pb-3">
+{{-- Judul Detail Pesanan --}}
+<div class="relative left-1/2 -mt-4 w-screen -translate-x-1/2 border-b border-green-200 bg-white">    <div class="mx-auto flex max-w-[760px] items-center gap-4 px-4 py-4">
+
         <a href="{{ route('pengusaha.pesanan') }}"
             class="inline-flex shrink-0 items-center gap-2 font-semibold text-green-800 transition hover:text-green-600">
             <span class="text-2xl leading-none">‹</span>
@@ -23,7 +24,9 @@
                 #{{ $pesanan['id'] }}
             </p>
         </div>
+
     </div>
+</div>
 
 
 
@@ -489,5 +492,9 @@
     </div>
 
 </div>
+
+@if (session('success'))
+    <x-toast :message="session('success')" />
+@endif
 
 @endsection
