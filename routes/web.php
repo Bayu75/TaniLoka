@@ -20,6 +20,7 @@ Route::middleware('peran:pengusaha')->prefix('pengusaha')->name('pengusaha.')->g
 
     Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan');
     Route::get('/pesanan/{id}', [PesananController::class, 'show'])->name('pesanan.detail');
+    Route::post('/pesanan/{id}/batalkan', [PesananController::class, 'cancel'])->name('pesanan.cancel');
 
     Route::view('/akun', 'pengusaha.akun')->name('akun');
 });

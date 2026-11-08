@@ -6,18 +6,25 @@
 
 <div class="mx-auto flex w-full max-w-[760px] flex-col gap-5">
 
+
     {{-- Judul Detail Pesanan --}}
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-4 border-b border-green-200 pb-3">
         <a href="{{ route('pengusaha.pesanan') }}"
-            class="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-gray-100">
-            ←
+            class="inline-flex shrink-0 items-center gap-2 font-semibold text-green-800 transition hover:text-green-600">
+            <span class="text-2xl leading-none">‹</span>
+            <span>Kembali</span>
         </a>
 
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Detail Pesanan</h1>
-            <p class="text-sm text-gray-500">Informasi lengkap pesanan Anda</p>
+            <h1 class="text-lg font-bold leading-tight text-gray-800">
+                Detail Pesanan
+            </h1>
+            <p class="text-sm text-gray-500">
+                #{{ $pesanan['id'] }}
+            </p>
         </div>
     </div>
+
 
 
     {{-- Status Pesanan --}}
@@ -118,6 +125,23 @@
             </div>
         </div>
 
+    @elseif ($pesanan['status'] === 'dibatalkan')
+
+        <div class="rounded-2xl border border-red-200 bg-red-50 p-5">
+            <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-2xl text-red-600">
+                    ❌
+                </div>
+
+                <div>
+                    <h2 class="font-bold text-red-800">Dibatalkan</h2>
+                    <p class="mt-1 text-sm text-red-700">
+                        Pesanan telah dibatalkan.
+                    </p>
+                </div>
+            </div>
+        </div>
+
     @endif
 
 
@@ -191,17 +215,57 @@
     @endif
 
 
-    {{-- Tombol Batalkan Pesanan --}}
+
+    {{-- Tombol dan Konfirmasi Pembatalan Pesanan --}}
     @if (in_array($pesanan['status'], ['menunggu_konfirmasi', 'menunggu_pembayaran']))
-        <div>
+        <div x-data="{ konfirmasiBatal: false }">
+
+            {{-- Tombol Batalkan Pesanan --}}
             <button
                 type="button"
-                onclick="alert('Fitur pembatalan pesanan akan segera tersedia.')"
+                x-show="!konfirmasiBatal"
+                @click="konfirmasiBatal = true"
                 class="w-full rounded-xl border border-red-300 bg-white px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50">
                 Batalkan Pesanan
             </button>
+
+            {{-- Kotak Konfirmasi --}}
+            <div
+                x-show="konfirmasiBatal"
+                x-transition
+                class="rounded-2xl border border-red-200 bg-red-50 p-4">
+
+                <p class="mb-3 font-semibold text-red-700">
+                    Yakin ingin membatalkan pesanan ini?
+                </p>
+
+                <div class="flex gap-3">
+                    <button
+                        type="button"
+                        @click="konfirmasiBatal = false"
+                        class="flex-1 rounded-xl border border-red-400 bg-white px-4 py-3 text-sm font-bold text-red-600 transition hover:bg-red-50">
+                        Tidak
+                    </button>
+
+                    <form
+                        action="{{ route('pengusaha.pesanan.cancel', $pesanan['id']) }}"
+                        method="POST"
+                        class="flex-1">
+
+                        @csrf
+
+                        <button
+                            type="submit"
+                            class="w-full rounded-xl bg-red-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-red-700">
+                            Ya, Batalkan
+                        </button>
+                    </form>
+                </div>
+            </div>
+
         </div>
     @endif
+
 
     {{-- Riwayat Pesanan --}}
     <div class="rounded-2xl border border-gray-200 bg-white p-5">
@@ -209,7 +273,11 @@
             Riwayat Pesanan
         </h2>
 
-        <x-order-timeline :status="$pesanan['status']" />
+            <x-order-timeline
+                :status="$pesanan['status']"
+                :tanggal-dibatalkan="$tanggalDibatalkan"
+                :alasan-dibatalkan="$alasanDibatalkan"
+            />
     </div>
 
 

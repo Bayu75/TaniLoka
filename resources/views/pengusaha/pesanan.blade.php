@@ -23,7 +23,7 @@
                 ? 'bg-green-800 text-white border-green-800'
                 : 'bg-white text-gray-800 border-green-200'"
             class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
-            Semua (4)
+            Semua ({{ $jumlahPesanan['semua'] }})
         </button>
 
         <button
@@ -32,7 +32,7 @@
                 ? 'bg-green-800 text-white border-green-800'
                 : 'bg-white text-gray-800 border-green-200'"
             class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
-            Menunggu (2)
+            Menunggu ({{ $jumlahPesanan['menunggu'] }})
         </button>
 
         <button
@@ -41,7 +41,7 @@
                 ? 'bg-green-800 text-white border-green-800'
                 : 'bg-white text-gray-800 border-green-200'"
             class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
-            Diproses (0)
+            Diproses ({{ $jumlahPesanan['diproses'] }})
         </button>
 
         <button
@@ -50,7 +50,7 @@
                 ? 'bg-green-800 text-white border-green-800'
                 : 'bg-white text-gray-800 border-green-200'"
             class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
-            Dikirim (1)
+            Dikirim ({{ $jumlahPesanan['dikirim'] }})
         </button>
 
         <button
@@ -59,7 +59,7 @@
                 ? 'bg-green-800 text-white border-green-800'
                 : 'bg-white text-gray-800 border-green-200'"
             class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
-            Selesai (1)
+            Selesai ({{ $jumlahPesanan['selesai'] }})
         </button>
 
         <button
@@ -68,7 +68,7 @@
                 ? 'bg-green-800 text-white border-green-800'
                 : 'bg-white text-gray-800 border-green-200'"
             class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
-            Dibatalkan (0)
+            Dibatalkan ({{ $jumlahPesanan['dibatalkan'] }})
         </button>
 
     </div>
@@ -97,6 +97,7 @@
                         'menunggu_pembayaran' => 'bg-orange-100',
                         'dikirim' => 'bg-green-100',
                         'selesai' => 'bg-emerald-100',
+                        'dibatalkan' => 'bg-red-50',
                         default => 'bg-white',
                     } }}">
 
@@ -117,6 +118,9 @@
                                     @case('selesai')
                                         🎉
                                         @break
+                                    @case('dibatalkan')
+                                        ❌
+                                        @break
                                 @endswitch
                             </div>
 
@@ -125,7 +129,8 @@
                                     {{ $item['status'] === 'menunggu_konfirmasi' ? 'text-yellow-800' : '' }}
                                     {{ $item['status'] === 'menunggu_pembayaran' ? 'text-orange-800' : '' }}
                                     {{ $item['status'] === 'dikirim' ? 'text-green-800' : '' }}
-                                    {{ $item['status'] === 'selesai' ? 'text-emerald-800' : '' }}">
+                                    {{ $item['status'] === 'selesai' ? 'text-emerald-800' : '' }}
+                                    {{ $item['status'] === 'dibatalkan' ? 'text-red-700' : '' }}"">
                                     {{ str_replace('_', ' ', ucfirst($item['status'])) }}
                                 </p>
 
@@ -177,7 +182,7 @@
                         </p>
 
                         {{-- Notifikasi Pesanan --}}
-                        @if (!empty($item['notifikasi']))
+                        @if (!empty($item['notifikasi']) && $item['status'] !== 'dibatalkan')
                             <div class="inline-flex rounded-lg px-3 py-2 text-xs font-bold
                                 {{ $item['jenis_notifikasi'] === 'waktu'
                                     ? 'bg-amber-50 text-amber-800'
@@ -186,7 +191,7 @@
                             </div>
                         @endif
 
-                        @if (!empty($item['tindakan']))
+                        @if (!empty($item['tindakan']) && $item['status'] !== 'dibatalkan')
                             <div class="rounded-lg bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">
                                 {{ $item['tindakan'] }}
                             </div>

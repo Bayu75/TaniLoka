@@ -12,9 +12,11 @@
         'selesai' => 'Selesai',
     ];
 
+    $dibatalkan = $status === 'dibatalkan';
+
     $urutanStatus = array_search($status, array_keys($tahapan));
 
-    if ($urutanStatus === false) {
+    if ($urutanStatus === false || $dibatalkan) {
         $urutanStatus = 0;
     }
 @endphp
@@ -23,15 +25,21 @@
     @foreach ($tahapan as $key => $nama)
         @php
             $urutan = $loop->index;
-            $aktif = $urutan === $urutanStatus;
-            $selesai = $urutan < $urutanStatus;
+            $aktif = !$dibatalkan && $urutan === $urutanStatus;
+            $selesai = $dibatalkan
+                ? $urutan === 0
+                : $urutan < $urutanStatus;
         @endphp
 
         <div class="flex gap-4">
             <div class="flex flex-col items-center">
                 <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base font-bold
                     {{ $aktif ? 'border-4 border-yellow-200 bg-yellow-400 text-gray-900' : ($selesai ? 'bg-green-700 text-white' : 'bg-gray-200 text-gray-500') }}">
-                    {{ $urutan + 1 }}
+                    @if ($selesai)
+                        ✓
+                    @else
+                        {{ $urutan + 1 }}
+                    @endif
                 </div>
 
                 @if (!$loop->last)
@@ -58,4 +66,28 @@
             </div>
         </div>
     @endforeach
+
+        @if ($dibatalkan)
+            <div class="flex gap-4">
+                <div class="flex flex-col items-center">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-600 text-xl font-bold text-white">
+                        ✕
+                    </div>
+                </div>
+
+                <div class="pb-5 pt-1">
+                    <p class="font-bold text-red-700">
+                        Dibatalkan
+                    </p>
+
+                    <p class="mt-1 text-sm text-gray-500">
+                        {{ $tanggalDibatalkan ?? 'Waktu pembatalan' }}
+                    </p>
+
+                    <p class="mt-1 text-sm text-red-600">
+                        Alasan: {{ $alasanDibatalkan ?? 'Dibatalkan pembeli' }}
+                    </p>
+                </div>
+            </div>
+        @endif
 </div>
