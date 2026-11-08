@@ -1,6 +1,6 @@
 @extends('layouts.petani')
 
-@section('main-class', 'w-full pb-24 pt-4 md:pb-10 md:pt-20')
+@section('main-class', 'w-full pb-24 pt-0 md:pb-10 md:pt-15')
 
 @section('content')
 @php
