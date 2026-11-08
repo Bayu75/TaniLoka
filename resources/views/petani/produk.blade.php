@@ -677,91 +677,49 @@
               <span class="text-text-muted">Nama Produk</span
               ><span class="font-medium text-gray-900 text-right max-w-[60%]"
                 ><span x-text="p.nama"></span
-                ><button
-                  type="button"
-                  @click="bukaUbah(p)"
-                  class="text-primary ml-1"
-                >
-                  ✎ Ubah
-                </button></span
+                ></span
               >
             </div>
             <div class="flex justify-between gap-2">
               <span class="text-text-muted">Kategori</span
               ><span class="font-medium text-gray-900 text-right max-w-[60%]"
                 ><span x-text="p.kategori"></span
-                ><button
-                  type="button"
-                  @click="bukaUbah(p)"
-                  class="text-primary ml-1"
-                >
-                  ✎ Ubah
-                </button></span
+                ></span
               >
             </div>
             <div class="flex justify-between gap-2">
               <span class="text-text-muted">Harga (per kg)</span
               ><span class="font-medium text-gray-900 text-right max-w-[60%]"
                 ><span x-text="rupiah(p.harga)"></span
-                ><button
-                  type="button"
-                  @click="bukaUbah(p)"
-                  class="text-primary ml-1"
-                >
-                  ✎ Ubah
-                </button></span
+                ></span
               >
             </div>
             <div class="flex justify-between gap-2">
               <span class="text-text-muted">Stok (kg)</span
               ><span class="font-medium text-gray-900 text-right max-w-[60%]"
                 ><span x-text="p.stok + ' kg'"></span
-                ><button
-                  type="button"
-                  @click="bukaUbah(p)"
-                  class="text-primary ml-1"
-                >
-                  ✎ Ubah
-                </button></span
+                ></span
               >
             </div>
             <div class="flex justify-between gap-2">
               <span class="text-text-muted">Minimal pesan (kg)</span
               ><span class="font-medium text-gray-900 text-right max-w-[60%]"
                 ><span x-text="p.min + ' kg'"></span
-                ><button
-                  type="button"
-                  @click="bukaUbah(p)"
-                  class="text-primary ml-1"
-                >
-                  ✎ Ubah
-                </button></span
+                ></span
               >
             </div>
             <div class="flex justify-between gap-2">
               <span class="text-text-muted">Kabupaten</span
               ><span class="font-medium text-gray-900 text-right max-w-[60%]"
                 ><span x-text="p.kabupaten"></span
-                ><button
-                  type="button"
-                  @click="bukaUbah(p)"
-                  class="text-primary ml-1"
-                >
-                  ✎ Ubah
-                </button></span
+                ></span
               >
             </div>
             <div class="flex justify-between gap-2">
               <span class="text-text-muted">Periode Panen</span
               ><span class="font-medium text-gray-900 text-right max-w-[60%]"
                 ><span x-text="p.periode"></span
-                ><button
-                  type="button"
-                  @click="bukaUbah(p)"
-                  class="text-primary ml-1"
-                >
-                  ✎ Ubah
-                </button></span
+                ></span
               >
             </div>
             <div class="flex justify-between gap-2">
@@ -798,6 +756,13 @@
                 ></span>
               </button>
             </div>
+            <button
+              type="button"
+              @click="bukaUbah(p)"
+              class="w-full mt-2 border border-green-700 text-green-700 rounded-xl py-2 font-medium hover:bg-green-50"
+            >
+              Ubah Produk
+            </button>
             <button
               type="button"
               @click="hapus(p.id)"
