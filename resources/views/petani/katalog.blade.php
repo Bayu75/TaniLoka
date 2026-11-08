@@ -169,13 +169,15 @@
     }
 </style>
 <div x-data="{
-    cari: '',
-    cariInput: '',
+    // Mengetik/menghapus hanya mengubah draft, bukan hasil yang sedang ditampilkan.
+    pencarianAktif: '',
+    pencarianDraft: '',
     kategoriOverflow: false,
     kategoriBisaKiri: false,
     kategoriBisaKanan: false,
+    // Hanya tombol Cari, Enter, atau submit form yang menerapkan draft.
     cariProduk() {
-        this.cari = this.cariInput;
+        this.pencarianAktif = this.pencarianDraft;
     },
     updateKategoriScroll() {
         const track = this.$refs.kategoriTrack;
@@ -232,7 +234,7 @@
         { nama: 'Paprika Merah', kategori: 'Sayuran', harga: 55000, minimal: 3, stokKg: 0, petani: 'Ibu Wayan Sari', rating: 4.9, transaksi: 187, lokasi: 'Bangli', label: [], nego: true, stok: false, gambar: '{{ asset('images/paprika.jpg') }}', ikon: '🫑', panen: 'Panen tiap 2 bulan', deskripsi: 'Paprika merah segar dari greenhouse Bangli, warna cerah dan daging tebal.' }
     ],
     hasil() {
-        const q = this.cari.toLowerCase();
+        const q = this.pencarianAktif.toLowerCase();
         let list = this.produk.filter(p =>
             (this.kategori === 'Semua' || p.kategori === this.kategori) &&
             (p.nama + ' ' + p.petani + ' ' + p.lokasi).toLowerCase().includes(q)
@@ -293,9 +295,11 @@
                     <div class="tl-search-box">
                         <label class="sr-only" for="tl-katalog-search">Cari produk, petani, lokasi</label>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>
-                        <input id="tl-katalog-search" type="search" x-model="cariInput" placeholder="Cari produk, petani, lokasi..." class="tl-search-input">
+                        <input id="tl-katalog-search" type="search" x-model="pencarianDraft"
+                            @keydown.enter.prevent="cariProduk()"
+                            placeholder="Cari produk, petani, lokasi..." class="tl-search-input">
                     </div>
-                    <button type="submit" class="tl-search-button">
+                    <button type="button" @click="cariProduk()" class="tl-search-button">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>
                         <span>Cari</span>
                     </button>
