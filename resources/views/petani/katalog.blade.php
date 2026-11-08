@@ -1,8 +1,207 @@
 @extends('layouts.petani')
 
 @section('content')
+<style>
+    .tl-catalog-header {
+      border-bottom: 1px solid #dce6d7;
+      color: #183f2b;
+    }
+    .tl-catalog-header [x-cloak] {
+      display: none !important;
+    }
+    .tl-catalog-header .tl-heading {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.3;
+      font-weight: 800;
+    }
+    .tl-catalog-header .tl-subtitle {
+      margin: 8px 0 22px;
+      color: #718575;
+      font-size: 14px;
+    }
+    .tl-catalog-header .tl-search-row {
+      display: flex;
+      align-items: stretch;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .tl-catalog-header .tl-search-box {
+      position: relative;
+      flex: 1 1 220px;
+      min-width: 0;
+    }
+    .tl-catalog-header .tl-search-box > svg {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #718575;
+      pointer-events: none;
+    }
+    .tl-catalog-header .tl-search-input {
+      width: 100%;
+      min-width: 0;
+      height: 48px;
+      padding: 12px 14px 12px 44px;
+      border: 1px solid #dce6d7;
+      border-radius: 12px;
+      background: white;
+      color: #183f2b;
+      font-size: 14px;
+    }
+    .tl-catalog-header .tl-search-input::placeholder {
+      color: #718575;
+    }
+    .tl-catalog-header .tl-search-button,
+    .tl-catalog-header .tl-filter-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 48px;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .tl-catalog-header .tl-search-button {
+      background: #ffbd00;
+      color: #17251b;
+      border: 1px solid #ffbd00;
+    }
+    .tl-catalog-header .tl-filter-button {
+      border: 1px solid #dce6d7;
+      background: white;
+      color: #183f2b;
+    }
+    .tl-catalog-header .tl-filter {
+      position: relative;
+    }
+    .tl-catalog-header .tl-filter-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      z-index: 30;
+      width: 192px;
+      padding: 8px;
+      background: white;
+      border: 1px solid #dce6d7;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px #183f2b14;
+    }
+    .tl-catalog-header .tl-category-wrap {
+      position: relative;
+      margin-top: 20px;
+    }
+    .tl-catalog-header .tl-category-wrap.has-overflow {
+      padding-inline: 36px;
+    }
+    .tl-catalog-header .tl-category-track {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 4px 0 8px;
+      scrollbar-width: thin;
+      overscroll-behavior-x: contain;
+    }
+    .tl-catalog-header .tl-category-chip {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 10px 14px;
+      border: 1px solid #dce6d7;
+      border-radius: 999px;
+      background: white;
+      color: #183f2b;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .tl-catalog-header .tl-category-chip.is-active {
+      background: #286441;
+      border-color: #286441;
+      color: white;
+    }
+    .tl-catalog-header .tl-scroll-button {
+      position: absolute;
+      top: 9px;
+      z-index: 1;
+      width: 30px;
+      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: #e5e7e5;
+      color: #4b554e;
+    }
+    .tl-catalog-header .tl-scroll-button:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+    .tl-catalog-header .tl-scroll-left {
+      left: 0;
+    }
+    .tl-catalog-header .tl-scroll-right {
+      right: 0;
+    }
+    .tl-catalog-header button:focus-visible,
+    .tl-catalog-header input:focus-visible,
+    .tl-catalog-header .tl-category-track:focus-visible {
+      outline: 2px solid #286441;
+      outline-offset: 2px;
+    }
+    @media (max-width: 480px) {
+      .tl-catalog-header .tl-search-box {
+        flex-basis: 100%;
+      }
+      .tl-catalog-header .tl-search-button,
+      .tl-catalog-header .tl-filter {
+        flex: 1;
+      }
+      .tl-catalog-header .tl-filter-button {
+        width: 100%;
+      }
+    }
+</style>
 <div x-data="{
     cari: '',
+    cariInput: '',
+    kategoriOverflow: false,
+    kategoriBisaKiri: false,
+    kategoriBisaKanan: false,
+    cariProduk() {
+        this.cari = this.cariInput;
+    },
+    updateKategoriScroll() {
+        const track = this.$refs.kategoriTrack;
+        if (!track || !track.clientWidth) return;
+        // Compare natural chip width against the whole row, not the padded track.
+        // This prevents stale arrows when resizing back to a width where all chips fit.
+        const chips = Array.from(track.children).filter(el => el.tagName === 'BUTTON');
+        const contentWidth = chips.reduce((width, chip) => width + chip.offsetWidth, 0)
+            + Math.max(0, chips.length - 1) * 8;
+        this.kategoriOverflow = contentWidth > track.parentElement.clientWidth + 1;
+        this.$nextTick(() => {
+            const max = Math.max(0, track.scrollWidth - track.clientWidth);
+            this.kategoriBisaKiri = this.kategoriOverflow && track.scrollLeft > 1;
+            this.kategoriBisaKanan = this.kategoriOverflow && track.scrollLeft < max - 1;
+        });
+    },
+    geserKategori(arah) {
+        const track = this.$refs.kategoriTrack;
+        if (!track) return;
+        const reduced = window.matchMedia
+            && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        track.scrollBy({
+            left: arah * Math.max(120, track.clientWidth * 0.75),
+            behavior: reduced ? 'auto' : 'smooth'
+        });
+    },
     kategori: 'Semua',
     urut: '',
     saringBuka: false,
@@ -86,28 +285,51 @@
 
     {{-- ===== DAFTAR KATALOG ===== --}}
     <div x-show="!pilih && !toko">
-        <div class="border-b border-gray-200">
-            <div class="max-w-5xl mx-auto px-4 py-5 space-y-3">
-                <h1 class="text-xl font-bold">Katalog</h1>
-                <div class="flex gap-2 relative">
-                    <input type="text" x-model="cari" placeholder="Cari produk, petani, lokasi..." class="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-600">
-                    <button type="button" @click="saringBuka = !saringBuka" class="bg-white border border-gray-300 rounded-xl px-4 text-sm font-semibold hover:border-green-600">☰ Saring</button>
-                    <div x-show="saringBuka" x-cloak @click.outside="saringBuka = false" class="absolute right-0 top-12 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-20 w-48 text-sm">
-                        <button type="button" @click="urut = ''; saringBuka = false" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">Default</button>
-                        <button type="button" @click="urut = 'murah'; saringBuka = false" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">Harga termurah</button>
-                        <button type="button" @click="urut = 'mahal'; saringBuka = false" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">Harga termahal</button>
-                        <button type="button" @click="urut = 'rating'; saringBuka = false" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">Rating tertinggi</button>
+        <header class="tl-catalog-header" x-effect="if (!pilih && !toko) $nextTick(() => updateKategoriScroll())" @resize.window="$nextTick(() => updateKategoriScroll())">
+            <div class="max-w-5xl mx-auto px-4 py-5">
+                <h1 class="tl-heading">Katalog Produk</h1>
+                <p class="tl-subtitle">Temukan hasil pertanian segar langsung dari petani Bali.</p>
+                <form class="tl-search-row" role="search" @submit.prevent="cariProduk()">
+                    <div class="tl-search-box">
+                        <label class="sr-only" for="tl-katalog-search">Cari produk, petani, lokasi</label>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>
+                        <input id="tl-katalog-search" type="search" x-model="cariInput" placeholder="Cari produk, petani, lokasi..." class="tl-search-input">
                     </div>
-                </div>
-                <div class="flex gap-2 overflow-x-auto pb-1">
-                    <template x-for="k in daftarKategori" :key="k.nama">
-                        <button type="button" @click="kategori = k.nama" :class="kategori === k.nama ? 'bg-green-700 text-white border-green-700' : 'bg-white text-gray-800 border-gray-300'" class="px-4 py-1.5 rounded-full border text-sm font-medium whitespace-nowrap">
-                            <span x-text="k.ikon"></span> <span x-text="k.nama"></span>
+                    <button type="submit" class="tl-search-button">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>
+                        <span>Cari</span>
+                    </button>
+                    <div class="tl-filter" @keydown.escape.stop="saringBuka = false; $refs.saringButton.focus()">
+                        <button type="button" class="tl-filter-button" x-ref="saringButton" @click="saringBuka = !saringBuka" :aria-expanded="saringBuka" aria-controls="tl-katalog-sort">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
+                            <span>Saring</span>
                         </button>
-                    </template>
+                        <div id="tl-katalog-sort" x-show="saringBuka" x-cloak @click.outside="saringBuka = false" class="tl-filter-menu" aria-label="Urutkan produk">
+                            <button type="button" @click="urut = ''; saringBuka = false" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">Default</button>
+                            <button type="button" @click="urut = 'murah'; saringBuka = false" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">Harga termurah</button>
+                            <button type="button" @click="urut = 'mahal'; saringBuka = false" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">Harga termahal</button>
+                            <button type="button" @click="urut = 'rating'; saringBuka = false" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">Rating tertinggi</button>
+                        </div>
+                    </div>
+                </form>
+                <div class="tl-category-wrap" :class="{ 'has-overflow': kategoriOverflow }">
+                    <button type="button" x-show="kategoriOverflow" x-cloak class="tl-scroll-button tl-scroll-left" :disabled="!kategoriBisaKiri" @click="geserKategori(-1)" aria-label="Geser kategori ke kiri" aria-controls="tl-katalog-categories">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+                    </button>
+                    <div id="tl-katalog-categories" x-ref="kategoriTrack" class="tl-category-track" tabindex="0" role="group" aria-label="Kategori produk; geser untuk melihat semua kategori" @scroll.passive="updateKategoriScroll()" @keydown.left.prevent="geserKategori(-1)" @keydown.right.prevent="geserKategori(1)">
+                        <template x-for="k in daftarKategori" :key="k.nama">
+                            <button type="button" @click="kategori = k.nama" :aria-pressed="kategori === k.nama" :class="{ 'is-active': kategori === k.nama }" class="tl-category-chip">
+                                <span x-show="k.ikon" x-text="k.ikon" aria-hidden="true"></span>
+                                <span x-text="k.nama"></span>
+                            </button>
+                        </template>
+                    </div>
+                    <button type="button" x-show="kategoriOverflow" x-cloak class="tl-scroll-button tl-scroll-right" :disabled="!kategoriBisaKanan" @click="geserKategori(1)" aria-label="Geser kategori ke kanan" aria-controls="tl-katalog-categories">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+                    </button>
                 </div>
             </div>
-        </div>
+        </header>
 
         <div class="max-w-5xl mx-auto px-4 py-5 pb-16">
             <p class="text-sm text-gray-600 mb-3"><span class="font-semibold" x-text="hasil().length"></span> produk ditemukan</p>
