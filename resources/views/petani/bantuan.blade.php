@@ -2,7 +2,16 @@
 
 @section('content')
 <div class="max-w-3xl mx-auto px-4 py-6 space-y-5 pb-24">
-    <x-page-header judul="Bantuan & Informasi" />
+    <header class="mb-4 grid grid-cols-[5rem_minmax(0,1fr)_5rem] items-center gap-2">
+        <a href="{{ url('/petani/akun') }}" class="inline-flex items-center gap-1 py-2 text-sm font-semibold text-green-700 hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 justify-self-start">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="shrink-0">
+                    <path d="m15 18-6-6 6-6" />
+                </svg>
+                <span>Kembali</span>
+            </a>
+        <h1 class="min-w-0 break-words text-center text-lg font-bold">Bantuan & Informasi</h1>
+        <span aria-hidden="true"></span>
+    </header>
 
     <a href="https://wa.me/6281234567890" target="_blank" class="block w-full text-center bg-primary text-white font-semibold rounded-xl py-3">
         Hubungi via WhatsApp

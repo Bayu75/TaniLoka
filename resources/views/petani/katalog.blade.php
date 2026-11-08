@@ -8,6 +8,7 @@
     saringBuka: false,
     pilih: null,
     toko: null,
+    riwayatNavigasi: [],
     tabDetail: 'info',
     fotoAktif: 0,
     banner: '{{ asset('images/banner-toko.jpg') }}',
@@ -44,10 +45,40 @@
     },
     produkToko() { return this.produk.filter(p => p.petani === this.toko); },
     infoToko() { return this.produkToko()[0] || {}; },
-    buka(p) { this.toko = null; this.pilih = p; this.tabDetail = 'info'; this.fotoAktif = 0; window.scrollTo(0, 0); },
-    tutup() { this.pilih = null; window.scrollTo(0, 0); },
-    bukaToko(nama) { this.toko = nama; window.scrollTo(0, 0); },
-    tutupToko() { this.toko = null; window.scrollTo(0, 0); },
+    // Simpan induk lokal tanpa mengubah pencarian, kategori, atau urutan.
+    buka(p) {
+        this.riwayatNavigasi.push({
+            pilih: this.pilih,
+            toko: this.toko,
+            tabDetail: this.tabDetail,
+            fotoAktif: this.fotoAktif
+        });
+        this.toko = null;
+        this.pilih = p;
+        this.tabDetail = 'info';
+        this.fotoAktif = 0;
+        window.scrollTo(0, 0);
+    },
+    kembaliInduk() {
+        const induk = this.riwayatNavigasi.pop() || { pilih: null, toko: null };
+        this.pilih = induk.pilih;
+        this.toko = induk.toko;
+        if (induk.tabDetail !== undefined) this.tabDetail = induk.tabDetail;
+        if (induk.fotoAktif !== undefined) this.fotoAktif = induk.fotoAktif;
+        window.scrollTo(0, 0);
+    },
+    tutup() { this.kembaliInduk(); },
+    bukaToko(nama) {
+        this.riwayatNavigasi.push({
+            pilih: this.pilih,
+            toko: this.toko,
+            tabDetail: this.tabDetail,
+            fotoAktif: this.fotoAktif
+        });
+        this.toko = nama;
+        window.scrollTo(0, 0);
+    },
+    tutupToko() { this.kembaliInduk(); },
     inisial(n) { return n.split(' ').pop().charAt(0); },
     rupiah(n) { return 'Rp ' + n.toLocaleString('id-ID'); },
     bintang(r) { return '★★★★★'.slice(0, Math.round(r)) + '☆☆☆☆☆'.slice(0, 5 - Math.round(r)); }
@@ -115,12 +146,18 @@
     <template x-if="pilih && !toko">
         <div>
             <div class="bg-white border-b border-gray-200">
-                <div class="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
-                    <button type="button" @click="tutup()" class="text-green-700 font-semibold text-sm">‹ Kembali</button>
-                    <div>
+                <div class="max-w-4xl mx-auto px-4 py-3 grid grid-cols-[5rem_minmax(0,1fr)_5rem] items-center gap-2">
+                    <button type="button" @click="tutup()" class="inline-flex items-center gap-1 py-2 text-sm font-semibold text-green-700 hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 justify-self-start">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="shrink-0">
+                    <path d="m15 18-6-6 6-6" />
+                </svg>
+                <span>Kembali</span>
+            </button>
+                    <div class="min-w-0 break-words text-center">
                         <p class="font-bold text-sm" x-text="pilih.nama"></p>
                         <p class="text-xs text-gray-500" x-text="pilih.kategori"></p>
                     </div>
+                    <span aria-hidden="true"></span>
                 </div>
             </div>
 
@@ -218,12 +255,18 @@
     <template x-if="toko">
         <div class="pb-16">
             <div class="bg-white border-b border-gray-200">
-                <div class="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
-                    <button type="button" @click="tutupToko()" class="text-green-700 font-semibold text-sm">‹ Kembali</button>
-                    <div>
+                <div class="max-w-4xl mx-auto px-4 py-3 grid grid-cols-[5rem_minmax(0,1fr)_5rem] items-center gap-2">
+                    <button type="button" @click="tutupToko()" class="inline-flex items-center gap-1 py-2 text-sm font-semibold text-green-700 hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 justify-self-start">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="shrink-0">
+                    <path d="m15 18-6-6 6-6" />
+                </svg>
+                <span>Kembali</span>
+            </button>
+                    <div class="min-w-0 break-words text-center">
                         <p class="font-bold text-sm">Profil Toko</p>
                         <p class="text-xs text-gray-500" x-text="toko"></p>
                     </div>
+                    <span aria-hidden="true"></span>
                 </div>
             </div>
 

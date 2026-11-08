@@ -67,7 +67,16 @@
     }
 }">
 
-    <x-page-header judul="Alamat Saya" />
+    <header class="mb-4 grid grid-cols-[5rem_minmax(0,1fr)_5rem] items-center gap-2">
+        <a href="{{ url('/petani/akun') }}" class="inline-flex items-center gap-1 py-2 text-sm font-semibold text-green-700 hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 justify-self-start">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="shrink-0">
+                    <path d="m15 18-6-6 6-6" />
+                </svg>
+                <span>Kembali</span>
+            </a>
+        <h1 class="min-w-0 break-words text-center text-lg font-bold">Alamat Saya</h1>
+        <span aria-hidden="true"></span>
+    </header>
 
     <div class="space-y-3">
         <template x-for="a in daftar" :key="a.id">
@@ -95,7 +104,16 @@
 
     {{-- Form tambah: hanya muncul setelah tombol diklik --}}
     <div x-show="formTambah" x-cloak class="bg-white border border-border rounded-2xl p-4 space-y-3">
-        <h2 class="font-semibold text-gray-900">Tambah Alamat Baru</h2>
+        <div class="grid grid-cols-[5rem_minmax(0,1fr)_5rem] items-center gap-2">
+            <button type="button" @click="formTambah = false" class="inline-flex items-center gap-1 py-2 text-sm font-semibold text-green-700 hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 justify-self-start">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="shrink-0">
+                    <path d="m15 18-6-6 6-6" />
+                </svg>
+                <span>Kembali</span>
+            </button>
+            <h2 class="text-center font-semibold text-gray-900">Tambah Alamat Baru</h2>
+            <span aria-hidden="true"></span>
+        </div>
         <div>
             <label class="block text-sm font-medium mb-1">Label</label>
             <input type="text" x-model="baru.label" class="w-full border border-border rounded-xl px-4 py-2" placeholder="Rumah">
@@ -120,7 +138,16 @@
 
     {{-- Form ubah --}}
     <div x-show="formUbah" x-cloak class="bg-white border border-border rounded-2xl p-4 space-y-3">
-        <h2 class="font-semibold text-gray-900">Ubah Alamat</h2>
+        <div class="grid grid-cols-[5rem_minmax(0,1fr)_5rem] items-center gap-2">
+            <button type="button" @click="formUbah = false" class="inline-flex items-center gap-1 py-2 text-sm font-semibold text-green-700 hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 justify-self-start">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="shrink-0">
+                    <path d="m15 18-6-6 6-6" />
+                </svg>
+                <span>Kembali</span>
+            </button>
+            <h2 class="text-center font-semibold text-gray-900">Ubah Alamat</h2>
+            <span aria-hidden="true"></span>
+        </div>
         <div>
             <label class="block text-sm font-medium mb-1">Label</label>
             <input type="text" x-model="edit.label" class="w-full border border-border rounded-xl px-4 py-2">

@@ -2,8 +2,12 @@
 
 @section('content')
 <div class="max-w-3xl mx-auto px-4 py-6 space-y-4 pb-24">
-    <x-page-header judul="Pesan" />
-    <p class="text-sm text-text-muted -mt-2">Percakapan dan negosiasi harga dengan pembeli.</p>
+    <div id="pesan-awal">
+        <header class="mb-4">
+        <h1 class="text-2xl font-extrabold">Pesan</h1>
+    </header>
+        <p class="text-sm text-text-muted -mt-2">Percakapan dan negosiasi harga dengan pembeli.</p>
+    </div>
     <div id="daftar-kontak" class="space-y-3">
         <a href="#chat-sari" class="pesan-kontak block bg-white border border-border rounded-2xl p-4 hover:border-primary">
             <div class="flex gap-3">
@@ -40,12 +44,18 @@
     </div>
 
     <div id="chat-sari" class="pesan-detail hidden scroll-mt-24 space-y-4">
-        <div class="flex items-center gap-3 border-b border-border pb-3">
-            <a href="#daftar-kontak" class="pesan-kembali text-sm text-primary font-medium">&lt; Kembali</a>
-            <div>
+        <div class="grid grid-cols-[5rem_minmax(0,1fr)_5rem] items-center gap-2 border-b border-border pb-3">
+            <a href="#daftar-kontak" class="inline-flex items-center gap-1 py-2 text-sm font-semibold text-green-700 hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 pesan-kembali justify-self-start">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="shrink-0">
+                    <path d="m15 18-6-6 6-6" />
+                </svg>
+                <span>Kembali</span>
+            </a>
+            <div class="min-w-0 break-words text-center">
                 <p class="font-semibold text-gray-900">Sari Kitchen</p>
                 <p class="text-sm text-text-muted">Bayam Hijau Organik</p>
             </div>
+            <span aria-hidden="true"></span>
         </div>
 
         <div id="thread-sari" class="space-y-4">
@@ -85,12 +95,18 @@
     </div>
 
     <div id="chat-bali" class="pesan-detail hidden scroll-mt-24 space-y-4">
-        <div class="flex items-center gap-3 border-b border-border pb-3">
-            <a href="#daftar-kontak" class="pesan-kembali text-sm text-primary font-medium">&lt; Kembali</a>
-            <div>
+        <div class="grid grid-cols-[5rem_minmax(0,1fr)_5rem] items-center gap-2 border-b border-border pb-3">
+            <a href="#daftar-kontak" class="inline-flex items-center gap-1 py-2 text-sm font-semibold text-green-700 hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 pesan-kembali justify-self-start">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="shrink-0">
+                    <path d="m15 18-6-6 6-6" />
+                </svg>
+                <span>Kembali</span>
+            </a>
+            <div class="min-w-0 break-words text-center">
                 <p class="font-semibold text-gray-900">Bali Delights Restaurant</p>
                 <p class="text-sm text-text-muted">Wortel Organik</p>
             </div>
+            <span aria-hidden="true"></span>
         </div>
 
         <div id="thread-bali" class="space-y-4">
@@ -119,12 +135,16 @@
 <script>
 (function () {
     function hideAll() {
+        var awal = document.getElementById('pesan-awal');
+        if (awal) awal.classList.remove('hidden');
         document.querySelectorAll('.pesan-detail').forEach(function (el) { el.classList.add('hidden'); });
         var daftar = document.getElementById('daftar-kontak');
         if (daftar) daftar.classList.remove('hidden');
     }
     function showChat(id) {
         hideAll();
+        var awal = document.getElementById('pesan-awal');
+        if (awal) awal.classList.add('hidden');
         var daftar = document.getElementById('daftar-kontak');
         if (daftar) daftar.classList.add('hidden');
         var box = document.getElementById(id);

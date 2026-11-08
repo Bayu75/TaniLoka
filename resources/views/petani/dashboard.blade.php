@@ -1,5 +1,7 @@
 @extends('layouts.petani')
 
+@section('main-class', 'w-full pb-24 pt-4 md:pb-10 md:pt-20')
+
 @section('content')
 @php
     $pesananTerbaru = [
@@ -8,8 +10,9 @@
         ['nomor' => 'TL-0010', 'pembeli' => 'Katering Sari Rasa', 'produk' => 'Tomat Segar Grade A 15 kg', 'total' => 180000, 'tab' => 'dikirim', 'status' => 'Dikirim', 'kelas' => 'bg-indigo-100 text-indigo-800'],
     ];
 @endphp
+
 <div class="pb-16">
-    <div class="bg-gradient-to-r from-green-800 to-green-600 text-white">
+    <div class="w-full bg-gradient-to-r from-green-800 to-green-600 text-white">
         <div class="max-w-4xl mx-auto px-4 pt-6 pb-20">
             <p class="text-sm opacity-90">Selamat datang</p>
             <h1 class="text-2xl font-bold">{{ session('nama', 'Pak Made Sukartha') }}</h1>

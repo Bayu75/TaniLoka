@@ -2,7 +2,9 @@
 
 @section('content')
 <div class="max-w-3xl mx-auto px-4 py-6 space-y-5 pb-24">
-    <x-page-header judul="Akun" />
+    <header class="mb-4">
+        <h1 class="text-2xl font-extrabold">Akun</h1>
+    </header>
 
     <div class="bg-primary text-white rounded-2xl p-4 flex items-center gap-4">
         <div class="w-14 h-14 rounded-xl bg-yellow-400 text-primary flex items-center justify-center text-2xl font-bold">
