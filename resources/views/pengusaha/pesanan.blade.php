@@ -5,62 +5,6 @@
 
 @section('content')
 
-@php
-
-    $pesanan = [
-        [
-            'id' => 'TL-0008',
-            'tanggal' => '26 Okt 2026',
-            'status' => 'menunggu_konfirmasi',
-            'nama_petani' => 'Ibu Wayan Sari',
-            'produk' => 'Cabai Rawit Merah',
-            'gambar' => 'images/products/cabai rawit.jpg',
-            'jumlah' => '5 kg',
-            'total' => 237000,
-            'foto' => 'https://placehold.co/100x100?text=Cabai',
-            'notifikasi' => 'Batas konfirmasi: 21 jam 58 menit',
-            'jenis_notifikasi' => 'waktu',
-        ],
-        [
-            'id' => 'TL-0006',
-            'tanggal' => '26 Okt 2026',
-            'status' => 'menunggu_pembayaran',
-            'nama_petani' => 'Ibu Nyoman Dewi',
-            'produk' => 'Kangkung Segar',
-            'gambar' => 'images/products/kangkung.png',
-            'jumlah' => '20 kg',
-            'total' => 110000,
-            'foto' => 'https://placehold.co/100x100?text=Kangkung',
-            'notifikasi' => 'Batas pembayaran: 1 menit 44 detik',
-            'jenis_notifikasi' => 'waktu',
-            'tindakan' => 'Perlu tindakan: Unggah bukti pembayaran',
-        ],
-        [
-            'id' => 'TL-0004',
-            'tanggal' => '23 Okt 2026',
-            'status' => 'dikirim',
-            'nama_petani' => 'Pak Ketut Wirasa',
-            'produk' => 'Tomat Segar Grade A',
-            'gambar' => 'images/products/tomat.jpg',
-            'jumlah' => '20 kg',
-            'total' => 260000,
-            'foto' => 'https://placehold.co/100x100?text=Tomat',
-        ],
-        [
-            'id' => 'TL-0001',
-            'tanggal' => '14 Okt 2026',
-            'status' => 'selesai',
-            'nama_petani' => 'Pak Made Sukartha',
-            'produk' => 'Bayam Hijau Organik',
-            'gambar' => 'images/products/bayam.png',
-            'jumlah' => '10 kg',
-            'total' => 100000,
-            'foto' => 'https://placehold.co/100x100?text=Bayam',
-            'tindakan' => 'Perlu tindakan: Beri penilaian',
-        ],
-    ];
-@endphp
-
 <div class="mx-auto max-w-[760px] space-y-4" x-data="{ filter: 'semua', detailPesanan: null }">    <div>
         <h1 class="text-2xl font-extrabold text-gray-900">
             Pesanan
@@ -258,7 +202,7 @@
                                 class="block w-full rounded-xl bg-green-700 px-5 py-2.5 text-center text-sm font-bold text-white transition hover:bg-green-800">
                                 Lihat Detail
                             </a>
-                        
+
 
                         </div>
 

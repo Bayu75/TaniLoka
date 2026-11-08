@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Pengusaha\PesananController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'auth.landing')->name('landing');
@@ -16,11 +17,9 @@ Route::middleware('peran:pengusaha')->prefix('pengusaha')->name('pengusaha.')->g
     Route::view('/katalog', 'pengusaha.katalog')->name('katalog');
     Route::view('/pesan', 'pengusaha.pesan')->name('pesan');
     Route::view('/keranjang', 'pengusaha.keranjang')->name('keranjang');
-    Route::view('/pesanan', 'pengusaha.pesanan')->name('pesanan');
 
-    Route::get('/pesanan/{id}', function ($id) {
-    return view('pengusaha.detail-pesanan', ['id' => $id]);
-    })->name('pesanan.detail');
+    Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan');
+    Route::get('/pesanan/{id}', [PesananController::class, 'show'])->name('pesanan.detail');
 
     Route::view('/akun', 'pengusaha.akun')->name('akun');
 });
