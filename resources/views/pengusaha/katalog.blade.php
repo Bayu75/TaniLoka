@@ -177,6 +177,9 @@
 @endphp
 
 <div class="pb-10" x-data="{ filterOpen: false }">
+{{-- HEADER PUTIH KATALOG --}}
+<div class="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-[#D4E8D0] bg-white">
+    <div class="mx-auto max-w-6xl px-4 py-5 md:py-6">
 
     {{-- HEADER KATALOG --}}
     <section class="mb-5">
@@ -270,6 +273,8 @@
             @endforeach
         </div>
     </section>
+     </div>
+</div>
 
     {{-- HASIL DAN PENGURUTAN --}}
     <section>
