@@ -19,7 +19,8 @@ Route::middleware('peran:pengusaha')->prefix('pengusaha')->name('pengusaha.')->g
     Route::view('/keranjang', 'pengusaha.keranjang')->name('keranjang');
     Route::view('/checkout', 'pengusaha.checkout')->name('checkout');
     Route::view('/pembayaran', 'pengusaha.pembayaran')->name('pembayaran');
-
+    Route::view('/konfirmasi', 'pengusaha.konfirmasi')->name('konfirmasi');
+    Route::post('/konfirmasi', [PesananController::class, 'store'])->name('konfirmasi.store');
     Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan');
     Route::get('/pesanan/{id}', [PesananController::class, 'show'])->name('pesanan.detail');
     Route::post('/pesanan/{id}/batalkan', [PesananController::class, 'cancel'])->name('pesanan.cancel');

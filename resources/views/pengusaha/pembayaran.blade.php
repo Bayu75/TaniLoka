@@ -3,6 +3,15 @@
 
 @section('title', 'Pembayaran - TaniLoka')
 
+@php
+    $metodePengiriman = request('metode', 'diantar');
+    $kurir = request('kurir', 'kendaraan');
+
+    $subtotal = 90000;
+    $ongkir = $metodePengiriman === 'ambil' ? 0 : ($kurir === 'jnt' ? 12000 : 0);
+    $total = $subtotal + $ongkir;
+@endphp
+
 @section('content')
 
 <div class="relative left-1/2 -mt-4 w-screen -translate-x-1/2 border-b border-green-200 bg-white">
@@ -51,11 +60,8 @@
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_266px]">
 
         {{-- Kolom Kiri: Metode Pembayaran --}}
-        <div class="min-w-0">
-            <div
-                x-data="{ metodeBayar: 'transfer' }"
-                class="rounded-2xl border border-green-100 bg-white p-5"
-            >
+        <div class="min-w-0" x-data="{ metodeBayar: 'transfer' }">
+            <div class="rounded-2xl border border-green-100 bg-white p-5">
                 <h2 class="text-lg font-bold text-gray-800">
                     Metode Pembayaran
                 </h2>
@@ -132,7 +138,25 @@
 
                 </div>
             </div>
+
+            {{-- Informasi Pembayaran --}}
+            <div class="mt-4 rounded-2xl border border-green-200 bg-green-50 p-4">
+                <p class="text-sm leading-relaxed text-green-800">
+                    <span class="font-bold">Kapan saya membayar?</span>
+                    Pembayaran dilakukan setelah petani mengonfirmasi pesanan.
+                    Instruksi dan unggah bukti ada di Detail Pesanan.
+                </p>
+            </div>
+
+            <a
+                :href="'{{ route('pengusaha.konfirmasi', request()->query()) }}&pembayaran=' + metodeBayar"
+                class="mt-4 block w-full rounded-xl bg-amber-500 px-4 py-4 text-center font-bold text-gray-900 transition hover:bg-amber-600"
+            >
+                Tinjau Pesanan
+            </a>
+
         </div>
+
 
         {{-- Kolom Kanan: Ringkasan --}}
         <div class="self-start lg:sticky lg:top-24">
@@ -148,29 +172,40 @@
                     </p>
 
                     <p class="shrink-0 text-sm font-bold text-gray-800">
-                        Rp 90.000
+                        Rp {{ number_format($subtotal, 0, ',', '.') }}
                     </p>
                 </div>
 
                 <div class="mt-3 space-y-2 text-sm">
                     <div class="flex justify-between">
                         <span class="text-gray-600">Subtotal</span>
-                        <span class="text-gray-700">Rp 90.000</span>
+                        <span class="text-gray-700">
+                            Rp {{ number_format($subtotal, 0, ',', '.') }}
+                        </span>
                     </div>
 
                     <div class="flex justify-between">
                         <span class="text-gray-600">Ongkos kirim</span>
-                        <span class="text-gray-700">Gratis</span>
+                        <span class="text-gray-700">
+                            @if ($ongkir === 0)
+                                Gratis
+                            @else
+                                Rp {{ number_format($ongkir, 0, ',', '.') }}
+                            @endif
+                        </span>
                     </div>
                 </div>
 
                 <div class="mt-3 flex justify-between border-t border-gray-200 pt-3">
                     <span class="font-bold text-primary">Total</span>
-                    <span class="font-extrabold text-primary">Rp 90.000</span>
+                    <span class="font-extrabold text-primary">
+                        Rp {{ number_format($total, 0, ',', '.') }}
+                    </span>
                 </div>
 
             </div>
         </div>
+
 
     </div>
 

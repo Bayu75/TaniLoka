@@ -110,8 +110,8 @@
         }"
             class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_266px]"
     >
-        {{-- Kolom Kiri: Konten yang Bisa Di-scroll --}}
-        <div class="min-w-0 lg:h-[calc(100vh-280px)] lg:overflow-y-auto lg:pr-2">
+        {{-- Kolom Kiri: Konten Checkout --}}
+        <div class="min-w-0">
 
             {{-- Alamat Pengiriman --}}
             <div class="rounded-2xl border border-green-100 bg-white p-5">
@@ -344,7 +344,7 @@
 
     {{-- Tombol Lanjut ke Pembayaran --}}
     <a
-        href="{{ route('pengusaha.pembayaran') }}"
+        :href="'{{ route('pengusaha.pembayaran') }}?metode=' + metode + '&kurir=' + kurir + '&ongkir=' + biayaKirim"
         class="mt-4 block w-full rounded-xl bg-amber-500 px-4 py-4 text-center text-sm font-bold text-gray-900 transition hover:bg-amber-600"
     >
         Lanjut ke Pembayaran
