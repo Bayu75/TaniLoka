@@ -2,6 +2,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Pengusaha\PesananController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'auth.landing')->name('landing');
@@ -196,7 +197,14 @@ Route::post('/keranjang/update', function (\Illuminate\Http\Request $request) {
     })->name('keranjang.hapus');
 
     Route::view('/keranjang', 'pengusaha.keranjang')->name('keranjang');
-    Route::view('/pesanan', 'pengusaha.pesanan')->name('pesanan');
+    Route::view('/checkout', 'pengusaha.checkout')->name('checkout');
+    Route::view('/pembayaran', 'pengusaha.pembayaran')->name('pembayaran');
+    Route::view('/konfirmasi', 'pengusaha.konfirmasi')->name('konfirmasi');
+    Route::post('/konfirmasi', [PesananController::class, 'store'])->name('konfirmasi.store');
+    Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan');
+    Route::get('/pesanan/{id}', [PesananController::class, 'show'])->name('pesanan.detail');
+    Route::post('/pesanan/{id}/batalkan', [PesananController::class, 'cancel'])->name('pesanan.cancel');
+
     Route::view('/akun', 'pengusaha.akun')->name('akun');
 });
 

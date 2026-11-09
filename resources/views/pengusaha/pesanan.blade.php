@@ -5,18 +5,236 @@
 
 @section('content')
 
-{{-- HEADER PUTIH --}}
-<div class="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-[#D4E8D0] bg-white">
-    <div class="mx-auto max-w-6xl px-4 py-5 md:py-6">
-        <h1 class="text-2xl font-extrabold text-[#1A2A1A] md:text-3xl">
-            Pesanan
-        </h1>
-    </div>
-</div>
+<div class="mx-auto max-w-[760px] space-y-4" x-data="{ filter: 'semua', detailPesanan: null }">
 
-{{-- KONTEN PESANAN --}}
-<div class="mx-auto max-w-4xl py-6">
-    {{-- Konten pesanan nantinya ditampilkan di sini --}}
+    {{-- Bagian Judul dan Filter --}}
+    <div class="relative left-1/2 -mt-4 w-screen -translate-x-1/2 border-b border-green-200 bg-white">
+        <div class="mx-auto max-w-[760px] space-y-4 px-4 py-5">
+
+            {{-- Judul --}}
+            <div>
+                <h1 class="text-2xl font-extrabold text-gray-900">
+                    Pesanan
+                </h1>
+            </div>
+
+            {{-- Filter Status --}}
+            <div class="flex w-full items-center gap-3 overflow-x-auto pb-3">
+
+                <button
+                    @click="filter = 'semua'"
+                    :class="filter === 'semua'
+                        ? 'bg-green-800 text-white border-green-800'
+                        : 'bg-white text-gray-800 border-green-200'"
+                    class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
+                    Semua ({{ $jumlahPesanan['semua'] }})
+                </button>
+
+                <button
+                    @click="filter = 'menunggu'"
+                    :class="filter === 'menunggu'
+                        ? 'bg-green-800 text-white border-green-800'
+                        : 'bg-white text-gray-800 border-green-200'"
+                    class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
+                    Menunggu ({{ $jumlahPesanan['menunggu'] }})
+                </button>
+
+                <button
+                    @click="filter = 'diproses'"
+                    :class="filter === 'diproses'
+                        ? 'bg-green-800 text-white border-green-800'
+                        : 'bg-white text-gray-800 border-green-200'"
+                    class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
+                    Diproses ({{ $jumlahPesanan['diproses'] }})
+                </button>
+
+                <button
+                    @click="filter = 'dikirim'"
+                    :class="filter === 'dikirim'
+                        ? 'bg-green-800 text-white border-green-800'
+                        : 'bg-white text-gray-800 border-green-200'"
+                    class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
+                    Dikirim ({{ $jumlahPesanan['dikirim'] }})
+                </button>
+
+                <button
+                    @click="filter = 'selesai'"
+                    :class="filter === 'selesai'
+                        ? 'bg-green-800 text-white border-green-800'
+                        : 'bg-white text-gray-800 border-green-200'"
+                    class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
+                    Selesai ({{ $jumlahPesanan['selesai'] }})
+                </button>
+
+                <button
+                    @click="filter = 'dibatalkan'"
+                    :class="filter === 'dibatalkan'
+                        ? 'bg-green-800 text-white border-green-800'
+                        : 'bg-white text-gray-800 border-green-200'"
+                    class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold">
+                    Dibatalkan ({{ $jumlahPesanan['dibatalkan'] }})
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+    {{-- Daftar Pesanan --}}
+    <div class="flex flex-col gap-5">
+
+        @foreach ($pesanan as $item)
+
+            <div
+                x-show="
+                    filter === 'semua' ||
+                    (filter === 'menunggu' && ['menunggu_pembayaran', 'menunggu_konfirmasi'].includes('{{ $item['status'] }}')) ||
+                    filter === '{{ $item['status'] }}'
+                "
+                x-transition
+                class="overflow-hidden rounded-2xl border border-green-200 bg-white shadow-sm">
+
+                {{-- Header Pesanan --}}
+
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-green-200 p-4
+                    {{ match($item['status']) {
+                        'menunggu_konfirmasi' => 'bg-yellow-100',
+                        'menunggu_pembayaran' => 'bg-orange-100',
+                        'dikirim' => 'bg-green-100',
+                        'selesai' => 'bg-emerald-100',
+                        'dibatalkan' => 'bg-red-100',
+                        default => 'bg-white',
+                    } }}">
+
+                    <div>
+                        <div class="flex items-center gap-3">
+
+                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-xl">
+                                @switch($item['status'])
+                                    @case('menunggu_konfirmasi')
+                                        ⏳
+                                        @break
+                                    @case('menunggu_pembayaran')
+                                        💳
+                                        @break
+                                    @case('dikirim')
+                                        🚚
+                                        @break
+                                    @case('selesai')
+                                        🎉
+                                        @break
+                                    @case('dibatalkan')
+                                        ❌
+                                        @break
+                                @endswitch
+                            </div>
+
+                            <div>
+                                <p class="text-sm font-extrabold
+                                    {{ $item['status'] === 'menunggu_konfirmasi' ? 'text-yellow-800' : '' }}
+                                    {{ $item['status'] === 'menunggu_pembayaran' ? 'text-orange-800' : '' }}
+                                    {{ $item['status'] === 'dikirim' ? 'text-green-800' : '' }}
+                                    {{ $item['status'] === 'selesai' ? 'text-emerald-800' : '' }}
+                                    {{ $item['status'] === 'dibatalkan' ? 'text-red-700' : '' }}"">
+                                    {{ str_replace('_', ' ', ucfirst($item['status'])) }}
+                                </p>
+
+                                <h3 class="font-bold text-gray-900">
+                                    {{ $item['nama_petani'] }}
+                                </h3>
+
+                                <p class="text-sm text-gray-500">
+                                    #{{ $item['id'] }} · {{ $item['tanggal'] }}
+                                </p>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {{-- Informasi Produk --}}
+                <div class="space-y-4 p-5">
+
+
+                    <div class="space-y-3">
+
+                        {{-- Foto dan Informasi Produk --}}
+                        <div class="flex items-center gap-3">
+
+                            <img
+                                src="{{ asset($item['gambar']) }}"
+                                alt="{{ $item['produk'] }}"
+                                class="h-12 w-12 rounded-xl object-cover"
+                            >
+
+                            <div>
+                                <h4 class="text-sm font-bold text-gray-900">
+                                    {{ $item['produk'] }}
+                                </h4>
+
+                                <p class="mt-1 text-sm text-gray-500">
+                                    {{ $item['jumlah'] }}
+                                </p>
+                            </div>
+
+                        </div>
+
+                        {{-- Total Pesanan --}}
+                        <p class="font-extrabold text-green-700">
+                            Total: Rp{{ number_format($item['total'], 0, ',', '.') }}
+                        </p>
+
+                        {{-- Notifikasi Pesanan --}}
+                        @if (!empty($item['notifikasi']) && $item['status'] !== 'dibatalkan')
+                            <div class="inline-flex rounded-lg px-3 py-2 text-xs font-bold
+                                {{ $item['jenis_notifikasi'] === 'waktu'
+                                    ? 'bg-amber-50 text-amber-800'
+                                    : 'bg-red-50 text-red-600' }}">
+                                ⏱ {{ $item['notifikasi'] }}
+                            </div>
+                        @endif
+
+                        @if (!empty($item['tindakan']) && $item['status'] !== 'dibatalkan')
+                            <div class="rounded-lg bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">
+                                {{ $item['tindakan'] }}
+                            </div>
+                        @endif
+
+                    </div>
+
+                    </div>
+                        {{-- Tombol Detail --}}
+                        <div class="px-3 pt-1 pb-3">
+                            <a
+                                href="{{ route('pengusaha.pesanan.detail', $item['id']) }}"
+                                class="block w-full rounded-xl bg-green-700 px-5 py-2.5 text-center text-sm font-bold text-white transition hover:bg-green-800">
+                                Lihat Detail
+                            </a>
+
+
+                        </div>
+
+                        {{-- Detail Pesanan dan Timeline --}}
+                        <div
+                            x-show="detailPesanan === '{{ $item['id'] }}'"
+                            x-transition
+                            class="border-t border-green-200 bg-green-50 p-5">
+
+                            <h4 class="mb-5 text-lg font-extrabold text-gray-900">
+                                Perkembangan Pesanan
+                            </h4>
+
+                            <x-order-timeline :status="$item['status']" />
+
+                 </div>
+
+            </div>
+
+        @endforeach
+
+    </div>
+
 </div>
 
 @endsection
