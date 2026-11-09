@@ -241,15 +241,25 @@
                 Jumlah (kg)
             </label>
 
-            <input
-                type="number"
-                name="jumlah"
-                value="{{ $jumlah }}"
-                min="{{ $produk['minimal'] }}"
-                max="{{ $produk['stok'] }}"
-                required
-                class="h-10 w-full rounded-lg border border-border px-3 text-sm outline-none focus:border-primary"
-            >
+           <input
+    type="number"
+    name="jumlah"
+    value="{{ $jumlah }}"
+    min="{{ $produk['minimal'] }}"
+    max="{{ $produk['stok'] }}"
+    required
+    oninvalid="
+        if (this.validity.valueMissing) {
+            this.setCustomValidity('Jumlah pembelian wajib diisi.');
+        } else if (this.validity.rangeUnderflow) {
+            this.setCustomValidity('Jumlah pembelian minimal {{ $produk['minimal'] }} kg.');
+        } else if (this.validity.rangeOverflow) {
+            this.setCustomValidity('Jumlah pembelian maksimal {{ $produk['stok'] }} kg sesuai stok tersedia.');
+        }
+    "
+    oninput="this.setCustomValidity('')"
+    class="h-10 w-full rounded-lg border border-border px-3 text-sm outline-none focus:border-primary"
+>
         </div>
 
         <button
