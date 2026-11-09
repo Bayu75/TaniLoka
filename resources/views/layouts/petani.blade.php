@@ -9,9 +9,13 @@
 <body class="bg-cream text-text antialiased">
     <x-navbar-petani />
 
-    <main class="mx-auto max-w-6xl px-4 pb-24 pt-4 md:pb-10 md:pt-20">
+    <main class="@yield('main-class', 'mx-auto max-w-6xl px-4 pb-24 pt-4 md:pb-10 md:pt-20')">
         @if (session('sukses'))
-            <div class="mb-4 rounded-xl bg-green-muted p-3 font-medium text-primary">{{ session('sukses') }}</div>
+            <div class="mx-auto max-w-6xl px-4">
+                <div class="mb-4 rounded-xl bg-green-muted p-3 font-medium text-primary">
+                    {{ session('sukses') }}
+                </div>
+            </div>
         @endif
 
         @yield('content')

@@ -10,8 +10,21 @@
     <x-navbar-pengusaha />
 
     <main class="mx-auto max-w-6xl px-4 pb-24 pt-4 md:pb-10 md:pt-20">
+
+        {{-- NOTIFIKASI BERHASIL --}}
         @if (session('sukses'))
-            <div class="mb-4 rounded-xl bg-green-muted p-3 font-medium text-primary">{{ session('sukses') }}</div>
+            <div class="mb-4 rounded-xl bg-green-muted p-3 font-medium text-primary">
+                {{ session('sukses') }}
+            </div>
+        @endif
+
+        {{-- NOTIFIKASI ERROR --}}
+        @if ($errors->any())
+            <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+                @foreach ($errors->all() as $error)
+                    <p>{{ $error }}</p>
+                @endforeach
+            </div>
         @endif
 
         @yield('content')
