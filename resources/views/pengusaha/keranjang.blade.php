@@ -91,15 +91,24 @@
     }
 @endphp
 
-<div class="mb-6">
-    <p class="mb-1 text-sm font-medium text-primary">Belanja</p>
-    <h1 class="text-2xl font-extrabold text-text md:text-3xl">
-        Keranjang Saya
-    </h1>
-    <p class="mt-2 text-sm text-text-muted">
-        Periksa kembali produk sebelum melanjutkan pesanan.
-    </p>
+
+{{-- HEADER PUTIH --}}
+<div class="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-[#D4E8D0] bg-white">
+    <div class="mx-auto max-w-6xl px-4 py-5 md:py-6">
+        <p class="mb-1 text-sm font-semibold text-[#2E7D32]">
+            Belanja
+        </p>
+
+        <h1 class="text-2xl font-extrabold text-[#1A2A1A] md:text-3xl">
+            Keranjang Saya
+        </h1>
+
+        <p class="mt-2 text-sm text-[#5A7A5A]">
+            Periksa kembali produk sebelum melanjutkan pesanan.
+        </p>
+    </div>
 </div>
+
 
 <div class="grid gap-6 lg:grid-cols-3">
 
