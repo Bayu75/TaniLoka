@@ -16,6 +16,7 @@ Route::middleware('peran:pengusaha')->prefix('pengusaha')->name('pengusaha.')->g
     Route::view('/', 'pengusaha.beranda')->name('beranda');
     Route::view('/katalog', 'pengusaha.katalog')->name('katalog');
     Route::view('/pesan', 'pengusaha.pesan')->name('pesan');
+    Route::view('/pesan/{id}', 'pengusaha.chat')->name('pesan.detail');
     Route::view('/keranjang', 'pengusaha.keranjang')->name('keranjang');
     Route::view('/checkout', 'pengusaha.checkout')->name('checkout');
     Route::view('/pembayaran', 'pengusaha.pembayaran')->name('pembayaran');
