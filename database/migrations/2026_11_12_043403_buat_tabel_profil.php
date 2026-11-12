@@ -19,10 +19,6 @@ return new class extends Migration
             $table->string('nama_bank')->nullable();
             $table->string('no_rekening', 30)->nullable();
             $table->string('atas_nama_rekening')->nullable();
-            $table->enum('status_verifikasi', [
-                'belum_diajukan', 'menunggu', 'perlu_perbaikan', 'terverifikasi', 'ditolak',
-            ])->default('belum_diajukan');
-            $table->timestamp('terverifikasi_pada')->nullable();
             $table->timestamps();
         });
 
