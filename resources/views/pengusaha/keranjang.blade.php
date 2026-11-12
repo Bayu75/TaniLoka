@@ -77,22 +77,25 @@
     $jumlahProduk = count($keranjangValid);
 @endphp
 
-{{-- HEADER PUTIH --}}
+{{-- HEADER KERANJANG --}}
 <div class="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-[#D4E8D0] bg-white">
-    <div class="mx-auto max-w-6xl px-4 py-5 md:py-6">
-        <p class="mb-1 text-sm font-semibold text-[#2E7D32]">
+    <div class="mx-auto max-w-5xl px-4 py-3">
+        <p class="text-sm font-semibold text-[#087C3E]">
             Belanja
         </p>
 
-        <h1 class="text-2xl font-extrabold text-[#1A2A1A] md:text-3xl">
+        <h1 class="mt-1 text-2xl font-extrabold text-[#1A2A1A]">
             Keranjang Saya
         </h1>
 
-        <p class="mt-2 text-sm text-[#5A7A5A]">
+        <p class="mt-1 text-sm text-[#6B806B]">
             Pilih produk yang ingin dibeli sebelum melanjutkan pesanan.
         </p>
     </div>
 </div>
+
+{{-- KONTEN HALAMAN --}}
+<div class="mx-auto max-w-5xl space-y-6 px-4">
 
 {{-- KERANJANG DAN RINGKASAN --}}
 <div

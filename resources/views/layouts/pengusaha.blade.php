@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -9,7 +10,7 @@
 <body class="bg-cream text-text antialiased">
     <x-navbar-pengusaha />
 
-    <main class="mx-auto max-w-6xl px-4 pb-24 pt-4 md:pb-10 md:pt-20">
+    <main class="@yield('main-class', 'mx-auto max-w-6xl px-4 pb-24 pt-1 md:pb-10 md:pt-16')">
 
         {{-- NOTIFIKASI BERHASIL --}}
         @if (session('sukses'))
