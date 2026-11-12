@@ -3,7 +3,7 @@
 {{-- Desktop --}}
 <nav class="fixed inset-x-0 top-0 z-50 hidden h-16 items-center border-b border-border bg-white/95 px-6 shadow-sm backdrop-blur-sm md:flex">
     <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-4">
-        <x-logo :size="36" />
+        <x-logo :size="42" />
         <div class="flex items-center gap-1">
             @foreach ($menu as [$route, $label, $icon])
                 <x-nav-item :route="$route" :label="$label" :icon="$icon" />
