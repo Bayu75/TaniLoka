@@ -7,13 +7,24 @@ use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'auth.landing')->name('landing');
 
-Route::get('/masuk', [AuthController::class, 'masuk'])->name('masuk');
-Route::post('/masuk', [AuthController::class, 'prosesMasuk'])->name('masuk.proses');
-Route::get('/daftar', [AuthController::class, 'daftar'])->name('daftar');
-Route::post('/daftar', [AuthController::class, 'prosesDaftar'])->name('daftar.proses');
-Route::post('/keluar', [AuthController::class, 'keluar'])->name('keluar');
+Route::middleware('guest')->group(function () {
+    Route::get('/masuk', [AuthController::class, 'formLogin'])->name('masuk');
+    Route::post('/masuk', [AuthController::class, 'login'])->name('masuk.proses');
+    Route::get('/daftar', [AuthController::class, 'formRegister'])->name('daftar');
+    Route::post('/daftar', [AuthController::class, 'register'])->name('daftar.proses');
 
-Route::middleware('peran:pengusaha')->prefix('pengusaha')->name('pengusaha.')->group(function () {
+    // ini untuk demo masuk/login cepat
+    Route::post('/masuk/demo', [AuthController::class, 'masukDemo'])->name('masuk.demo');
+});
+
+
+Route::post('/keluar', [AuthController::class, 'logout'])->middleware('auth')->name('keluar');
+
+Route::middleware(['auth', 'peran:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::view('/verifikasi', 'admin.verifikasi')->name('verifikasi');
+});
+
+Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengusaha.')->group(function () {
 
     Route::view('/', 'pengusaha.beranda')->name('beranda');
     Route::view('/katalog', 'pengusaha.katalog')->name('katalog');
@@ -22,162 +33,159 @@ Route::middleware('peran:pengusaha')->prefix('pengusaha')->name('pengusaha.')->g
         return view('pengusaha.detail-produk', compact('slug'));
     })->name('produk.detail');
 
-  // Halaman toko petani
+    // Halaman toko petani
     Route::get('/toko/{petani}', function ($petani) {
 
-    $daftarPetani = [
-        'pak-made-sukartha',
-        'ibu-wayan-sari',
-        'pak-ketut-wirasa',
-        'ibu-nyoman-dewi',
-        'pak-gede-setiawan',
-    ];
+        $daftarPetani = [
+            'pak-made-sukartha',
+            'ibu-wayan-sari',
+            'pak-ketut-wirasa',
+            'ibu-nyoman-dewi',
+            'pak-gede-setiawan',
+        ];
 
-    abort_unless(in_array($petani, $daftarPetani), 404);
+        abort_unless(in_array($petani, $daftarPetani), 404);
 
-    return view('pengusaha.toko-petani', compact('petani'));
-
+        return view('pengusaha.toko-petani', compact('petani'));
     })->name('toko');
 
     Route::view('/pesan', 'pengusaha.pesan')->name('pesan');
 
     // Menambahkan produk ke keranjang dengan validasi stok
-Route::post('/keranjang/tambah', function (\Illuminate\Http\Request $request) {
+    Route::post('/keranjang/tambah', function (\Illuminate\Http\Request $request) {
 
-    $request->validate([
-        'slug' => 'required|string',
-        'jumlah' => 'required|integer|min:1',
-    ]);
+        $request->validate([
+            'slug' => 'required|string',
+            'jumlah' => 'required|integer|min:1',
+        ]);
 
-    // Data minimal pembelian dan stok produk
-    $produkList = [
-        'bayam-hijau-organik' => ['minimal' => 5, 'stok' => 120],
-        'cabai-rawit-merah' => ['minimal' => 2, 'stok' => 85],
-        'tomat-segar-grade-a' => ['minimal' => 10, 'stok' => 300],
-        'kangkung-segar' => ['minimal' => 10, 'stok' => 200],
-        'bawang-putih-lokal' => ['minimal' => 5, 'stok' => 150],
-        'kembang-kol-putih' => ['minimal' => 5, 'stok' => 60],
-        'wortel-organik' => ['minimal' => 5, 'stok' => 90],
-        'paprika-merah' => ['minimal' => 3, 'stok' => 0],
-    ];
+        // Data minimal pembelian dan stok produk
+        $produkList = [
+            'bayam-hijau-organik' => ['minimal' => 5, 'stok' => 120],
+            'cabai-rawit-merah' => ['minimal' => 2, 'stok' => 85],
+            'tomat-segar-grade-a' => ['minimal' => 10, 'stok' => 300],
+            'kangkung-segar' => ['minimal' => 10, 'stok' => 200],
+            'bawang-putih-lokal' => ['minimal' => 5, 'stok' => 150],
+            'kembang-kol-putih' => ['minimal' => 5, 'stok' => 60],
+            'wortel-organik' => ['minimal' => 5, 'stok' => 90],
+            'paprika-merah' => ['minimal' => 3, 'stok' => 0],
+        ];
 
-    $slug = $request->slug;
-    $jumlah = (int) $request->jumlah;
+        $slug = $request->slug;
+        $jumlah = (int) $request->jumlah;
 
-    // Pastikan produk terdaftar
-    if (!isset($produkList[$slug])) {
-        return back()->withErrors([
-            'jumlah' => 'Produk tidak ditemukan.',
-        ])->withInput();
-    }
+        // Pastikan produk terdaftar
+        if (!isset($produkList[$slug])) {
+            return back()->withErrors([
+                'jumlah' => 'Produk tidak ditemukan.',
+            ])->withInput();
+        }
 
-    $produk = $produkList[$slug];
+        $produk = $produkList[$slug];
 
-    // Pastikan stok tersedia
-    if ($produk['stok'] <= 0) {
-        return back()->withErrors([
-            'jumlah' => 'Maaf, stok produk sedang habis.',
-        ])->withInput();
-    }
+        // Pastikan stok tersedia
+        if ($produk['stok'] <= 0) {
+            return back()->withErrors([
+                'jumlah' => 'Maaf, stok produk sedang habis.',
+            ])->withInput();
+        }
 
-    // Validasi minimal pembelian
-    if ($jumlah < $produk['minimal']) {
-        return back()->withErrors([
-            'jumlah' => 'Minimal pembelian adalah ' . $produk['minimal'] . ' kg.',
-        ])->withInput();
-    }
+        // Validasi minimal pembelian
+        if ($jumlah < $produk['minimal']) {
+            return back()->withErrors([
+                'jumlah' => 'Minimal pembelian adalah ' . $produk['minimal'] . ' kg.',
+            ])->withInput();
+        }
 
-    $keranjang = session()->get('keranjang', []);
+        $keranjang = session()->get('keranjang', []);
 
-    // Periksa total jumlah setelah ditambahkan
-    $totalJumlah = ($keranjang[$slug] ?? 0) + $jumlah;
+        // Periksa total jumlah setelah ditambahkan
+        $totalJumlah = ($keranjang[$slug] ?? 0) + $jumlah;
 
-    if ($totalJumlah > $produk['stok']) {
-        return back()->withErrors([
-            'jumlah' => 'Jumlah pembelian melebihi stok yang tersedia.',
-        ])->withInput();
-    }
+        if ($totalJumlah > $produk['stok']) {
+            return back()->withErrors([
+                'jumlah' => 'Jumlah pembelian melebihi stok yang tersedia.',
+            ])->withInput();
+        }
 
-    $keranjang[$slug] = $totalJumlah;
+        $keranjang[$slug] = $totalJumlah;
 
-    session()->put('keranjang', $keranjang);
+        session()->put('keranjang', $keranjang);
 
-    return redirect()
-        ->route('pengusaha.keranjang')
-        ->with('sukses', 'Produk berhasil ditambahkan ke keranjang!');
-
-})->name('keranjang.tambah');
+        return redirect()
+            ->route('pengusaha.keranjang')
+            ->with('sukses', 'Produk berhasil ditambahkan ke keranjang!');
+    })->name('keranjang.tambah');
 
     // Mengubah jumlah produk di keranjang dengan validasi stok
-Route::post('/keranjang/update', function (\Illuminate\Http\Request $request) {
+    Route::post('/keranjang/update', function (\Illuminate\Http\Request $request) {
 
-    $request->validate([
-        'slug' => 'required|string',
-        'jumlah' => 'required|integer|min:1',
-    ]);
-
-    // Data minimal pembelian dan stok produk
-    $produkList = [
-        'bayam-hijau-organik' => ['minimal' => 5, 'stok' => 120],
-        'cabai-rawit-merah' => ['minimal' => 2, 'stok' => 85],
-        'tomat-segar-grade-a' => ['minimal' => 10, 'stok' => 300],
-        'kangkung-segar' => ['minimal' => 10, 'stok' => 200],
-        'bawang-putih-lokal' => ['minimal' => 5, 'stok' => 150],
-        'kembang-kol-putih' => ['minimal' => 5, 'stok' => 60],
-        'wortel-organik' => ['minimal' => 5, 'stok' => 90],
-        'paprika-merah' => ['minimal' => 3, 'stok' => 0],
-    ];
-
-    $slug = $request->slug;
-    $jumlah = (int) $request->jumlah;
-
-    // Pastikan produk terdaftar
-    if (!isset($produkList[$slug])) {
-        return back()->withErrors([
-            'jumlah' => 'Produk tidak ditemukan.',
+        $request->validate([
+            'slug' => 'required|string',
+            'jumlah' => 'required|integer|min:1',
         ]);
-    }
 
-    $produk = $produkList[$slug];
+        // Data minimal pembelian dan stok produk
+        $produkList = [
+            'bayam-hijau-organik' => ['minimal' => 5, 'stok' => 120],
+            'cabai-rawit-merah' => ['minimal' => 2, 'stok' => 85],
+            'tomat-segar-grade-a' => ['minimal' => 10, 'stok' => 300],
+            'kangkung-segar' => ['minimal' => 10, 'stok' => 200],
+            'bawang-putih-lokal' => ['minimal' => 5, 'stok' => 150],
+            'kembang-kol-putih' => ['minimal' => 5, 'stok' => 60],
+            'wortel-organik' => ['minimal' => 5, 'stok' => 90],
+            'paprika-merah' => ['minimal' => 3, 'stok' => 0],
+        ];
 
-    // Pastikan stok tersedia
-    if ($produk['stok'] <= 0) {
-        return back()->withErrors([
-            'jumlah' => 'Maaf, stok produk sedang habis.',
-        ]);
-    }
+        $slug = $request->slug;
+        $jumlah = (int) $request->jumlah;
 
-    // Validasi minimal pembelian
-    if ($jumlah < $produk['minimal']) {
-        return back()->withErrors([
-            'jumlah' => 'Minimal pembelian adalah ' . $produk['minimal'] . ' kg.',
-        ]);
-    }
+        // Pastikan produk terdaftar
+        if (!isset($produkList[$slug])) {
+            return back()->withErrors([
+                'jumlah' => 'Produk tidak ditemukan.',
+            ]);
+        }
 
-    // Validasi maksimal stok
-    if ($jumlah > $produk['stok']) {
-        return back()->withErrors([
-            'jumlah' => 'Jumlah pembelian melebihi stok yang tersedia.',
-        ]);
-    }
+        $produk = $produkList[$slug];
 
-    $keranjang = session()->get('keranjang', []);
+        // Pastikan stok tersedia
+        if ($produk['stok'] <= 0) {
+            return back()->withErrors([
+                'jumlah' => 'Maaf, stok produk sedang habis.',
+            ]);
+        }
 
-    if (!isset($keranjang[$slug])) {
-        return back()->withErrors([
-            'jumlah' => 'Produk tidak ditemukan di keranjang.',
-        ]);
-    }
+        // Validasi minimal pembelian
+        if ($jumlah < $produk['minimal']) {
+            return back()->withErrors([
+                'jumlah' => 'Minimal pembelian adalah ' . $produk['minimal'] . ' kg.',
+            ]);
+        }
 
-    $keranjang[$slug] = $jumlah;
+        // Validasi maksimal stok
+        if ($jumlah > $produk['stok']) {
+            return back()->withErrors([
+                'jumlah' => 'Jumlah pembelian melebihi stok yang tersedia.',
+            ]);
+        }
 
-    session()->put('keranjang', $keranjang);
+        $keranjang = session()->get('keranjang', []);
 
-    return redirect()
-        ->route('pengusaha.keranjang')
-        ->with('sukses', 'Jumlah produk berhasil diperbarui!');
+        if (!isset($keranjang[$slug])) {
+            return back()->withErrors([
+                'jumlah' => 'Produk tidak ditemukan di keranjang.',
+            ]);
+        }
 
-})->name('keranjang.update');
+        $keranjang[$slug] = $jumlah;
+
+        session()->put('keranjang', $keranjang);
+
+        return redirect()
+            ->route('pengusaha.keranjang')
+            ->with('sukses', 'Jumlah produk berhasil diperbarui!');
+    })->name('keranjang.update');
 
     // Menghapus produk dari keranjang
     Route::post('/keranjang/hapus', function (\Illuminate\Http\Request $request) {
@@ -206,125 +214,117 @@ Route::post('/keranjang/update', function (\Illuminate\Http\Request $request) {
     Route::post('/pesanan/{id}/batalkan', [PesananController::class, 'cancel'])->name('pesanan.cancel');
 
     Route::view('/akun', 'pengusaha.akun')->name('akun');
-   // HALAMAN PROFIL USAHA
-Route::get('/profil-usaha', function () {
+    // HALAMAN PROFIL USAHA
+    Route::get('/profil-usaha', function () {
 
-    $profil = session()->get('profil_usaha', [
-        'nama' => session('nama', 'Sari Kitchen'),
-        'nama_usaha' => 'Sari Kitchen',
-        'email' => 'pengusaha@taniloka.id',
-        'telepon' => '',
-        'jenis_usaha' => 'Restoran',
-        'deskripsi' => '',
-    ]);
+        $profil = session()->get('profil_usaha', [
+            'nama' => session('nama', 'Sari Kitchen'),
+            'nama_usaha' => 'Sari Kitchen',
+            'email' => 'pengusaha@taniloka.id',
+            'telepon' => '',
+            'jenis_usaha' => 'Restoran',
+            'deskripsi' => '',
+        ]);
 
-    return view('pengusaha.profil-usaha', compact('profil'));
+        return view('pengusaha.profil-usaha', compact('profil'));
+    })->name('profil');
 
-})->name('profil');
 
-
-// SIMPAN / PERBARUI PROFIL USAHA
-Route::post('/profil-usaha', function (\Illuminate\Http\Request $request) {
-
-    $data = $request->validate([
-        'nama' => 'required|string|max:100',
-        'nama_usaha' => 'required|string|max:100',
-        'email' => 'required|email',
-        'telepon' => 'nullable|string|max:20',
-        'jenis_usaha' => 'required|string|max:100',
-        'deskripsi' => 'nullable|string|max:500',
-    ], [
-        'nama.required' => 'Nama pemilik wajib diisi.',
-        'nama_usaha.required' => 'Nama usaha wajib diisi.',
-        'email.required' => 'Email wajib diisi.',
-        'email.email' => 'Format email tidak valid.',
-        'jenis_usaha.required' => 'Jenis usaha wajib dipilih.',
-    ]);
-
-    session()->put('nama', $data['nama']);
-
-    session()->put('profil_usaha', $data);
-
-    return redirect()
-        ->route('pengusaha.profil')
-        ->with('sukses', 'Profil usaha berhasil diperbarui!');
-
-})->name('profil.simpan');
+    // SIMPAN / PERBARUI PROFIL USAHA
     Route::post('/profil-usaha', function (\Illuminate\Http\Request $request) {
 
-    $data = $request->validate([
-        'nama' => 'required|string|max:100',
-        'nama_usaha' => 'required|string|max:100',
-        'email' => 'required|email',
-        'telepon' => 'nullable|string|max:20',
-        'jenis_usaha' => 'nullable|string|max:100',
-        'deskripsi' => 'nullable|string|max:500',
-    ], [
-        'nama.required' => 'Nama pemilik wajib diisi.',
-        'nama_usaha.required' => 'Nama usaha wajib diisi.',
-        'email.required' => 'Email wajib diisi.',
-        'email.email' => 'Format email tidak valid.',
-    ]);
+        $data = $request->validate([
+            'nama' => 'required|string|max:100',
+            'nama_usaha' => 'required|string|max:100',
+            'email' => 'required|email',
+            'telepon' => 'nullable|string|max:20',
+            'jenis_usaha' => 'required|string|max:100',
+            'deskripsi' => 'nullable|string|max:500',
+        ], [
+            'nama.required' => 'Nama pemilik wajib diisi.',
+            'nama_usaha.required' => 'Nama usaha wajib diisi.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'jenis_usaha.required' => 'Jenis usaha wajib dipilih.',
+        ]);
 
-    session()->put('nama', $data['nama']);
+        session()->put('nama', $data['nama']);
 
-    session()->put('profil_usaha', [
-        'nama_usaha' => $data['nama_usaha'],
-        'email' => $data['email'],
-        'telepon' => $data['telepon'] ?? '',
-        'jenis_usaha' => $data['jenis_usaha'] ?? '',
-        'deskripsi' => $data['deskripsi'] ?? '',
-    ]);
+        session()->put('profil_usaha', $data);
 
-    return redirect()
-        ->route('pengusaha.profil')
-        ->with('sukses', 'Profil usaha berhasil diperbarui!');
+        return redirect()
+            ->route('pengusaha.profil')
+            ->with('sukses', 'Profil usaha berhasil diperbarui!');
+    })->name('profil.simpan');
+    Route::post('/profil-usaha', function (\Illuminate\Http\Request $request) {
 
-})->name('profil.simpan');
+        $data = $request->validate([
+            'nama' => 'required|string|max:100',
+            'nama_usaha' => 'required|string|max:100',
+            'email' => 'required|email',
+            'telepon' => 'nullable|string|max:20',
+            'jenis_usaha' => 'nullable|string|max:100',
+            'deskripsi' => 'nullable|string|max:500',
+        ], [
+            'nama.required' => 'Nama pemilik wajib diisi.',
+            'nama_usaha.required' => 'Nama usaha wajib diisi.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+        ]);
+
+        session()->put('nama', $data['nama']);
+
+        session()->put('profil_usaha', [
+            'nama_usaha' => $data['nama_usaha'],
+            'email' => $data['email'],
+            'telepon' => $data['telepon'] ?? '',
+            'jenis_usaha' => $data['jenis_usaha'] ?? '',
+            'deskripsi' => $data['deskripsi'] ?? '',
+        ]);
+
+        return redirect()
+            ->route('pengusaha.profil')
+            ->with('sukses', 'Profil usaha berhasil diperbarui!');
+    })->name('profil.simpan');
     // Menampilkan alamat
-Route::get('/alamat', function () {
-    return view('pengusaha.alamat');
-})->name('alamat');
+    Route::get('/alamat', function () {
+        return view('pengusaha.alamat');
+    })->name('alamat');
 
-// Menyimpan atau mengubah alamat
-Route::post('/alamat', function (\Illuminate\Http\Request $request) {
+    // Menyimpan atau mengubah alamat
+    Route::post('/alamat', function (\Illuminate\Http\Request $request) {
 
-    $data = $request->validate([
-        'label' => 'required|string|max:50',
-        'nama' => 'required|string|max:100',
-        'telepon' => 'required|string|max:20',
-        'alamat' => 'required|string|max:500',
-        'kota' => 'required|string|max:100',
-        'catatan' => 'nullable|string|max:255',
-        'latitude' => 'nullable|numeric|between:-90,90',
-        'longitude' => 'nullable|numeric|between:-180,180',
-    ]);
+        $data = $request->validate([
+            'label' => 'required|string|max:50',
+            'nama' => 'required|string|max:100',
+            'telepon' => 'required|string|max:20',
+            'alamat' => 'required|string|max:500',
+            'kota' => 'required|string|max:100',
+            'catatan' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+        ]);
 
-    session()->put('alamat_pengusaha', $data);
+        session()->put('alamat_pengusaha', $data);
 
-    return redirect()
-        ->route('pengusaha.alamat')
-        ->with('sukses', 'Alamat berhasil disimpan!');
+        return redirect()
+            ->route('pengusaha.alamat')
+            ->with('sukses', 'Alamat berhasil disimpan!');
+    })->name('alamat.simpan');
 
-})->name('alamat.simpan');
+    // Menghapus alamat
+    Route::post('/alamat/hapus', function () {
 
-// Menghapus alamat
-Route::post('/alamat/hapus', function () {
+        session()->forget('alamat_pengusaha');
 
-    session()->forget('alamat_pengusaha');
-
-    return redirect()
-        ->route('pengusaha.alamat')
-        ->with('sukses', 'Alamat berhasil dihapus!');
-
-})->name('alamat.hapus');
+        return redirect()
+            ->route('pengusaha.alamat')
+            ->with('sukses', 'Alamat berhasil dihapus!');
+    })->name('alamat.hapus');
     Route::view('/bantuan', 'pengusaha.bantuan')->name('bantuan');
 });
 
-Route::middleware('peran:petani')
-    ->prefix('petani')
-    ->name('petani.')
-    ->group(function () {
+Route::middleware(['auth', 'peran:petani'])->prefix('petani')->name('petani.')->group(function () {
         Route::view('/', 'petani.dashboard')->name('dashboard');
         Route::view('/produk', 'petani.produk')->name('produk');
         Route::view('/katalog', 'petani.katalog')->name('katalog');
