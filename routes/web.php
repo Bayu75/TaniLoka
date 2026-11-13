@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Pengusaha\PesananController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Pengusaha\ProdukController;
+use App\Http\Controllers\Pengusaha\ProfilUsahaController;
 use App\Http\Controllers\Pengusaha\KeranjangController;
 
 Route::view('/', 'auth.landing')->name('landing');
@@ -44,81 +45,9 @@ Route::middleware('peran:pengusaha')->prefix('pengusaha')->name('pengusaha.')->g
     Route::post('/pesanan/{id}/batalkan', [PesananController::class, 'cancel'])->name('pesanan.cancel');
 
     Route::view('/akun', 'pengusaha.akun')->name('akun');
-   // HALAMAN PROFIL USAHA
-Route::get('/profil-usaha', function () {
-
-    $profil = session()->get('profil_usaha', [
-        'nama' => session('nama', 'Sari Kitchen'),
-        'nama_usaha' => 'Sari Kitchen',
-        'email' => 'pengusaha@taniloka.id',
-        'telepon' => '',
-        'jenis_usaha' => 'Restoran',
-        'deskripsi' => '',
-    ]);
-
-    return view('pengusaha.profil-usaha', compact('profil'));
-
-})->name('profil');
-
-
-// SIMPAN / PERBARUI PROFIL USAHA
-Route::post('/profil-usaha', function (\Illuminate\Http\Request $request) {
-
-    $data = $request->validate([
-        'nama' => 'required|string|max:100',
-        'nama_usaha' => 'required|string|max:100',
-        'email' => 'required|email',
-        'telepon' => 'nullable|string|max:20',
-        'jenis_usaha' => 'required|string|max:100',
-        'deskripsi' => 'nullable|string|max:500',
-    ], [
-        'nama.required' => 'Nama pemilik wajib diisi.',
-        'nama_usaha.required' => 'Nama usaha wajib diisi.',
-        'email.required' => 'Email wajib diisi.',
-        'email.email' => 'Format email tidak valid.',
-        'jenis_usaha.required' => 'Jenis usaha wajib dipilih.',
-    ]);
-
-    session()->put('nama', $data['nama']);
-
-    session()->put('profil_usaha', $data);
-
-    return redirect()
-        ->route('pengusaha.profil')
-        ->with('sukses', 'Profil usaha berhasil diperbarui!');
-
-})->name('profil.simpan');
-    Route::post('/profil-usaha', function (\Illuminate\Http\Request $request) {
-
-    $data = $request->validate([
-        'nama' => 'required|string|max:100',
-        'nama_usaha' => 'required|string|max:100',
-        'email' => 'required|email',
-        'telepon' => 'nullable|string|max:20',
-        'jenis_usaha' => 'nullable|string|max:100',
-        'deskripsi' => 'nullable|string|max:500',
-    ], [
-        'nama.required' => 'Nama pemilik wajib diisi.',
-        'nama_usaha.required' => 'Nama usaha wajib diisi.',
-        'email.required' => 'Email wajib diisi.',
-        'email.email' => 'Format email tidak valid.',
-    ]);
-
-    session()->put('nama', $data['nama']);
-
-    session()->put('profil_usaha', [
-        'nama_usaha' => $data['nama_usaha'],
-        'email' => $data['email'],
-        'telepon' => $data['telepon'] ?? '',
-        'jenis_usaha' => $data['jenis_usaha'] ?? '',
-        'deskripsi' => $data['deskripsi'] ?? '',
-    ]);
-
-    return redirect()
-        ->route('pengusaha.profil')
-        ->with('sukses', 'Profil usaha berhasil diperbarui!');
-
-})->name('profil.simpan');
+    Route::get('/profil-usaha', [ProfilUsahaController::class, 'edit'])->name('profil');
+    Route::post('/profil-usaha', [ProfilUsahaController::class, 'simpan'])->name('profil.simpan');
+   
     // Menampilkan alamat
 Route::get('/alamat', function () {
     return view('pengusaha.alamat');

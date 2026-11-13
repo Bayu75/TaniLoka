@@ -29,7 +29,7 @@
                     </p>
 
                     <h1 class="truncate text-xl font-bold text-white">
-                        {{ auth()->user()->name ?? 'Pengusaha' }}
+                        {{ auth()->user()->profilPengusaha?->nama_usaha ?: auth()->user()->name }}
                     </h1>
                 </div>
 
