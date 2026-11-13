@@ -11,7 +11,7 @@
         </div>
         <form method="POST" action="{{ route('keluar') }}">
             @csrf
-            <button class="min-h-11 rounded-xl border-2 border-red-200 px-4 font-bold text-red-600 transition hover:bg-red-50">Keluar</button>
+            <button class="min-h-11 rounded-xl border-2 border-red-200 px-4 font-bold text-red-600 transition hover:bg-red-50 cursor-pointer" type="submit">Keluar</button>
         </form>
     </div>
 </nav>

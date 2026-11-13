@@ -2,80 +2,124 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
-    // Akun demo (sementara, tanpa database)
-    private array $akunDemo = [
-        'petani'    => ['nama' => 'Pak Made', 'email' => 'petani@taniloka.id'],
-        'pengusaha' => ['nama' => 'Sari Kitchen', 'email' => 'pengusaha@taniloka.id'],
-    ];
-
-    public function masuk(Request $request)
+    public function formLogin(Request $request)
     {
-        return view('auth.masuk', ['peran' => $request->query('peran', 'petani')]);
+        return view('auth.masuk');
     }
 
-    public function prosesMasuk(Request $request)
+    public function login(Request $request)
     {
         $data = $request->validate([
-            'peran'    => 'required|in:petani,pengusaha',
-            'email'    => 'nullable|email',
-            'password' => 'nullable|min:8',
-            'demo'     => 'nullable',
+            'login' => 'required|string',      // email atau no WA
+            'password' => 'required|string',
         ], [
-            'email.email'  => 'Masukkan email yang valid.',
-            'password.min' => 'Password minimal 8 karakter.',
+            'login.required' => 'Email atau nomor WA wajib diisi.',
+            'password.required' => 'Kata sandi wajib diisi.',
         ]);
 
-        // Login biasa wajib isi email & password, "Masuk Cepat" tidak
-        if (! $request->has('demo') && (empty($data['email']) || empty($data['password']))) {
-            return back()->withInput()->withErrors(['email' => 'Email dan password wajib diisi.']);
+        $kolom = filter_var($data['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'no_wa';
+
+        if (! Auth::attempt([$kolom => $data['login'], 'password' => $data['password']], $request->boolean('ingat'))) {
+            return back()
+                ->withErrors(['login' => 'Email/nomor WA atau kata sandi salah.'])
+                ->onlyInput('login');
         }
 
-        return $this->simpanSesi($request, $data['peran'], $this->akunDemo[$data['peran']]['nama']);
+        $request->session()->regenerate();
+
+        return redirect()->intended($this->berandaPeran(Auth::user()));
     }
 
-    public function daftar(Request $request)
+    public function formRegister(Request $request)
     {
         return view('auth.daftar', ['peran' => $request->query('peran', 'pengusaha')]);
     }
 
-    public function prosesDaftar(Request $request)
+    public function register(Request $request)
     {
         $data = $request->validate([
-            'peran'      => 'required|in:petani,pengusaha',
-            'nama'       => 'required|string|max:100',
-            'email'      => 'required|email',
-            'telepon'    => 'nullable|string|max:20',
-            'nama_usaha' => 'nullable|string|max:100',
-            'password'   => 'required|min:8',
+            'name' => 'required|string|max:100',
+            'email' => 'nullable|email|max:100|unique:users,email|required_without:no_wa',
+            'no_wa' => 'nullable|string|max:20|unique:users,no_wa|required_without:email',
+            'peran' => 'required|in:petani,pengusaha',
+            'password' => ['required', 'confirmed', Password::min(8)],
+            'setuju' => 'accepted',
         ], [
-            'nama.required'     => 'Nama lengkap wajib diisi.',
-            'email.required'    => 'Email wajib diisi.',
-            'email.email'       => 'Masukkan email yang valid, contoh: nama@contoh.com.',
-            'password.required' => 'Password wajib diisi.',
-            'password.min'      => 'Password minimal 8 karakter.',
+            'name.required' => 'Nama wajib diisi.',
+            'email.required_without' => 'Isi email atau nomor WA.',
+            'no_wa.required_without' => 'Isi email atau nomor WA.',
+            'email.unique' => 'Email sudah terdaftar.',
+            'no_wa.unique' => 'Nomor WA sudah terdaftar.',
+            'peran.required' => 'Pilih peran kamu.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
+            'password.min' => 'Kata sandi minimal 8 karakter.',
+            'setuju.accepted' => 'Kamu harus menyetujui syarat dan ketentuan.',
         ]);
 
-        // Petani baru belum terverifikasi
-        $request->session()->put('terverifikasi', $data['peran'] !== 'petani');
+        $user = DB::transaction(function () use ($data) {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'] ?? null,
+                'no_wa' => $data['no_wa'] ?? null,
+                'peran' => $data['peran'],
+                'password' => $data['password'], // otomatis di-hash oleh cast 'hashed'
+            ]);
 
-        return $this->simpanSesi($request, $data['peran'], $data['nama'], 'Akun berhasil dibuat.');
+            // Profil kosong dulu, dilengkapi nanti di halaman akun
+            $data['peran'] === 'petani'
+                ? $user->profilPetani()->create()
+                : $user->profilPengusaha()->create();
+
+            return $user;
+        });
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect($this->berandaPeran($user))
+            ->with('pesan', 'Akun berhasil dibuat. Lengkapi profil dan ajukan verifikasi, ya.');
     }
 
-    public function keluar(Request $request)
+    public function logout(Request $request)
     {
-        $request->session()->flush();
-        return redirect()->route('landing');
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('masuk');
     }
 
-    private function simpanSesi(Request $request, string $peran, string $nama, ?string $pesan = null)
+    private function berandaPeran(User $user): string
     {
-        $request->session()->put(['peran' => $peran, 'nama' => $nama]);
+        return match ($user->peran) {
+            'petani' => route('petani.dashboard'),
+            'admin' => route('admin.verifikasi'),
+            default => route('pengusaha.beranda'),
+        };
+    }
 
-        $tujuan = $peran === 'petani' ? 'petani.dashboard' : 'pengusaha.beranda';
-        return redirect()->route($tujuan)->with('sukses', $pesan ?? "Selamat datang, {$nama}!");
+    public function masukDemo(Request $request)
+    {
+        $data = $request->validate(['peran' => 'required|in:petani,pengusaha']);
+
+        $email = $data['peran'] === 'petani' ? 'made@taniloka.test' : 'resto@taniloka.test';
+        $user = User::where('email', $email)->first();
+
+        if (! $user) {
+            return back()->withErrors(['login' => 'Akun demo belum ada. Jalankan php artisan migrate:fresh --seed.']);
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect($this->berandaPeran($user))->with('sukses', "Selamat datang, {$user->name}!");
     }
 }

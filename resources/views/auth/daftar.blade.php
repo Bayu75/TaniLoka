@@ -34,44 +34,54 @@
                             </button>
                         @endforeach
                     </div>
-                    <p x-show="peran === 'petani'" x-cloak class="mt-3 rounded-xl border border-accent/40 bg-accent/10 p-3 text-sm">
-                        <span class="font-semibold">Catatan:</span> akun petani perlu diverifikasi 1–2 hari kerja sebelum bisa mulai berjualan.
-                    </p>
+                    @error('peran') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label for="nama" class="mb-1.5 block font-semibold">Nama Lengkap</label>
-                    <input id="nama" name="nama" value="{{ old('nama') }}" placeholder="Contoh: Wayan Suartha"
-                        class="{{ $input }} {{ $errors->has('nama') ? 'border-red-400' : 'border-border' }}">
-                    @error('nama') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    <label for="name" class="mb-1.5 block font-semibold">Nama Lengkap</label>
+                    <input id="name" name="name" type="text" value="{{ old('name') }}" placeholder="Nama sesuai KTP" autocomplete="name"
+                        class="{{ $input }} {{ $errors->has('name') ? 'border-red-400' : 'border-border' }}">
+                    @error('name') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label for="email" class="mb-1.5 block font-semibold">Email</label>
-                    <input id="email" name="email" type="email" value="{{ old('email') }}" placeholder="email@contoh.com"
+                    <input id="email" name="email" type="email" value="{{ old('email') }}" placeholder="email@contoh.com" autocomplete="email"
                         class="{{ $input }} {{ $errors->has('email') ? 'border-red-400' : 'border-border' }}">
                     @error('email') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label for="telepon" class="mb-1.5 block font-semibold">Nomor WhatsApp</label>
-                    <input id="telepon" name="telepon" type="tel" value="{{ old('telepon') }}" placeholder="08xx-xxxx-xxxx" class="{{ $input }} border-border">
-                </div>
-
-                <div>
-                    <label for="nama_usaha" class="mb-1.5 block font-semibold" x-text="peran === 'petani' ? 'Nama Toko/Kebun' : 'Nama Usaha'"></label>
-                    <input id="nama_usaha" name="nama_usaha" value="{{ old('nama_usaha') }}"
-                        :placeholder="peran === 'petani' ? 'Contoh: Kebun Sukartha' : 'Contoh: Warung Mak Bali'" class="{{ $input }} border-border">
+                    <label for="no_wa" class="mb-1.5 block font-semibold">Nomor WhatsApp</label>
+                    <input id="no_wa" name="no_wa" type="tel" value="{{ old('no_wa') }}" placeholder="08xxxxxxxxxx" autocomplete="tel"
+                        class="{{ $input }} {{ $errors->has('no_wa') ? 'border-red-400' : 'border-border' }}">
+                    @error('no_wa') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    <p class="mt-1 text-sm text-text-muted">Isi minimal salah satu: email atau nomor WA.</p>
                 </div>
 
                 <div>
                     <label for="password" class="mb-1.5 block font-semibold">Password</label>
-                    <input id="password" name="password" type="password" placeholder="Minimal 8 karakter"
+                    <input id="password" name="password" type="password" placeholder="Minimal 8 karakter" autocomplete="new-password"
                         class="{{ $input }} {{ $errors->has('password') ? 'border-red-400' : 'border-border' }}">
                     @error('password') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
-                <button class="mt-2 min-h-14 w-full rounded-xl bg-accent text-lg font-bold transition hover:bg-accent-dark">Buat Akun</button>
+                <div>
+                    <label for="password_confirmation" class="mb-1.5 block font-semibold">Konfirmasi Password</label>
+                    <input id="password_confirmation" name="password_confirmation" type="password" placeholder="Ulangi password" autocomplete="new-password"
+                        class="{{ $input }} border-border">
+                </div>
+
+                <div>
+                    <label class="flex items-start gap-2 text-text-muted">
+                        <input type="checkbox" name="setuju" value="1" @checked(old('setuju'))
+                            class="mt-0.5 size-5 shrink-0 rounded border-2 border-border accent-primary">
+                        <span>Saya menyetujui <a href="#" class="font-semibold text-primary underline">Syarat &amp; Ketentuan</a> serta <a href="#" class="font-semibold text-primary underline">Kebijakan Privasi</a> TaniLoka.</span>
+                    </label>
+                    @error('setuju') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                <button class="mt-2 min-h-14 w-full rounded-xl bg-accent text-lg font-bold transition hover:bg-accent-dark cursor-pointer">Buat Akun</button>
             </form>
         </div>
     </div>

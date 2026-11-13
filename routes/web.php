@@ -10,13 +10,24 @@ use App\Http\Controllers\Pengusaha\KeranjangController;
 
 Route::view('/', 'auth.landing')->name('landing');
 
-Route::get('/masuk', [AuthController::class, 'masuk'])->name('masuk');
-Route::post('/masuk', [AuthController::class, 'prosesMasuk'])->name('masuk.proses');
-Route::get('/daftar', [AuthController::class, 'daftar'])->name('daftar');
-Route::post('/daftar', [AuthController::class, 'prosesDaftar'])->name('daftar.proses');
-Route::post('/keluar', [AuthController::class, 'keluar'])->name('keluar');
+Route::middleware('guest')->group(function () {
+    Route::get('/masuk', [AuthController::class, 'formLogin'])->name('masuk');
+    Route::post('/masuk', [AuthController::class, 'login'])->name('masuk.proses');
+    Route::get('/daftar', [AuthController::class, 'formRegister'])->name('daftar');
+    Route::post('/daftar', [AuthController::class, 'register'])->name('daftar.proses');
 
-Route::middleware('peran:pengusaha')->prefix('pengusaha')->name('pengusaha.')->group(function () {
+    // ini untuk demo masuk/login cepat
+    Route::post('/masuk/demo', [AuthController::class, 'masukDemo'])->name('masuk.demo');
+});
+
+
+Route::post('/keluar', [AuthController::class, 'logout'])->middleware('auth')->name('keluar');
+
+Route::middleware(['auth', 'peran:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::view('/verifikasi', 'admin.verifikasi')->name('verifikasi');
+});
+
+Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengusaha.')->group(function () {
 
     Route::get('/', [ProdukController::class, 'beranda'])
     ->name('beranda');
@@ -49,49 +60,44 @@ Route::middleware('peran:pengusaha')->prefix('pengusaha')->name('pengusaha.')->g
     Route::post('/profil-usaha', [ProfilUsahaController::class, 'simpan'])->name('profil.simpan');
    
     // Menampilkan alamat
-Route::get('/alamat', function () {
-    return view('pengusaha.alamat');
-})->name('alamat');
+    Route::get('/alamat', function () {
+        return view('pengusaha.alamat');
+    })->name('alamat');
 
-// Menyimpan atau mengubah alamat
-Route::post('/alamat', function (\Illuminate\Http\Request $request) {
+    // Menyimpan atau mengubah alamat
+    Route::post('/alamat', function (\Illuminate\Http\Request $request) {
 
-    $data = $request->validate([
-        'label' => 'required|string|max:50',
-        'nama' => 'required|string|max:100',
-        'telepon' => 'required|string|max:20',
-        'alamat' => 'required|string|max:500',
-        'kota' => 'required|string|max:100',
-        'catatan' => 'nullable|string|max:255',
-        'latitude' => 'nullable|numeric|between:-90,90',
-        'longitude' => 'nullable|numeric|between:-180,180',
-    ]);
+        $data = $request->validate([
+            'label' => 'required|string|max:50',
+            'nama' => 'required|string|max:100',
+            'telepon' => 'required|string|max:20',
+            'alamat' => 'required|string|max:500',
+            'kota' => 'required|string|max:100',
+            'catatan' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+        ]);
 
-    session()->put('alamat_pengusaha', $data);
+        session()->put('alamat_pengusaha', $data);
 
-    return redirect()
-        ->route('pengusaha.alamat')
-        ->with('sukses', 'Alamat berhasil disimpan!');
+        return redirect()
+            ->route('pengusaha.alamat')
+            ->with('sukses', 'Alamat berhasil disimpan!');
+    })->name('alamat.simpan');
 
-})->name('alamat.simpan');
+    // Menghapus alamat
+    Route::post('/alamat/hapus', function () {
 
-// Menghapus alamat
-Route::post('/alamat/hapus', function () {
+        session()->forget('alamat_pengusaha');
 
-    session()->forget('alamat_pengusaha');
-
-    return redirect()
-        ->route('pengusaha.alamat')
-        ->with('sukses', 'Alamat berhasil dihapus!');
-
-})->name('alamat.hapus');
+        return redirect()
+            ->route('pengusaha.alamat')
+            ->with('sukses', 'Alamat berhasil dihapus!');
+    })->name('alamat.hapus');
     Route::view('/bantuan', 'pengusaha.bantuan')->name('bantuan');
 });
 
-Route::middleware('peran:petani')
-    ->prefix('petani')
-    ->name('petani.')
-    ->group(function () {
+Route::middleware(['auth', 'peran:petani'])->prefix('petani')->name('petani.')->group(function () {
         Route::view('/', 'petani.dashboard')->name('dashboard');
         Route::view('/produk', 'petani.produk')->name('produk');
         Route::view('/katalog', 'petani.katalog')->name('katalog');

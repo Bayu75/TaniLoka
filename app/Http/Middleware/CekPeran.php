@@ -4,18 +4,20 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class CekPeran
 {
-    public function handle(Request $request, Closure $next, string $peran)
+    public function handle(Request $request, Closure $next, string ...$peran): Response
     {
-        if (! session('peran')) {
-            return redirect()->route('masuk');
+        $user = $request->user();
+
+        if (! $user) {
+            return redirect()->route('login');
         }
 
-        if (session('peran') !== $peran) {
-            $tujuan = session('peran') === 'petani' ? 'petani.dashboard' : 'pengusaha.beranda';
-            return redirect()->route($tujuan);
+        if (! in_array($user->peran, $peran)) {
+            abort(403, 'Kamu tidak punya akses ke halaman ini.');
         }
 
         return $next($request);
