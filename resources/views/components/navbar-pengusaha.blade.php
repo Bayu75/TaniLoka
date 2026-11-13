@@ -1,3 +1,9 @@
+
+@props([
+    'jumlahKeranjang' => 0,
+    'jumlahPesan' => 0,
+])
+
 @php
     $menu = [
         ['pengusaha.beranda', 'Beranda', 'beranda'],
@@ -9,4 +15,9 @@
     ];
 @endphp
 
-<x-navbar :menu="$menu" peran="Pengusaha Kuliner" />
+<x-navbar
+    :menu="$menu"
+    peran="Pengusaha Kuliner"
+    :jumlah-keranjang="$jumlahKeranjang"
+    :jumlah-pesan="$jumlahPesan"
+/>

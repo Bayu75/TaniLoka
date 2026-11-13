@@ -7,7 +7,15 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-cream text-text antialiased">
-    <x-navbar-pengusaha />
+    @php
+        $jumlahKeranjang = count(session('keranjang', []));
+        $jumlahPesan = 4; // Simulasi jumlah percakapan terbuka
+    @endphp
+
+    <x-navbar-pengusaha
+        :jumlah-keranjang="$jumlahKeranjang"
+        :jumlah-pesan="$jumlahPesan"
+    />
 
     <main class="mx-auto max-w-6xl px-4 pb-24 pt-4 md:pb-10 md:pt-20">
         @if (session('sukses'))

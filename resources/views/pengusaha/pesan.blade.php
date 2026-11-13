@@ -17,7 +17,7 @@
 
         percakapan: [
             {
-                id: 1,
+                id: 'pak-made-sukartha',
                 nama: 'Pak Made Sukartha',
                 produk: 'Bayam Hijau Organik',
                 pesan: 'Tawaran balik: Rp 8.000/kg, 20 kg',
@@ -25,7 +25,7 @@
                 status: 'terbuka'
             },
             {
-                id: 2,
+                id: 'Pak-Gede-Setiawan',
                 nama: 'Pak Gede Setiawan',
                 produk: 'Bayam Putih Lokal',
                 pesan: 'Penawaran Rp 33.300/kg untuk 5 kg diterima',
@@ -33,7 +33,7 @@
                 status: 'disepakati'
             },
             {
-                id: 3,
+                id: 'Bu-Sari-Wulandari',
                 nama: 'Bu Sari Wulandari',
                 produk: 'Tomat Merah',
                 pesan: 'Penawaran: Rp 12.000/kg, 10 kg',
@@ -41,7 +41,7 @@
                 status: 'terbuka'
             },
             {
-                id: 4,
+                id: 'Pak-Ketut-Suardana',
                 nama: 'Pak Ketut Suardana',
                 produk: 'Cabai Rawit Merah',
                 pesan: 'Penawaran Rp 45.000/kg, 5 kg disepakati',
@@ -49,7 +49,7 @@
                 status: 'disepakati'
             },
             {
-                id: 5,
+                id: 'Bu-Komang-Sri',
                 nama: 'Bu Komang Sri',
                 produk: 'Beras Organik',
                 pesan: 'Tawaran balik: Rp 18.000/kg, 25 kg',
@@ -57,7 +57,7 @@
                 status: 'terbuka'
             },
             {
-                id: 6,
+                id: 'Pak-Wayan-Dharma',
                 nama: 'Pak Wayan Dharma',
                 produk: 'Jagung Manis',
                 pesan: 'Penawaran: Rp 7.500/kg, 15 kg',

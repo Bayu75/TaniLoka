@@ -278,10 +278,10 @@
 
                     <span class="flex-1">
                         <span class="block text-sm font-bold text-gray-800">
-                            Kendaraan Sendiri
+                            Kendaraan dari Petani
                         </span>
                         <span class="block text-xs text-gray-500">
-                            Pengiriman mandiri, hanya Bali
+                            Pengiriman mandiri dari petani, hanya Bali
                         </span>
                     </span>
 
