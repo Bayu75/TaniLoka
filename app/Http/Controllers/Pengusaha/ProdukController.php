@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Pengusaha;
 
 use App\Http\Controllers\Controller;
 use App\Models\Produk;
+use App\Models\User;
 use App\Models\Kategori;
 use Illuminate\Http\Request;
 use App\Models\ProfilPetani;
@@ -164,23 +165,21 @@ public function detail(Produk $produk)
         ->where('produk_id', $produk->id)
         ->first();
 
-    return view('pengusaha.produk-detail', compact('produk', 'produkLain', 'sudahDiKeranjang'));
+    return view('pengusaha.detail-produk', compact('produk', 'produkLain', 'sudahDiKeranjang'));
 }
 
-// Halaman toko petani
-public function toko(\App\Models\User $petani)
-{
-    abort_unless($petani->isPetani(), 404);
+public function toko(User $petani)
+    {
+        abort_unless($petani->isPetani(), 404);
 
-    $petani->load('profilPetani');
+        $petani->load('profilPetani');
 
-    $produkList = Produk::with(['fotoUtama', 'kategori'])
-        ->aktif()
-        ->where('petani_id', $petani->id)
-        ->orderByRaw('CASE WHEN stok_kg > 0 THEN 0 ELSE 1 END')
-        ->latest()
-        ->get();
+        $produkToko = Produk::with(['kategori', 'fotoUtama', 'petani.profilPetani'])
+            ->where('petani_id', $petani->id)
+            ->aktif()
+            ->latest()
+            ->get();
 
-    return view('pengusaha.toko-petani', compact('petani', 'produkList'));
+        return view('pengusaha.toko-petani', compact('petani', 'produkToko'));
     }
 }

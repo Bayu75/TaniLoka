@@ -48,6 +48,10 @@ class KeranjangController extends Controller
         $item->jumlah_kg = $jumlahBaru;
         $item->save();
 
+        if ($request->input('aksi') === 'beli') {
+            return redirect()->route('pengusaha.keranjang');
+        }
+
         return back()->with('sukses', 'Produk ditambahkan ke keranjang.');
     }
 

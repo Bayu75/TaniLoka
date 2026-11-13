@@ -164,36 +164,7 @@
     <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
 
         @foreach ($produkList as $produk)
-
-            @php
-                $gambar = $produk->fotoUtama
-                    ? asset('storage/' . $produk->fotoUtama->path)
-                    : 'https://placehold.co/400x300?text=Foto+Produk';
-
-                $namaPetani = $produk->petani?->name ?? 'Petani';
-
-                $kabupaten = $produk->petani?->profilPetani?->kabupaten ?? '-';
-
-                $badge = $produk->grade
-                    ? 'Grade ' . $produk->grade
-                    : null;
-            @endphp
-
-            <x-pengusaha.product-card
-                :nama="$produk->nama"
-                :gambar="$gambar"
-                :kategori="$produk->kategori?->nama ?? 'Lainnya'"
-                :harga="$produk->harga_per_kg"
-                :minimal-pesan="$produk->min_order_kg"
-                :petani="$namaPetani"
-                :rating="null"
-                :kabupaten="$kabupaten"
-                :badge="$badge"
-                :bisa-nego="false"
-                :tersedia="$produk->stok_kg > 0"
-                :detail-url="route('pengusaha.produk.detail', ['slug' => $produk->slug])"
-            />
-
+            <x-pengusaha.product-card :produk="$produk" />
         @endforeach
 
     </div>

@@ -6,74 +6,14 @@
 @section('content')
 
 @php
-    $kategori = [
-        ['nama' => 'Sayuran', 'ikon' => '🥬'],
-        ['nama' => 'Bumbu & Rempah', 'ikon' => '🌶️'],
-        ['nama' => 'Umbi-umbian', 'ikon' => '🥕'],
-        ['nama' => 'Buah-buahan', 'ikon' => '🍅'],
-        ['nama' => 'Serealia', 'ikon' => '🌾'],
-        ['nama' => 'Jamur', 'ikon' => '🍄'],
+    $ikonKategori = [
+        'Sayuran' => '🥬',
+        'Bumbu & Rempah' => '🌶️',
+        'Umbi-umbian' => '🥕',
+        'Buah-buahan' => '🍅',
+        'Serealia' => '🌾',
+        'Jamur' => '🍄',
     ];
-
-    $produkUnggulan = [
-        [
-            'nama' => 'Bayam Hijau Organik',
-            'gambar' => 'https://images.unsplash.com/photo-1768734837803-54eb8c83e080?w=400&h=300&fit=crop&auto=format',
-            'kategori' => 'Sayuran',
-            'harga' => 8500,
-            'minimal' => 5,
-            'petani' => 'Pak Made Sukartha',
-            'rating' => 4.8,
-            'kabupaten' => 'Tabanan',
-            'badge' => 'Organik',
-            'nego' => true,
-            'tersedia' => true,
-        ],
-        [
-            'nama' => 'Cabai Rawit Merah',
-            'gambar' => 'https://images.unsplash.com/photo-1768734837679-9b3180433384?w=400&h=300&fit=crop&auto=format',
-            'kategori' => 'Bumbu & Rempah',
-            'harga' => 45000,
-            'minimal' => 2,
-            'petani' => 'Ibu Wayan Sari',
-            'rating' => 4.9,
-            'kabupaten' => 'Bangli',
-            'badge' => null,
-            'nego' => false,
-            'tersedia' => true,
-        ],
-        [
-            'nama' => 'Tomat Segar Grade A',
-            'gambar' => 'https://images.unsplash.com/photo-1768734837464-c5045c6a98c4?w=400&h=300&fit=crop&auto=format',
-            'kategori' => 'Sayuran',
-            'harga' => 12000,
-            'minimal' => 10,
-            'petani' => 'Pak Ketut Wirasa',
-            'rating' => 4.7,
-            'kabupaten' => 'Tabanan',
-            'badge' => 'Grade A',
-            'nego' => true,
-            'tersedia' => true,
-        ],
-        [
-            'nama' => 'Kangkung Segar',
-            'gambar' => 'https://images.unsplash.com/photo-1768734836079-040ec2543a65?w=400&h=300&fit=crop&auto=format',
-            'kategori' => 'Sayuran',
-            'harga' => 5500,
-            'minimal' => 10,
-            'petani' => 'Ibu Nyoman Dewi',
-            'rating' => 4.6,
-            'kabupaten' => 'Gianyar',
-            'badge' => null,
-            'nego' => true,
-            'tersedia' => true,
-        ],
-    ];
-
-    $produkNego = array_values(array_filter(
-        $produkUnggulan,
-        fn ($produk) => $produk['nego']
-    ));
 @endphp
 
 <div class="pb-10">
@@ -172,19 +112,13 @@
             </div>
 
             <div class="grid grid-cols-3 gap-3 md:grid-cols-6">
-                @foreach ($kategori as $item)
-                    <a href="{{ route('pengusaha.katalog', ['cat' => $item['nama']]) }}"
-                       class="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border border-[#D4E8D0] bg-white p-3 transition hover:border-[#66BB6A] hover:bg-[#EBF5EB]">
-
-                        <span class="text-2xl">
-                            {{ $item['ikon'] }}
-                        </span>
-
-                        <span class="text-center text-sm font-semibold text-[#1A2A1A]">
-                            {{ $item['nama'] }}
-                        </span>
-                    </a>
-                @endforeach
+                @foreach ($kategoriList as $item)
+                <a href="{{ route('pengusaha.katalog', ['cat' => $item->slug]) }}"
+                class="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border border-[#D4E8D0] bg-white p-3 transition hover:border-[#66BB6A] hover:bg-[#EBF5EB]">
+                    <span class="text-2xl">{{ $ikonKategori[$item->nama] ?? '🌱' }}</span>
+                    <span class="text-center text-sm font-semibold text-[#1A2A1A]">{{ $item->nama }}</span>
+                </a>
+                 @endforeach
             </div>
         </section>
 
@@ -204,26 +138,18 @@
 
             <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
                 @foreach ($produkUnggulan as $produk)
-                    <x-pengusaha.product-card
-                        :nama="$produk['nama']"
-                        :gambar="$produk['gambar']"
-                        :kategori="$produk['kategori']"
-                        :harga="$produk['harga']"
-                        :minimal-pesan="$produk['minimal']"
-                        :petani="$produk['petani']"
-                        :rating="$produk['rating']"
-                        :kabupaten="$produk['kabupaten']"
-                        :badge="$produk['badge']"
-                        :bisa-nego="$produk['nego']"
-                        :tersedia="$produk['tersedia']"
-                        :detail-url="route('pengusaha.produk.detail', ['slug' => \Illuminate\Support\Str::slug($produk['nama'])])"
-                    />
+                 <x-pengusaha.product-card :produk="$produk" />
                 @endforeach
             </div>
+            @if ($produkUnggulan->isEmpty())
+            <p class="text-sm text-[#5A7A5A]">Belum ada produk tersedia.</p>
+            @endif
+
         </section>
 
 
         {{-- PRODUK BISA NEGO --}}
+        @if ($produkNego->isNotEmpty())
         <section class="mb-6">
             <div class="mb-3 flex items-center justify-between">
                 <h2 class="text-lg font-bold text-[#1A2A1A]">
@@ -235,7 +161,9 @@
                     Lihat Semua
                 </a>
             </div>
-
+        </section>
+        @endif
+        
             <div class="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2">
                 @foreach ($produkNego as $produk)
                   <a href="{{ route('pengusaha.produk.detail', ['slug' => \Illuminate\Support\Str::slug($produk['nama'])]) }}"
