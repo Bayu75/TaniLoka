@@ -25,11 +25,13 @@
     </form>
 </div>
 
-{{-- Nav bawah (HP) --}}
+{{-- Nav bawah (HP), hanya kalau menunya lebih dari satu --}}
+@if (count($menu) > 1)
 <nav class="fixed inset-x-0 bottom-0 z-50 border-t-2 border-border bg-white md:hidden">
-    <div class="grid grid-cols-6 gap-0.5 p-1">
+    <div class="grid gap-0.5 p-1" style="grid-template-columns: repeat({{ count($menu) }}, minmax(0, 1fr))">
         @foreach ($menu as [$route, $label, $icon])
             <x-nav-item :route="$route" :label="$label" :icon="$icon" mobile />
         @endforeach
     </div>
 </nav>
+@endif

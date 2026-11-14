@@ -10,7 +10,7 @@ class VerifikasiAkun extends Model
     protected $guarded = ['id'];
     protected $casts = ['ditinjau_pada' => 'datetime'];
 
-    public function user() { return $this->belongsTo(User::class); }
+    public function user()     { return $this->belongsTo(User::class); }
     public function peninjau() { return $this->belongsTo(User::class, 'ditinjau_oleh'); }
-    public function bukti() { return $this->hasMany(BuktiVerifikasi::class, 'verifikasi_id'); }
+    public function bukti()    { return $this->hasMany(BuktiVerifikasi::class, 'verifikasi_id'); }
 }
