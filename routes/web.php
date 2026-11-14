@@ -3,6 +3,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Pengusaha\PesananController;
+use App\Http\Controllers\Pengusaha\ChatController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'auth.landing')->name('landing');
@@ -15,23 +16,25 @@ Route::middleware('guest')->group(function () {
 
     // ini untuk demo masuk/login cepat
     Route::post('/masuk/demo', [AuthController::class, 'masukDemo'])->name('masuk.demo');
-});
+    });
 
 
-Route::post('/keluar', [AuthController::class, 'logout'])->middleware('auth')->name('keluar');
+    Route::post('/keluar', [AuthController::class, 'logout'])->middleware('auth')->name('keluar');
 
-Route::middleware(['auth', 'peran:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::view('/verifikasi', 'admin.verifikasi')->name('verifikasi');
-});
+    Route::middleware(['auth', 'peran:admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::view('/verifikasi', 'admin.verifikasi')->name('verifikasi');
+    });
 
-Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengusaha.')->group(function () {
+    Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengusaha.')->group(function () {
 
     Route::view('/', 'pengusaha.beranda')->name('beranda');
-    Route::view('/katalog', 'pengusaha.katalog')->name('katalog');
+    Route::get('/katalog', [\App\Http\Controllers\Pengusaha\KatalogController::class, 'index'])
+    ->name('katalog');
 
-    Route::get('/produk/{slug}', function ($slug) {
-        return view('pengusaha.detail-produk', compact('slug'));
-    })->name('produk.detail');
+    Route::get('/produk/{slug}', [
+    \App\Http\Controllers\Pengusaha\KatalogController::class,
+    'show'
+    ])->name('produk.detail');
 
     // Halaman toko petani
     Route::get('/toko/{petani}', function ($petani) {
@@ -49,7 +52,10 @@ Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengu
         return view('pengusaha.toko-petani', compact('petani'));
     })->name('toko');
 
-    Route::view('/pesan', 'pengusaha.pesan')->name('pesan');
+    Route::get('/pesan', [ChatController::class, 'index'])->name('pesan');
+    Route::get('/pesan/{id}', [ChatController::class, 'show'])->name('pesan.detail');
+    Route::post('/pesan/{id}', [ChatController::class, 'kirim'])->name('pesan.kirim');
+    Route::post('/pesan/{id}/penawaran', [ChatController::class, 'kirimPenawaran'])->name('pesan.penawaran');
 
     // Menambahkan produk ke keranjang dengan validasi stok
     Route::post('/keranjang/tambah', function (\Illuminate\Http\Request $request) {

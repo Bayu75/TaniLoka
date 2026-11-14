@@ -3,23 +3,25 @@
 namespace App\Http\Controllers\Pengusaha;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pesanan;
+use Illuminate\Support\Facades\Auth;
 
 class PesananController extends Controller
 {
     // Menampilkan daftar pesanan
     public function index()
     {
-        $pesanan = array_merge(
-            session()->get('pesanan_baru', []),
-            $this->dataPesanan()
-        );
-        foreach ($pesanan as &$item) {
-            if (session()->get("pesanan_dibatalkan.{$item['id']}")) {
-                $item['status'] = 'dibatalkan';
-            }
-        }
+        $dataPesanan = Pesanan::with([
+            'petani.profilPetani',
+            'item.produk.fotoUtama',
+        ])
+        ->where('pengusaha_id', Auth::id())
+        ->latest()
+        ->get();
 
-        unset($item);
+        $pesanan = $dataPesanan->map(function ($data) {
+            return $this->formatPesanan($data);
+        })->all();
 
         $jumlahPesanan = [
             'semua' => count($pesanan),
@@ -39,37 +41,33 @@ class PesananController extends Controller
     // Menampilkan detail pesanan berdasarkan ID
     public function show($id)
     {
-        $daftarPesanan = array_merge(
-            session()->get('pesanan_baru', []),
-            $this->dataPesanan()
-        );
-        $pesanan = collect($daftarPesanan)->firstWhere('id', $id);
+        $data = Pesanan::with([
+            'petani.profilPetani',
+            'item.produk.fotoUtama',
+            'riwayat',
+            'pembayaran',
+        ])
+        ->where('pengusaha_id', Auth::id())
+        ->where('kode', $id)
+        ->firstOrFail();
 
-        abort_if(!$pesanan, 404);
+        $pesanan = $this->formatPesanan($data);
 
-        $dataPembatalan = session()->get("pesanan_dibatalkan.$id", []);
+        $dataPembatalan = $data->riwayat->firstWhere('status', 'dibatalkan');
 
-        // Memperbaiki data pembatalan lama yang masih bernilai true
-        if ($dataPembatalan === true) {
-            $dataPembatalan = [
-                'tanggal' => now()->format('d M, H.i'),
-                'alasan' => 'Dibatalkan pembeli',
-            ];
+        $tanggalDibatalkan = $dataPembatalan
+            ? $dataPembatalan->created_at?->format('d M Y, H.i')
+            : null;
 
-            session()->put("pesanan_dibatalkan.$id", $dataPembatalan);
-        }
+        $alasanDibatalkan = $dataPembatalan?->keterangan;
 
-        if (!empty($dataPembatalan)) {
-            $pesanan['status'] = 'dibatalkan';
-        }
-
-        $tanggalDibatalkan = $dataPembatalan['tanggal'] ?? null;
-        $alasanDibatalkan = $dataPembatalan['alasan'] ?? null;
+        $riwayatStatus = $data->riwayat;
 
         return view('pengusaha.detail-pesanan', compact(
             'pesanan',
             'tanggalDibatalkan',
-            'alasanDibatalkan'
+            'alasanDibatalkan',
+            'riwayatStatus'
         ));
     }
 
@@ -77,30 +75,27 @@ class PesananController extends Controller
     // Membatalkan pesanan
     public function cancel($id)
     {
-        $daftarPesanan = array_merge(
-            session()->get('pesanan_baru', []),
-            $this->dataPesanan()
-        );
+        $pesanan = Pesanan::where('kode', $id)
+            ->where('pengusaha_id', Auth::id())
+            ->firstOrFail();
 
-        $pesanan = collect($daftarPesanan)->firstWhere('id', $id);
-
-        abort_if(!$pesanan, 404);
-
-        if (!in_array($pesanan['status'], ['menunggu_konfirmasi', 'menunggu_pembayaran'])) {
+        if (!in_array($pesanan->status, [
+            'menunggu_konfirmasi',
+            'menunggu_pembayaran',
+        ])) {
             return redirect()
                 ->route('pengusaha.pesanan.detail', $id);
         }
 
-        session()->put("pesanan_dibatalkan.$id", [
-            'tanggal' => now()->format('d M, H.i'),
-            'alasan' => 'Dibatalkan pembeli',
-        ]);
+        $pesanan->ubahStatus(
+            'dibatalkan',
+            'Pesanan dibatalkan oleh pembeli'
+        );
 
         return redirect()
             ->route('pengusaha.pesanan.detail', $id)
             ->with('success', 'Pesanan berhasil dibatalkan.');
     }
-
 
         // Menyimpan pesanan baru dari halaman konfirmasi
         public function store()
@@ -192,5 +187,61 @@ class PesananController extends Controller
                 'tindakan' => 'Perlu tindakan: Beri penilaian',
             ],
         ];
-    }
+
+        }
+
+        private function formatPesanan(Pesanan $data): array
+        {
+            $itemPertama = $data->item->first();
+            $produk = $itemPertama?->produk;
+
+            $jumlahKg = (float) $data->item->sum('jumlah_kg');
+
+            $jumlahLabel = rtrim(
+                rtrim(number_format($jumlahKg, 2, ',', '.'), '0'),
+                ','
+            );
+
+            $namaPetani = $data->petani?->profilPetani?->nama_usaha_tani
+                ?: ($data->petani?->name ?? '-');
+
+            $notifikasi = match ($data->status) {
+                'menunggu_konfirmasi' => 'Menunggu konfirmasi petani',
+                'menunggu_pembayaran' => 'Menunggu pembayaran',
+                'diproses' => 'Pesanan sedang diproses',
+                'dikirim' => 'Pesanan sedang dikirim',
+                'selesai' => 'Pesanan selesai',
+                'dibatalkan' => 'Pesanan dibatalkan',
+                'ditolak' => 'Pesanan ditolak',
+                default => '-',
+            };
+
+            $gambar = $produk?->fotoUtama?->path;
+
+            return [
+                'id' => $data->kode,
+                'petani_id' => $data->petani_id,
+                'tanggal' => $data->created_at?->format('d M Y'),
+                'status' => $data->status,
+                'nama_petani' => $namaPetani,
+                'produk' => $itemPertama?->nama_produk ?? '-',
+                'gambar' => $gambar,
+                'jumlah' => $jumlahLabel . ' kg',
+                'total' => $data->total,
+                'subtotal' => $data->subtotal,
+                'ongkir' => $data->ongkir,
+                'biaya_layanan' => $data->biaya_layanan,
+                'notifikasi' => $notifikasi,
+                'jenis_notifikasi' => in_array($data->status, [
+                    'menunggu_konfirmasi',
+                    'menunggu_pembayaran',
+                ]) ? 'waktu' : null,
+                'tindakan' => $data->status === 'menunggu_pembayaran'
+                    ? 'Perlu tindakan: Unggah bukti pembayaran'
+                    : null,
+                'metode_pembayaran' => $data->pembayaran?->metode,
+                'items' => $data->item,
+            ];
+        }
+
 }

@@ -6,128 +6,6 @@
 @section('content')
 
 @php
-    // Data dummy mengikuti data.ts dari ZIP
-    $produkList = [
-        [
-            'nama' => 'Bayam Hijau Organik',
-            'gambar' => 'https://images.unsplash.com/photo-1768734837803-54eb8c83e080?w=400&h=300&fit=crop&auto=format',
-            'kategori' => 'Sayuran',
-            'harga' => 8500,
-            'minimal' => 5,
-            'stok' => 120,
-            'petani' => 'Pak Made Sukartha',
-            'rating' => 4.8,
-            'kabupaten' => 'Tabanan',
-            'badge' => 'Organik',
-            'nego' => true,
-        ],
-        [
-            'nama' => 'Cabai Rawit Merah',
-            'gambar' => 'https://images.unsplash.com/photo-1768734837679-9b3180433384?w=400&h=300&fit=crop&auto=format',
-            'kategori' => 'Bumbu & Rempah',
-            'harga' => 45000,
-            'minimal' => 2,
-            'stok' => 85,
-            'petani' => 'Ibu Wayan Sari',
-            'rating' => 4.9,
-            'kabupaten' => 'Bangli',
-            'badge' => null,
-            'nego' => false,
-        ],
-        [
-            'nama' => 'Tomat Segar Grade A',
-            'gambar' => 'https://images.unsplash.com/photo-1768734837464-c5045c6a98c4?w=400&h=300&fit=crop&auto=format',
-            'kategori' => 'Sayuran',
-            'harga' => 12000,
-            'minimal' => 10,
-            'stok' => 300,
-            'petani' => 'Pak Ketut Wirasa',
-            'rating' => 4.7,
-            'kabupaten' => 'Tabanan',
-            'badge' => 'Grade A',
-            'nego' => true,
-        ],
-        [
-            'nama' => 'Kangkung Segar',
-            'gambar' => 'https://images.unsplash.com/photo-1768734836079-040ec2543a65?w=400&h=300&fit=crop&auto=format',
-            'kategori' => 'Sayuran',
-            'harga' => 5500,
-            'minimal' => 10,
-            'stok' => 200,
-            'petani' => 'Ibu Nyoman Dewi',
-            'rating' => 4.6,
-            'kabupaten' => 'Gianyar',
-            'badge' => null,
-            'nego' => true,
-        ],
-        [
-            'nama' => 'Bawang Putih Lokal',
-            'gambar' => 'https://images.unsplash.com/photo-1765862857099-cb03e1c3de07?w=400&h=300&fit=crop&auto=format',
-            'kategori' => 'Bumbu & Rempah',
-            'harga' => 35000,
-            'minimal' => 5,
-            'stok' => 150,
-            'petani' => 'Pak Gede Setiawan',
-            'rating' => 4.5,
-            'kabupaten' => 'Karangasem',
-            'badge' => null,
-            'nego' => true,
-        ],
-        [
-            'nama' => 'Kembang Kol Putih',
-            'gambar' => 'https://images.unsplash.com/photo-1770782912836-82b4d67444d5?w=400&h=300&fit=crop&auto=format',
-            'kategori' => 'Sayuran',
-            'harga' => 15000,
-            'minimal' => 5,
-            'stok' => 60,
-            'petani' => 'Pak Ketut Wirasa',
-            'rating' => 4.7,
-            'kabupaten' => 'Tabanan',
-            'badge' => null,
-            'nego' => false,
-        ],
-        [
-            'nama' => 'Wortel Organik',
-            'gambar' => 'https://images.unsplash.com/photo-1768119901638-75c6edd64c0b?w=400&h=300&fit=crop&auto=format',
-            'kategori' => 'Umbi-umbian',
-            'harga' => 14000,
-            'minimal' => 5,
-            'stok' => 90,
-            'petani' => 'Pak Made Sukartha',
-            'rating' => 4.8,
-            'kabupaten' => 'Tabanan',
-            'badge' => 'Organik',
-            'nego' => true,
-        ],
-        [
-            'nama' => 'Paprika Merah',
-            'gambar' => 'https://images.unsplash.com/photo-1777791374501-ff28ce93d2cb?w=400&h=300&fit=crop&auto=format',
-            'kategori' => 'Sayuran',
-            'harga' => 55000,
-            'minimal' => 3,
-            'stok' => 0,
-            'petani' => 'Ibu Wayan Sari',
-            'rating' => 4.9,
-            'kabupaten' => 'Bangli',
-            'badge' => null,
-            'nego' => true,
-        ],
-    ];
-
-    $kategoriList = [
-        ['nama' => 'Sayuran', 'ikon' => '🥬'],
-        ['nama' => 'Bumbu & Rempah', 'ikon' => '🌶️'],
-        ['nama' => 'Umbi-umbian', 'ikon' => '🥕'],
-        ['nama' => 'Buah-buahan', 'ikon' => '🍅'],
-        ['nama' => 'Serealia', 'ikon' => '🌾'],
-        ['nama' => 'Jamur', 'ikon' => '🍄'],
-    ];
-
-    $kabupatenList = [
-        'Badung', 'Bangli', 'Buleleng', 'Denpasar',
-        'Gianyar', 'Jembrana', 'Karangasem',
-        'Klungkung', 'Tabanan'
-    ];
 
     // Mengambil parameter pencarian dan filter
     $q = trim(request('q', ''));
@@ -333,6 +211,7 @@
                 @foreach ($filtered as $produk)
                     <x-pengusaha.product-card
                         :nama="$produk['nama']"
+                        :slug="$produk['slug']"
                         :gambar="$produk['gambar']"
                         :kategori="$produk['kategori']"
                         :harga="$produk['harga']"
@@ -343,7 +222,7 @@
                         :badge="$produk['badge']"
                         :bisa-nego="$produk['nego']"
                         :tersedia="$produk['stok'] > 0"
-                        :detail-url="route('pengusaha.produk.detail', ['slug' => \Illuminate\Support\Str::slug($produk['nama'])])"
+                        :detail-url="route('pengusaha.produk.detail', ['slug' => $produk['slug']])"
                     />
                 @endforeach
             </div>

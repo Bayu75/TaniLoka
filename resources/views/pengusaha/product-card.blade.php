@@ -13,10 +13,12 @@
     'bisaNego' => false,
     'tersedia' => true,
     'detailUrl' => '#',
+    'slug',
 ])
 
-<a href="{{ $detailUrl }}"
-   class="flex flex-col overflow-hidden rounded-2xl border border-[#D4E8D0] bg-white transition hover:-translate-y-1 hover:shadow-md {{ $tersedia ? '' : 'opacity-70' }}">
+<div
+    class="flex flex-col overflow-hidden rounded-2xl border border-[#D4E8D0] bg-white transition hover:-translate-y-1 hover:shadow-md {{ $tersedia ? '' : 'opacity-70' }}"
+>
 
     <div class="relative h-40 overflow-hidden bg-[#EBF5EB]">
         <img
@@ -81,4 +83,22 @@
             </div>
         </div>
     </div>
-</a>
+
+    <div class="mt-3 grid grid-cols-2 gap-2">
+        <a
+            href="{{ $detailUrl }}"
+            class="flex min-h-10 items-center justify-center rounded-lg border border-[#2E7D32] px-2 text-sm font-semibold text-[#2E7D32] hover:bg-[#EBF5EB]"
+        >
+            Detail
+        </a>
+
+        @if ($bisaNego && $tersedia)
+            <a
+                href="{{ route('pengusaha.pesan', ['produk' => $slug]) }}"
+                class="flex min-h-10 items-center justify-center rounded-lg bg-[#F4B400] px-2 text-sm font-bold text-[#1A2A00] hover:bg-[#E6A800]"
+            >
+                Tawar Harga
+            </a>
+        @endif
+    </div>
+</div>

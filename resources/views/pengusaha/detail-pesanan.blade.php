@@ -290,27 +290,29 @@
             Produk Dipesan
         </h2>
 
-        <div class="flex items-center gap-3">
-            <img
-                src="{{ asset($pesanan['gambar']) }}"
-                alt="{{ $pesanan['produk'] }}"
-                class="h-16 w-16 rounded-xl object-cover"
-            >
+        @foreach ($pesanan['items'] as $item)
+            <div class="flex items-center gap-3 {{ !$loop->last ? 'mb-4 border-b border-gray-100 pb-4' : '' }}">
+                <img
+                    src="{{ $item->produk?->fotoUtama?->path ? asset($item->produk->fotoUtama->path) : asset('images/no-image.png') }}"
+                    alt="{{ $item->nama_produk }}"
+                    class="h-16 w-16 rounded-xl object-cover"
+                >
 
-            <div class="flex-1">
-                <h3 class="text-sm font-bold text-gray-800">
-                    {{ $pesanan['produk'] }}
-                </h3>
+                <div class="flex-1">
+                    <h3 class="text-sm font-bold text-gray-800">
+                        {{ $item->nama_produk }}
+                    </h3>
 
-                <p class="mt-1 text-sm text-green-800">
-                    {{ $pesanan['jumlah'] }}
-                </p>
+                    <p class="mt-1 text-sm text-green-800">
+                        {{ rtrim(rtrim(number_format((float) $item->jumlah_kg, 2, ',', '.'), '0'), ',') }} kg
+                    </p>
 
-                <p class="mt-1 font-bold text-green-700">
-                    Rp{{ number_format($pesanan['total'], 0, ',', '.') }}
-                </p>
+                    <p class="mt-1 font-bold text-green-700">
+                        Rp{{ number_format($item->subtotal, 0, ',', '.') }}
+                    </p>
+                </div>
             </div>
-        </div>
+        @endforeach
     </div>
 
         {{-- Instruksi Pembayaran --}}
@@ -440,17 +442,30 @@
         <div class="space-y-2 text-sm">
             <div class="flex justify-between">
                 <span class="text-green-800">Subtotal produk</span>
-                <span class="text-gray-800">Rp225.000</span>
+                <span class="text-gray-800">
+                    Rp{{ number_format($pesanan['subtotal'], 0, ',', '.') }}
+                </span>
             </div>
 
             <div class="flex justify-between">
                 <span class="text-green-800">Ongkos kirim</span>
-                <span class="text-gray-800">Rp12.000</span>
+                <span class="text-gray-800">
+                    Rp{{ number_format($pesanan['ongkir'], 0, ',', '.') }}
+                </span>
+            </div>
+
+            <div class="flex justify-between">
+                <span class="text-green-800">Biaya layanan</span>
+                <span class="text-gray-800">
+                    Rp{{ number_format($pesanan['biaya_layanan'], 0, ',', '.') }}
+                </span>
             </div>
 
             <div class="mt-3 flex justify-between border-t border-green-100 pt-3">
                 <span class="font-bold text-gray-800">Total</span>
-                <span class="font-extrabold text-green-700">Rp237.000</span>
+                <span class="font-extrabold text-green-700">
+                    Rp{{ number_format($pesanan['total'], 0, ',', '.') }}
+                </span>
             </div>
         </div>
     </div>
@@ -462,23 +477,24 @@
         </h2>
 
         <p class="mb-3 text-sm font-semibold text-gray-800">
-            Ibu Wayan Sari
+            {{ $pesanan['nama_petani'] }}
         </p>
 
         <div class="flex gap-3">
-            <button
-                type="button"
-                onclick="alert('Halaman toko akan segera tersedia.')"
-                class="flex-1 rounded-xl border border-green-700 bg-white px-4 py-3 text-sm font-bold text-green-700 transition hover:bg-green-50">
+            <a
+                 href="{{ route('pengusaha.toko', $pesanan['petani_id']) }}"
+                class="flex-1 rounded-xl border border-green-700 bg-white px-4 py-3 text-center text-sm font-bold text-green-700 transition hover:bg-green-50"
+            >
                 Lihat Toko
-            </button>
+            </a>
 
-            <button
-                type="button"
-                onclick="alert('Fitur chat penjual akan segera tersedia.')"
-                class="flex-1 rounded-xl border border-green-700 bg-white px-4 py-3 text-sm font-bold text-green-700 transition hover:bg-green-50">
+            <a
+                href="{{ route('pengusaha.pesan')
+                class="flex-1 rounded-xl border border-green-700 bg-white px-4 py-3 text-center text-sm font-bold text-green-700 transition hover:bg-green-50"
+            >
                 Hubungi Penjual
-            </button>
+            </a>
+
         </div>
     </div>
 
