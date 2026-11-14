@@ -4,78 +4,46 @@
 @section('title', 'Keranjang - TaniLoka')
 
 @section('content')
-@php
-    $produkList = [
-        'bayam-hijau-organik' => [
-            'nama' => 'Bayam Hijau Organik',
-            'gambar' => 'https://images.unsplash.com/photo-1768734837803-54eb8c83e080?w=300&h=300&fit=crop&auto=format',
-            'harga' => 8500,
-            'minimal' => 5,
-            'stok' => 120,
-            'petani' => 'Pak Made Sukartha',
-        ],
-        'cabai-rawit-merah' => [
-            'nama' => 'Cabai Rawit Merah',
-            'gambar' => 'https://images.unsplash.com/photo-1768734837679-9b3180433384?w=300&h=300&fit=crop&auto=format',
-            'harga' => 45000,
-            'minimal' => 2,
-            'stok' => 85,
-            'petani' => 'Ibu Wayan Sari',
-        ],
-        'tomat-segar-grade-a' => [
-            'nama' => 'Tomat Segar Grade A',
-            'gambar' => 'https://images.unsplash.com/photo-1768734837464-c5045c6a98c4?w=300&h=300&fit=crop&auto=format',
-            'harga' => 12000,
-            'minimal' => 10,
-            'stok' => 300,
-            'petani' => 'Pak Ketut Wirasa',
-        ],
-        'kangkung-segar' => [
-            'nama' => 'Kangkung Segar',
-            'gambar' => 'https://images.unsplash.com/photo-1768734836079-040ec2543a65?w=300&h=300&fit=crop&auto=format',
-            'harga' => 5500,
-            'minimal' => 10,
-            'stok' => 200,
-            'petani' => 'Ibu Nyoman Dewi',
-        ],
-        'bawang-putih-lokal' => [
-            'nama' => 'Bawang Putih Lokal',
-            'gambar' => 'https://images.unsplash.com/photo-1765862857099-cb03e1c3de07?w=300&h=300&fit=crop&auto=format',
-            'harga' => 35000,
-            'minimal' => 5,
-            'stok' => 150,
-            'petani' => 'Pak Gede Setiawan',
-        ],
-        'kembang-kol-putih' => [
-            'nama' => 'Kembang Kol Putih',
-            'gambar' => 'https://images.unsplash.com/photo-1770782912836-82b4d67444d5?w=300&h=300&fit=crop&auto=format',
-            'harga' => 15000,
-            'minimal' => 5,
-            'stok' => 60,
-            'petani' => 'Pak Ketut Wirasa',
-        ],
-        'wortel-organik' => [
-            'nama' => 'Wortel Organik',
-            'gambar' => 'https://images.unsplash.com/photo-1768119901638-75c6edd64c0b?w=300&h=300&fit=crop&auto=format',
-            'harga' => 14000,
-            'minimal' => 5,
-            'stok' => 90,
-            'petani' => 'Pak Made Sukartha',
-        ],
-        'paprika-merah' => [
-            'nama' => 'Paprika Merah',
-            'gambar' => 'https://images.unsplash.com/photo-1777791374501-ff28ce93d2cb?w=300&h=300&fit=crop&auto=format',
-            'harga' => 55000,
-            'minimal' => 3,
-            'stok' => 0,
-            'petani' => 'Ibu Wayan Sari',
-        ],
-    ];
 
+@php
+    // Ambil data keranjang dari session
     $keranjang = session()->get('keranjang', []);
+
+    // Ambil produk dari database berdasarkan slug di keranjang
+    $produkList = \App\Models\Produk::with([
+        'petani.profilPetani',
+        'fotoUtama',
+    ])
+    ->whereIn('slug', array_keys($keranjang))
+    ->get()
+    ->mapWithKeys(function ($produk) {
+        $pathFoto = $produk->fotoUtama?->path;
+
+        return [
+            $produk->slug => [
+                'nama' => $produk->nama,
+                'gambar' => $pathFoto
+                    ? (filter_var($pathFoto, FILTER_VALIDATE_URL)
+                        ? $pathFoto
+                        : asset($pathFoto))
+                    : asset('images/no-image.png'),
+                'harga' => $produk->harga_per_kg,
+                'minimal' => $produk->min_order_kg,
+                'stok' => $produk->stok_kg,
+                'petani' => $produk->petani?->profilPetani?->nama_usaha_tani
+                    ?? $produk->petani?->name
+                    ?? 'Petani',
+            ],
+        ];
+    })
+    ->all();
+
+    // Hanya tampilkan produk yang masih tersedia di database
     $keranjangValid = array_intersect_key($keranjang, $produkList);
+
     $jumlahProduk = count($keranjangValid);
 @endphp
+
 
 {{-- HEADER KERANJANG --}}
 <div class="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-[#D4E8D0] bg-white">
@@ -225,7 +193,7 @@
                             </p>
                         </div>
 
-                        
+
 {{-- AKSI PRODUK --}}
 <div class="flex w-full flex-col gap-3 sm:w-40 sm:shrink-0">
 
@@ -349,18 +317,33 @@
             </div>
 
             <div class="mt-6">
-                <button
-                    type="button"
-                    disabled
-                    class="w-full cursor-not-allowed rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white opacity-50"
-                >
-                    Lanjutkan Pesanan
-                </button>
+                <form action="{{ route('pengusaha.checkout.proses') }}" method="POST">
+                    @csrf
 
-                <p class="mt-2 text-center text-xs text-[#8A9A8A]">
-                    Fitur checkout akan dihubungkan ke sistem pesanan.
-                </p>
-            </div>
+                    <input
+                        type="hidden"
+                        name="items"
+                        :value="JSON.stringify(selected.map(slug => ({
+                            slug: slug,
+                            jumlah: quantities[slug]
+                        })))"
+                    >
+
+                    <button
+                        type="submit"
+                        :disabled="selected.length === 0"
+                        :class="selected.length === 0
+                            ? 'w-full cursor-not-allowed rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white opacity-50'
+                            : 'w-full rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white hover:bg-primary-dark'"
+                    >
+                        Lanjutkan Pesanan
+                    </button>
+                </form>
+
+    <p class="mt-2 text-center text-xs text-[#8A9A8A]">
+        Lanjutkan untuk menyelesaikan pesanan produk pilihanmu.
+    </p>
+</div>
 
             <a
                 href="{{ route('pengusaha.katalog') }}"

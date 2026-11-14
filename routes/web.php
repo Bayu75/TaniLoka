@@ -65,62 +65,62 @@ Route::middleware('guest')->group(function () {
             'jumlah' => 'required|integer|min:1',
         ]);
 
-        // Data minimal pembelian dan stok produk
-        $produkList = [
-            'bayam-hijau-organik' => ['minimal' => 5, 'stok' => 120],
-            'cabai-rawit-merah' => ['minimal' => 2, 'stok' => 85],
-            'tomat-segar-grade-a' => ['minimal' => 10, 'stok' => 300],
-            'kangkung-segar' => ['minimal' => 10, 'stok' => 200],
-            'bawang-putih-lokal' => ['minimal' => 5, 'stok' => 150],
-            'kembang-kol-putih' => ['minimal' => 5, 'stok' => 60],
-            'wortel-organik' => ['minimal' => 5, 'stok' => 90],
-            'paprika-merah' => ['minimal' => 3, 'stok' => 0],
-        ];
+        // Ambil produk langsung dari database
+        $produk = \App\Models\Produk::aktif()
+            ->where('slug', $request->slug)
+            ->first();
 
-        $slug = $request->slug;
+        if (!$produk) {
+            return back()->withErrors([
+                'jumlah' => 'Produk tidak ditemukan atau stok habis.',
+            ])->withInput();
+        }
+
         $jumlah = (int) $request->jumlah;
 
-        // Pastikan produk terdaftar
-        if (!isset($produkList[$slug])) {
-            return back()->withErrors([
-                'jumlah' => 'Produk tidak ditemukan.',
-            ])->withInput();
-        }
-
-        $produk = $produkList[$slug];
-
-        // Pastikan stok tersedia
-        if ($produk['stok'] <= 0) {
-            return back()->withErrors([
-                'jumlah' => 'Maaf, stok produk sedang habis.',
-            ])->withInput();
-        }
-
         // Validasi minimal pembelian
-        if ($jumlah < $produk['minimal']) {
+        if ($jumlah < $produk->min_order_kg) {
             return back()->withErrors([
-                'jumlah' => 'Minimal pembelian adalah ' . $produk['minimal'] . ' kg.',
+                'jumlah' => 'Minimal pembelian adalah ' . $produk->min_order_kg . ' kg.',
             ])->withInput();
         }
 
+        // Jika pengguna memilih Beli Sekarang
+        if ($request->aksi === 'beli') {
+
+            if ($jumlah > $produk->stok_kg) {
+                return back()->withErrors([
+                    'jumlah' => 'Jumlah pembelian melebihi stok yang tersedia.',
+                ])->withInput();
+            }
+
+            session()->put('checkout_langsung', [
+                'slug' => $produk->slug,
+                'jumlah' => $jumlah,
+            ]);
+
+            return redirect()->route('pengusaha.checkout');
+        }
+
+        // Jika pengguna memilih Tambah ke Keranjang
         $keranjang = session()->get('keranjang', []);
 
-        // Periksa total jumlah setelah ditambahkan
-        $totalJumlah = ($keranjang[$slug] ?? 0) + $jumlah;
+        $totalJumlah = ($keranjang[$produk->slug] ?? 0) + $jumlah;
 
-        if ($totalJumlah > $produk['stok']) {
+        if ($totalJumlah > $produk->stok_kg) {
             return back()->withErrors([
                 'jumlah' => 'Jumlah pembelian melebihi stok yang tersedia.',
             ])->withInput();
         }
 
-        $keranjang[$slug] = $totalJumlah;
+        $keranjang[$produk->slug] = $totalJumlah;
 
         session()->put('keranjang', $keranjang);
 
         return redirect()
             ->route('pengusaha.keranjang')
             ->with('sukses', 'Produk berhasil ditambahkan ke keranjang!');
+
     })->name('keranjang.tambah');
 
     // Mengubah jumlah produk di keranjang dengan validasi stok
@@ -211,9 +211,422 @@ Route::middleware('guest')->group(function () {
     })->name('keranjang.hapus');
 
     Route::view('/keranjang', 'pengusaha.keranjang')->name('keranjang');
-    Route::view('/checkout', 'pengusaha.checkout')->name('checkout');
-    Route::view('/pembayaran', 'pengusaha.pembayaran')->name('pembayaran');
-    Route::view('/konfirmasi', 'pengusaha.konfirmasi')->name('konfirmasi');
+
+    Route::get('/checkout', function () {
+
+        // Prioritaskan data checkout dari keranjang
+        $checkoutKeranjang = session()->get('checkout_keranjang', []);
+        $checkoutLangsung = session()->get('checkout_langsung');
+
+        if (!empty($checkoutKeranjang)) {
+            $daftarCheckout = $checkoutKeranjang;
+        } elseif ($checkoutLangsung) {
+            $daftarCheckout = [
+                $checkoutLangsung['slug'] => $checkoutLangsung['jumlah'],
+            ];
+        } else {
+            return redirect()
+                ->route('pengusaha.keranjang')
+                ->with('error', 'Silakan pilih produk terlebih dahulu.');
+        }
+
+        // Ambil semua produk dari database
+        $produkDatabase = \App\Models\Produk::with([
+            'petani.profilPetani',
+            'fotoUtama',
+        ])
+        ->aktif()
+        ->whereIn('slug', array_keys($daftarCheckout))
+        ->get()
+        ->keyBy('slug');
+
+        // Validasi produk dan jumlah pembelian
+        $itemsCheckout = collect($daftarCheckout)->map(
+            function ($jumlah, $slug) use ($produkDatabase) {
+
+                $produk = $produkDatabase->get($slug);
+                $jumlah = (float) $jumlah;
+
+                if (!$produk) {
+                    abort(redirect()
+                        ->route('pengusaha.keranjang')
+                        ->with('error', 'Ada produk yang sudah tidak tersedia.'));
+                }
+
+                if (
+                    $jumlah < $produk->min_order_kg ||
+                    $jumlah > $produk->stok_kg
+                ) {
+                    abort(redirect()
+                        ->route('pengusaha.keranjang')
+                        ->with('error', 'Jumlah pesanan tidak sesuai dengan stok atau minimum pembelian.'));
+                }
+
+                return [
+                    'produk' => $produk,
+                    'jumlah' => $jumlah,
+                    'subtotal' => $produk->harga_per_kg * $jumlah,
+                ];
+            }
+        )->values();
+
+        // Hitung subtotal seluruh produk
+        $subtotal = $itemsCheckout->sum('subtotal');
+
+        // Data alamat pembeli
+        $daftarAlamat = \App\Models\Alamat::where('user_id', \Illuminate\Support\Facades\Auth::id())
+            ->orderByDesc('utama')
+            ->get()
+            ->map(function ($alamat) {
+                return [
+                    'id' => $alamat->id,
+                    'nama' => $alamat->label ?: $alamat->nama_penerima,
+                    'label' => $alamat->utama ? 'Utama' : '',
+                    'kontak' => $alamat->nama_penerima . ' · ' . $alamat->no_hp,
+                    'alamat' => implode(', ', array_filter([
+                        $alamat->alamat_lengkap,
+                        $alamat->kecamatan,
+                        $alamat->kabupaten,
+                        $alamat->kode_pos,
+                    ])),
+                ];
+            })
+            ->values();
+
+        // Variabel produk pertama dipertahankan sementara
+        // agar tampilan lama tetap bisa dibaca saat kita memperbarui Blade
+        $produkCheckout = $itemsCheckout->first()['produk'];
+        $jumlahCheckout = $itemsCheckout->first()['jumlah'];
+
+        return view('pengusaha.checkout', compact(
+            'itemsCheckout',
+            'produkCheckout',
+            'jumlahCheckout',
+            'subtotal',
+            'daftarAlamat'
+        ));
+
+    })->name('checkout');
+
+    Route::post('/checkout/proses', [PesananController::class, 'prosesCheckoutKeranjang'])
+    ->name('checkout.proses');
+
+    Route::get('/pembayaran', function (\Illuminate\Http\Request $request) {
+
+        // Ambil data checkout
+        $checkoutKeranjang = session()->get('checkout_keranjang', []);
+        $checkoutLangsung = session()->get('checkout_langsung');
+
+        if (!empty($checkoutKeranjang)) {
+            $daftarCheckout = $checkoutKeranjang;
+        } elseif ($checkoutLangsung) {
+            $daftarCheckout = [
+                $checkoutLangsung['slug'] => $checkoutLangsung['jumlah'],
+            ];
+        } else {
+            return redirect()->route('pengusaha.keranjang');
+        }
+
+        // Ambil produk dari database
+        $produkDatabase = \App\Models\Produk::with([
+            'petani.profilPetani',
+            'fotoUtama',
+        ])
+        ->aktif()
+        ->whereIn('slug', array_keys($daftarCheckout))
+        ->get()
+        ->keyBy('slug');
+
+        // Siapkan seluruh produk checkout
+        $itemsCheckout = collect($daftarCheckout)->map(
+            function ($jumlah, $slug) use ($produkDatabase) {
+
+                $produk = $produkDatabase->get($slug);
+                $jumlah = (float) $jumlah;
+
+                if (!$produk) {
+                    abort(404, 'Produk tidak ditemukan.');
+                }
+
+                if (
+                    $jumlah < $produk->min_order_kg ||
+                    $jumlah > $produk->stok_kg
+                ) {
+                    abort(422, 'Jumlah pesanan tidak sesuai dengan stok atau minimum pembelian.');
+                }
+
+                return [
+                    'produk' => $produk,
+                    'jumlah' => $jumlah,
+                    'subtotal' => $produk->harga_per_kg * $jumlah,
+                ];
+            }
+        )->values();
+
+        $subtotal = $itemsCheckout->sum('subtotal');
+
+        $alamat = \App\Models\Alamat::where('user_id', \Illuminate\Support\Facades\Auth::id())
+            ->where('id', $request->alamat_id)
+            ->first();
+
+        if (!$alamat) {
+            return redirect()
+                ->route('pengusaha.checkout')
+                ->with('error', 'Silakan pilih alamat pengiriman.');
+        }
+
+        // Ambil pilihan pengiriman setiap petani
+        $pilihanPengiriman = json_decode(
+            $request->query('pengiriman', ''),
+            true
+        );
+
+        if (!is_array($pilihanPengiriman)) {
+            return redirect()
+                ->route('pengusaha.checkout')
+                ->with('error', 'Data metode pengiriman tidak valid.');
+        }
+
+        // Kelompokkan produk berdasarkan petani
+        $kelompokPetani = $itemsCheckout->groupBy(
+            fn($item) => $item['produk']->petani_id
+        );
+
+        $pengirimanPerPetani = [];
+        $ongkirPerPetani = [];
+        $ongkir = 0;
+
+        foreach ($kelompokPetani as $petaniId => $itemsPetani) {
+
+            $pilihan = $pilihanPengiriman[$petaniId] ?? null;
+
+            if (
+                !is_array($pilihan) ||
+                !in_array($pilihan['metode'] ?? '', ['diantar', 'ambil'])
+            ) {
+                return redirect()
+                    ->route('pengusaha.checkout')
+                    ->with('error', 'Pilihan pengiriman salah satu petani belum valid.');
+            }
+
+            $metode = $pilihan['metode'];
+            $kurir = $pilihan['kurir'] ?? 'kendaraan';
+
+            if (
+                $metode === 'diantar' &&
+                !in_array($kurir, ['kendaraan', 'jnt'])
+            ) {
+                return redirect()
+                    ->route('pengusaha.checkout')
+                    ->with('error', 'Pilihan kurir tidak valid.');
+            }
+
+            $biayaOngkir = $metode === 'ambil'
+                ? 0
+                : ($kurir === 'jnt' ? 12000 : 15000);
+
+            $pengirimanPerPetani[$petaniId] = [
+                'metode' => $metode,
+                'kurir' => $metode === 'ambil' ? null : $kurir,
+                'ongkir' => $biayaOngkir,
+            ];
+
+            $ongkirPerPetani[$petaniId] = $biayaOngkir;
+
+            $ongkir += $biayaOngkir;
+        }
+
+        // Hitung total seluruh checkout
+        $total = $subtotal + $ongkir;
+
+        // Variabel kompatibilitas sementara
+        $pengirimanPertama = reset($pengirimanPerPetani);
+        $metodePengiriman = $pengirimanPertama['metode'];
+        $kurir = $pengirimanPertama['kurir'] ?? 'kendaraan';
+
+        $produkCheckout = $itemsCheckout->first()['produk'];
+        $jumlahCheckout = $itemsCheckout->first()['jumlah'];
+
+        return view('pengusaha.pembayaran', compact(
+            'itemsCheckout',
+            'produkCheckout',
+            'jumlahCheckout',
+            'subtotal',
+            'ongkir',
+            'ongkirPerPetani',
+            'pengirimanPerPetani',
+            'total',
+            'alamat',
+            'metodePengiriman',
+            'kurir'
+        ));
+
+    })->name('pembayaran');
+
+    Route::get('/konfirmasi', function (\Illuminate\Http\Request $request) {
+
+        // Ambil data checkout
+        $checkoutKeranjang = session()->get('checkout_keranjang', []);
+        $checkoutLangsung = session()->get('checkout_langsung');
+
+        if (!empty($checkoutKeranjang)) {
+            $daftarCheckout = $checkoutKeranjang;
+        } elseif ($checkoutLangsung) {
+            $daftarCheckout = [
+                $checkoutLangsung['slug'] => $checkoutLangsung['jumlah'],
+            ];
+        } else {
+            return redirect()->route('pengusaha.keranjang');
+        }
+
+        // Ambil produk dari database
+        $produkDatabase = \App\Models\Produk::with([
+            'petani.profilPetani',
+            'fotoUtama',
+        ])
+        ->aktif()
+        ->whereIn('slug', array_keys($daftarCheckout))
+        ->get()
+        ->keyBy('slug');
+
+        // Siapkan produk checkout
+        $itemsCheckout = collect($daftarCheckout)->map(
+            function ($jumlah, $slug) use ($produkDatabase) {
+
+                $produk = $produkDatabase->get($slug);
+                $jumlah = (float) $jumlah;
+
+                if (!$produk) {
+                    abort(404, 'Produk tidak ditemukan.');
+                }
+
+                if (
+                    $jumlah < $produk->min_order_kg ||
+                    $jumlah > $produk->stok_kg
+                ) {
+                    abort(422, 'Jumlah pesanan tidak sesuai dengan stok atau minimum pembelian.');
+                }
+
+                return [
+                    'produk' => $produk,
+                    'jumlah' => $jumlah,
+                    'subtotal' => $produk->harga_per_kg * $jumlah,
+                ];
+            }
+        )->values();
+
+        $subtotal = $itemsCheckout->sum('subtotal');
+
+        // Periksa alamat pengguna
+        $alamat = \App\Models\Alamat::where('user_id', \Illuminate\Support\Facades\Auth::id())
+            ->where('id', $request->alamat_id)
+            ->first();
+
+        if (!$alamat) {
+            return redirect()
+                ->route('pengusaha.checkout')
+                ->with('error', 'Silakan pilih alamat pengiriman.');
+        }
+
+        // Ambil pilihan pengiriman per petani
+        $pilihanPengiriman = json_decode(
+            $request->query('pengiriman', ''),
+            true
+        );
+
+        if (!is_array($pilihanPengiriman)) {
+            return redirect()
+                ->route('pengusaha.checkout')
+                ->with('error', 'Data pengiriman tidak valid.');
+        }
+
+        // Kelompokkan produk berdasarkan petani
+        $kelompokPetani = $itemsCheckout->groupBy(
+            fn($item) => $item['produk']->petani_id
+        );
+
+        $pengirimanPerPetani = [];
+        $ongkirPerPetani = [];
+        $ongkir = 0;
+
+        foreach ($kelompokPetani as $petaniId => $itemsPetani) {
+
+            $pilihan = $pilihanPengiriman[$petaniId] ?? null;
+
+            if (
+                !is_array($pilihan) ||
+                !in_array($pilihan['metode'] ?? '', ['diantar', 'ambil'])
+            ) {
+                return redirect()
+                    ->route('pengusaha.checkout')
+                    ->with('error', 'Pilihan pengiriman petani belum lengkap.');
+            }
+
+            $metode = $pilihan['metode'];
+            $kurir = $pilihan['kurir'] ?? null;
+
+            if (
+                $metode === 'diantar' &&
+                !in_array($kurir, ['kendaraan', 'jnt'])
+            ) {
+                return redirect()
+                    ->route('pengusaha.checkout')
+                    ->with('error', 'Pilihan kurir tidak valid.');
+            }
+
+            $biayaOngkir = $metode === 'ambil'
+                ? 0
+                : ($kurir === 'jnt' ? 12000 : 15000);
+
+            $pengirimanPerPetani[$petaniId] = [
+                'metode' => $metode,
+                'kurir' => $metode === 'ambil' ? null : $kurir,
+                'ongkir' => $biayaOngkir,
+            ];
+
+            $ongkirPerPetani[$petaniId] = $biayaOngkir;
+            $ongkir += $biayaOngkir;
+        }
+
+        // Validasi metode pembayaran
+        $metodeBayar = $request->query('pembayaran', 'transfer');
+
+        if (!in_array($metodeBayar, ['transfer', 'gopay', 'ovo', 'cod'])) {
+            return redirect()
+                ->route('pengusaha.pembayaran')
+                ->with('error', 'Metode pembayaran tidak valid.');
+        }
+
+        // COD hanya jika semua petani menggunakan Kendaraan Petani
+        $codTersedia = collect($pengirimanPerPetani)->isNotEmpty()
+            && collect($pengirimanPerPetani)->every(function ($pilihan) {
+                return $pilihan['metode'] === 'diantar'
+                    && $pilihan['kurir'] === 'kendaraan';
+            });
+
+        if ($metodeBayar === 'cod' && !$codTersedia) {
+            return redirect()
+                ->route('pengusaha.checkout')
+                ->with('error', 'COD hanya tersedia jika semua petani menggunakan Kendaraan Petani.');
+        }
+
+        // Hitung total pembayaran
+        $total = $subtotal + $ongkir;
+
+        return view('pengusaha.konfirmasi', compact(
+            'itemsCheckout',
+            'subtotal',
+            'ongkir',
+            'ongkirPerPetani',
+            'pengirimanPerPetani',
+            'total',
+            'alamat',
+            'metodeBayar',
+            'codTersedia'
+        ));
+
+    })->name('konfirmasi');
+
     Route::post('/konfirmasi', [PesananController::class, 'store'])->name('konfirmasi.store');
     Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan');
     Route::get('/pesanan/{id}', [PesananController::class, 'show'])->name('pesanan.detail');

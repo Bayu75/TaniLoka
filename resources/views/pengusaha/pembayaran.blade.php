@@ -4,12 +4,15 @@
 @section('title', 'Pembayaran - TaniLoka')
 
 @php
-    $metodePengiriman = request('metode', 'diantar');
-    $kurir = request('kurir', 'kendaraan');
+    $metodePengiriman = $metodePengiriman ?? request('metode', 'diantar');
+    $kurir = $kurir ?? request('kurir', 'kendaraan');
 
-    $subtotal = 90000;
-    $ongkir = $metodePengiriman === 'ambil' ? 0 : ($kurir === 'jnt' ? 12000 : 0);
-    $total = $subtotal + $ongkir;
+    // COD hanya tersedia jika semua petani menggunakan Kendaraan Petani
+    $codTersedia = collect($pengirimanPerPetani)->isNotEmpty()
+        && collect($pengirimanPerPetani)->every(function ($pilihan) {
+            return $pilihan['metode'] === 'diantar'
+                && $pilihan['kurir'] === 'kendaraan';
+        });
 @endphp
 
 @section('content')
@@ -120,21 +123,25 @@
                     </button>
 
                     {{-- COD --}}
-                    <button
-                        type="button"
-                        @click="metodeBayar = 'cod'"
-                        :class="metodeBayar === 'cod' ? 'border-green-700 bg-green-50' : 'border-green-100 bg-white'"
-                        class="flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left"
-                    >
-                        <span class="flex h-6 w-6 items-center justify-center rounded-full border border-gray-400">
-                            <span x-show="metodeBayar === 'cod'" class="h-3 w-3 rounded-full bg-green-700"></span>
-                        </span>
-                        <span class="text-xl">💵</span>
-                        <span class="flex-1">
-                            <span class="block font-bold text-gray-800">COD (Bayar di Tempat)</span>
-                            <span class="block text-sm text-gray-500">Khusus pengiriman mandiri</span>
-                        </span>
-                    </button>
+                    @if ($codTersedia)
+                        <button
+                            type="button"
+                            @click="metodeBayar = 'cod'"
+                            :class="metodeBayar === 'cod' ? 'border-green-700 bg-green-50' : 'border-green-100 bg-white'"
+                            class="flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left"
+                        >
+                            <span class="flex h-6 w-6 items-center justify-center rounded-full border border-gray-400">
+                                <span x-show="metodeBayar === 'cod'" class="h-3 w-3 rounded-full bg-green-700"></span>
+                            </span>
+
+                            <span class="text-xl">💵</span>
+
+                            <span class="flex-1">
+                                <span class="block font-bold text-gray-800">COD (Bayar di Tempat)</span>
+                                <span class="block text-sm text-gray-500">Khusus pengiriman mandiri oleh petani</span>
+                            </span>
+                        </button>
+                    @endif
 
                 </div>
             </div>
@@ -149,7 +156,7 @@
             </div>
 
             <a
-                :href="'{{ route('pengusaha.konfirmasi', request()->query()) }}&pembayaran=' + metodeBayar"
+                :href="'{{ route('pengusaha.konfirmasi') }}?{{ http_build_query(request()->query()) }}&pembayaran=' + metodeBayar"
                 class="mt-4 block w-full rounded-xl bg-amber-500 px-4 py-4 text-center font-bold text-gray-900 transition hover:bg-amber-600"
             >
                 Tinjau Pesanan
@@ -166,14 +173,74 @@
                     Ringkasan
                 </h2>
 
-                <div class="flex items-center justify-between gap-2 border-b border-gray-200 pb-3">
-                    <p class="truncate text-sm text-gray-600">
-                        Cabai Rawit Merah
+                <div class="space-y-3 border-b border-gray-200 pb-3">
+
+                    <p class="text-sm font-semibold text-gray-700">
+                        Produk ({{ $itemsCheckout->count() }})
                     </p>
 
-                    <p class="shrink-0 text-sm font-bold text-gray-800">
-                        Rp {{ number_format($subtotal, 0, ',', '.') }}
+                    @foreach ($itemsCheckout as $item)
+                        <div class="flex items-center justify-between gap-2">
+
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-sm text-gray-700">
+                                    {{ $item['produk']->nama }}
+                                </p>
+
+                                <p class="text-xs text-gray-500">
+                                    {{ $item['jumlah'] }} kg
+                                </p>
+                            </div>
+
+                            <p class="shrink-0 text-sm font-bold text-gray-800">
+                                Rp {{ number_format($item['subtotal'], 0, ',', '.') }}
+                            </p>
+
+                        </div>
+                    @endforeach
+
+                </div>
+
+                {{-- Rincian Pengiriman per Petani --}}
+                <div class="space-y-3 border-b border-gray-200 py-3">
+
+                    <p class="text-sm font-semibold text-gray-700">
+                        Rincian Pengiriman
                     </p>
+
+                    @foreach ($itemsCheckout->groupBy(fn($item) => $item['produk']->petani_id) as $petaniId => $itemsPetani)
+                        @php
+                            $petani = $itemsPetani->first()['produk']->petani;
+                            $pilihan = $pengirimanPerPetani[$petaniId];
+                        @endphp
+
+                        <div class="rounded-xl bg-green-50 p-3">
+                            <p class="text-sm font-bold text-gray-800">
+                                {{ $petani->profilPetani->nama_usaha_tani ?? $petani->name ?? 'Petani' }}
+                            </p>
+
+                            <div class="mt-2 flex justify-between gap-2 text-sm">
+                                <span class="text-gray-600">Metode pengiriman</span>
+                                <span class="text-right font-medium text-gray-800">
+                                    @if ($pilihan['metode'] === 'ambil')
+                                        Ambil Sendiri
+                                    @elseif ($pilihan['kurir'] === 'jnt')
+                                        J&T Express
+                                    @else
+                                        Kendaraan Petani
+                                    @endif
+                                </span>
+                            </div>
+
+                            <div class="mt-1 flex justify-between text-sm">
+                                <span class="text-gray-600">Ongkos kirim</span>
+                                <span class="font-bold text-gray-800">
+                                    {{ $pilihan['ongkir'] == 0 ? 'Gratis' : 'Rp ' . number_format($pilihan['ongkir'], 0, ',', '.') }}
+                                </span>
+                            </div>
+                        </div>
+                    @endforeach
+
                 </div>
 
                 <div class="mt-3 space-y-2 text-sm">

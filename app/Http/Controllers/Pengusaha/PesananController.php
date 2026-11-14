@@ -4,7 +4,11 @@ namespace App\Http\Controllers\Pengusaha;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pesanan;
+use App\Models\Produk;
+use App\Models\Alamat;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class PesananController extends Controller
 {
@@ -39,7 +43,7 @@ class PesananController extends Controller
     }
 
     // Menampilkan detail pesanan berdasarkan ID
-    public function show($id)
+    public function show(string $id)
     {
         $data = Pesanan::with([
             'petani.profilPetani',
@@ -73,7 +77,7 @@ class PesananController extends Controller
 
 
     // Membatalkan pesanan
-    public function cancel($id)
+    public function cancel(string $id)
     {
         $pesanan = Pesanan::where('kode', $id)
             ->where('pengusaha_id', Auth::id())
@@ -97,39 +101,307 @@ class PesananController extends Controller
             ->with('success', 'Pesanan berhasil dibatalkan.');
     }
 
+    public function prosesCheckoutKeranjang(Request $request)
+    {
+        $request->validate([
+            'items' => 'required|string',
+        ]);
+
+        $items = json_decode($request->items, true);
+
+        if (!is_array($items) || empty($items)) {
+            return back()->with('error', 'Pilih minimal satu produk.');
+        }
+
+        $checkoutItems = [];
+
+        foreach ($items as $item) {
+            if (
+                !isset($item['slug'], $item['jumlah']) ||
+                !is_numeric($item['jumlah']) ||
+                $item['jumlah'] <= 0
+            ) {
+                return back()->with('error', 'Data produk tidak valid.');
+            }
+
+            $produk = Produk::aktif()
+                ->where('slug', $item['slug'])
+                ->first();
+
+            if (!$produk) {
+                return back()->with('error', 'Produk tidak ditemukan atau tidak tersedia.');
+            }
+
+            $jumlah = (float) $item['jumlah'];
+
+            if ($jumlah < $produk->min_order_kg) {
+                return back()->with('error', 'Jumlah pesanan tidak memenuhi minimum pembelian.');
+            }
+
+            if ($jumlah > $produk->stok_kg) {
+                return back()->with('error', 'Jumlah pesanan melebihi stok produk.');
+            }
+
+            $checkoutItems[$produk->slug] = $jumlah;
+        }
+
+        session()->put('checkout_keranjang', $checkoutItems);
+
+        return redirect()->route('pengusaha.checkout');
+    }
+
         // Menyimpan pesanan baru dari halaman konfirmasi
-        public function store()
+        public function store(Request $request)
         {
-            $metodePengiriman = request('metode', 'diantar');
-            $kurir = request('kurir', 'kendaraan');
-            $metodeBayar = request('pembayaran', 'transfer');
+            $request->validate([
+                'alamat_id' => 'required|integer',
+                'pengiriman' => 'required|string',
+                'pembayaran' => 'required|in:transfer,gopay,ovo,cod',
+            ]);
 
-            $ongkir = $metodePengiriman === 'ambil'
-                ? 0
-                : ($kurir === 'jnt' ? 12000 : 0);
+            // Ambil data checkout dari session
+            $checkoutKeranjang = session()->get('checkout_keranjang', []);
+            $checkoutLangsung = session()->get('checkout_langsung');
 
-            $pesananBaru = [
-                'id' => 'TL-' . now()->format('ymdHis'),
-                'tanggal' => now()->format('d M Y'),
-                'status' => 'menunggu_konfirmasi',
-                'nama_petani' => 'Ibu Wayan Sari',
-                'produk' => 'Cabai Rawit Merah',
-                'gambar' => 'images/products/cabai rawit.jpg',
-                'jumlah' => '2 kg',
-                'total' => 90000 + $ongkir,
-                'notifikasi' => 'Menunggu konfirmasi petani',
-                'jenis_notifikasi' => 'waktu',
-                'metode_pengiriman' => $metodePengiriman === 'ambil'
-                    ? 'Ambil Sendiri'
-                    : ($kurir === 'jnt' ? 'J&T Express' : 'Kendaraan Sendiri'),
-                'metode_pembayaran' => $metodeBayar,
+            if (!empty($checkoutKeranjang)) {
+                $daftarCheckout = $checkoutKeranjang;
+            } elseif ($checkoutLangsung) {
+                $daftarCheckout = [
+                    $checkoutLangsung['slug'] => $checkoutLangsung['jumlah'],
+                ];
+            } else {
+                return redirect()
+                    ->route('pengusaha.keranjang')
+                    ->with('error', 'Data checkout tidak ditemukan.');
+            }
+
+            // Periksa alamat penerima
+            $alamat = Alamat::where('user_id', Auth::id())
+                ->where('id', $request->alamat_id)
+                ->first();
+
+            if (!$alamat) {
+                return back()->with('error', 'Alamat pengiriman tidak ditemukan.');
+            }
+
+            // Ambil pilihan pengiriman setiap petani
+            $pilihanPengiriman = json_decode($request->pengiriman, true);
+
+            if (!is_array($pilihanPengiriman)) {
+                return back()->with('error', 'Data pengiriman tidak valid.');
+            }
+
+            // Mapping metode pembayaran
+            $metodePembayaran = [
+                'transfer' => 'transfer_bank',
+                'gopay' => 'gopay',
+                'ovo' => 'ovo',
+                'cod' => 'cod',
             ];
 
-            $daftarPesanan = session()->get('pesanan_baru', []);
+            try {
+                DB::transaction(function () use (
+                    $daftarCheckout,
+                    $pilihanPengiriman,
+                    $metodePembayaran,
+                    $request,
+                    $alamat
+                ) {
 
-            array_unshift($daftarPesanan, $pesananBaru);
+                    // Ambil produk dan kunci stok selama transaksi
+                    $produkDatabase = Produk::aktif()
+                        ->whereIn('slug', array_keys($daftarCheckout))
+                        ->lockForUpdate()
+                        ->get()
+                        ->keyBy('slug');
 
-            session()->put('pesanan_baru', $daftarPesanan);
+                    // Validasi dan siapkan produk checkout
+                    $itemsCheckout = collect($daftarCheckout)->map(
+                        function ($jumlah, $slug) use ($produkDatabase) {
+
+                            $produk = $produkDatabase->get($slug);
+                            $jumlah = (float) $jumlah;
+
+                            if (!$produk) {
+                                throw \Illuminate\Validation\ValidationException::withMessages([
+                                    'produk' => 'Produk tidak ditemukan atau tidak tersedia.',
+                                ]);
+                            }
+
+                            if (
+                                $jumlah <= 0 ||
+                                $jumlah < $produk->min_order_kg ||
+                                $jumlah > $produk->stok_kg
+                            ) {
+                                throw \Illuminate\Validation\ValidationException::withMessages([
+                                    'produk' => 'Jumlah pembelian tidak sesuai dengan stok atau minimum pembelian.',
+                                ]);
+                            }
+
+                            return [
+                                'produk' => $produk,
+                                'jumlah' => $jumlah,
+                                'subtotal' => (int) round(
+                                    $produk->harga_per_kg * $jumlah
+                                ),
+                            ];
+                        }
+                    )->values();
+
+                    // Kelompokkan produk berdasarkan petani
+                    $kelompokPetani = $itemsCheckout->groupBy(
+                        fn($item) => $item['produk']->petani_id
+                    );
+
+                    // Validasi seluruh pilihan pengiriman
+                    $pengirimanPerPetani = [];
+
+                    foreach ($kelompokPetani as $petaniId => $itemsPetani) {
+
+                        $pilihan = $pilihanPengiriman[$petaniId] ?? null;
+
+                        if (
+                            !is_array($pilihan) ||
+                            !in_array($pilihan['metode'] ?? '', ['diantar', 'ambil'])
+                        ) {
+                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                'pengiriman' => 'Pilihan pengiriman petani belum lengkap.',
+                            ]);
+                        }
+
+                        $metode = $pilihan['metode'];
+                        $kurir = $pilihan['kurir'] ?? null;
+
+                        if (
+                            $metode === 'diantar' &&
+                            !in_array($kurir, ['kendaraan', 'jnt'])
+                        ) {
+                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                'pengiriman' => 'Pilihan kurir tidak valid.',
+                            ]);
+                        }
+
+                        $biayaOngkir = $metode === 'ambil'
+                            ? 0
+                            : ($kurir === 'jnt' ? 12000 : 15000);
+
+                        $pengirimanPerPetani[$petaniId] = [
+                            'metode' => $metode === 'ambil'
+                                ? 'ambil'
+                                : $kurir,
+                            'ongkir' => $biayaOngkir,
+                        ];
+                    }
+
+                    // Validasi COD
+                    $metodeBayar = $request->pembayaran;
+
+                    $codTersedia = collect($pengirimanPerPetani)->isNotEmpty()
+                        && collect($pengirimanPerPetani)->every(
+                            fn($pilihan) => $pilihan['metode'] === 'kendaraan'
+                        );
+
+                    if ($metodeBayar === 'cod' && !$codTersedia) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'pembayaran' => 'COD hanya tersedia jika semua petani menggunakan Kendaraan Petani.',
+                        ]);
+                    }
+
+                    // Buat satu pesanan untuk setiap petani
+                    foreach ($kelompokPetani as $petaniId => $itemsPetani) {
+
+                        $pengiriman = $pengirimanPerPetani[$petaniId];
+
+                        $subtotal = (int) $itemsPetani->sum('subtotal');
+                        $ongkir = $pengiriman['ongkir'];
+                        $biayaLayanan = 0;
+                        $total = $subtotal + $ongkir + $biayaLayanan;
+
+                        // Simpan pesanan utama
+                        $pesanan = Pesanan::create([
+                            'kode' => Pesanan::buatKode(),
+                            'pengusaha_id' => Auth::id(),
+                            'petani_id' => $petaniId,
+
+                            'nama_penerima' => $alamat->nama_penerima,
+                            'no_hp_penerima' => $alamat->no_hp,
+
+                            'alamat_pengiriman' => implode(', ', array_filter([
+                                $alamat->alamat_lengkap,
+                                $alamat->kecamatan,
+                                $alamat->kabupaten,
+                                $alamat->kode_pos,
+                            ])),
+
+                            'metode_pengiriman' => $pengiriman['metode'],
+
+                            'subtotal' => $subtotal,
+                            'ongkir' => $ongkir,
+                            'biaya_layanan' => $biayaLayanan,
+                            'total' => $total,
+
+                            'status' => 'menunggu_konfirmasi',
+                        ]);
+
+                        // Simpan setiap produk dalam pesanan
+                        foreach ($itemsPetani as $item) {
+
+                            $produk = $item['produk'];
+
+                            $pesanan->item()->create([
+                                'produk_id' => $produk->id,
+                                'nama_produk' => $produk->nama,
+                                'harga_per_kg' => $produk->harga_per_kg,
+                                'jumlah_kg' => $item['jumlah'],
+                                'subtotal' => $item['subtotal'],
+                            ]);
+
+                            // Kurangi stok produk
+                            $produk->decrement('stok_kg', $item['jumlah']);
+                        }
+
+                        // Simpan pembayaran
+                        $pesanan->pembayaran()->create([
+                            'metode' => $metodePembayaran[$metodeBayar],
+                            'jumlah' => $total,
+                            'status' => 'belum_bayar',
+                        ]);
+
+                        // Catat riwayat status pesanan
+                        $pesanan->riwayat()->create([
+                            'status' => 'menunggu_konfirmasi',
+                            'keterangan' => 'Pesanan berhasil dibuat oleh pembeli.',
+                            'diubah_oleh' => Auth::id(),
+                        ]);
+                    }
+                });
+
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                throw $e;
+
+            } catch (\Throwable $e) {
+                report($e);
+
+                return back()->with(
+                    'error',
+                    'Pesanan gagal disimpan. Silakan coba kembali.'
+                );
+            }
+
+            // Hapus produk yang sudah berhasil dibeli dari keranjang
+            $keranjang = session()->get('keranjang', []);
+
+            foreach (array_keys($daftarCheckout) as $slug) {
+                unset($keranjang[$slug]);
+            }
+
+            session()->put('keranjang', $keranjang);
+
+            // Bersihkan data checkout
+            session()->forget([
+                'checkout_keranjang',
+                'checkout_langsung',
+            ]);
 
             return redirect()
                 ->route('pengusaha.pesanan')

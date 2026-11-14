@@ -5,12 +5,15 @@
 @section('content')
 
 @php
-    // Data ongkos kirim sementara (dummy)
+    // Data ongkos kirim sementara
     $ongkosKirim = [
-        'kendaraan' => 0,
+        'kendaraan' => 15000,
         'jnt' => 12000,
         'ambil' => 0,
     ];
+
+    // Menghitung subtotal seluruh produk
+    $subtotal = $itemsCheckout->sum('subtotal');
 @endphp
 
     {{-- Judul halaman --}}
@@ -76,36 +79,40 @@
     {{-- Layout Checkout --}}
     <div
         x-data="{
-            metode: 'diantar',
-            kurir: 'kendaraan',
+            pengiriman: @js(
+                $itemsCheckout->groupBy(fn($item) => $item['produk']->petani_id)
+                    ->keys()
+                    ->mapWithKeys(fn($id) => [
+                        $id => [
+                            'metode' => 'diantar',
+                            'kurir' => 'kendaraan',
+                        ]
+                    ])
+                    ->all()
+            ),
 
             modalAlamat: false,
             alamatAktif: 0,
             tampilAlamat: false,
 
-            daftarAlamat: [
-                {
-                    nama: 'Restoran',
-                    label: 'Utama',
-                    kontak: 'Sari Kitchen · 0812-3456-7890',
-                    alamat: 'Jl. Sunset Road No. 88, Denpasar'
-                },
-                {
-                    nama: 'Dapur Pusat',
-                    label: '',
-                    kontak: 'Sari Kitchen (Gudang) · 0812-3456-7891',
-                    alamat: 'Jl. Imam Bonjol No. 21, Badung'
-                }
-            ],
+            daftarAlamat: @js($daftarAlamat),
+
             ongkosKirim: @js($ongkosKirim),
 
+            hitungOngkir(pilihan) {
+                if (pilihan.metode === 'ambil') return this.ongkosKirim.ambil;
+                return this.ongkosKirim[pilihan.kurir];
+            },
+
             get biayaKirim() {
-                if (this.metode === 'ambil') return this.ongkosKirim.ambil;
-                return this.ongkosKirim[this.kurir];
+                return Object.values(this.pengiriman).reduce(
+                    (total, pilihan) => total + this.hitungOngkir(pilihan),
+                    0
+                );
             },
 
             get totalPembayaran() {
-                return 90000 + this.biayaKirim;
+                return {{ $subtotal }} + this.biayaKirim;
             }
         }"
             class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_266px]"
@@ -206,145 +213,191 @@
 
             </div>
 
-    {{-- Pesanan dari Petani --}}
-    <div
-        class="mt-4 overflow-hidden rounded-2xl border border-green-100 bg-white"
 
-    >
+    {{-- Daftar Produk yang Dipesan --}}
+    <div class="mt-4 space-y-4">
 
-        {{-- Header Pesanan --}}
-        <div class="border-b border-green-100 bg-green-50 p-4">
-            <h3 class="font-bold text-gray-800">
-                Pesanan dari Ibu Wayan Sari
-            </h3>
+        @foreach ($itemsCheckout->groupBy(fn($item) => $item['produk']->petani_id) as $petaniId => $itemsPetani)
 
-            <p class="text-sm text-gray-600">
-                1 produk · Rp 90.000
-            </p>
-        </div>
+            @php
+                $petani = $itemsPetani->first()['produk']->petani;
+                $subtotalPetani = $itemsPetani->sum('subtotal');
+            @endphp
 
-        <div class="space-y-3 p-4">
+            <div class="overflow-hidden rounded-2xl border border-green-100 bg-white">
 
-            {{-- Pilihan Metode --}}
-            <div class="grid grid-cols-2 gap-2">
+                {{-- Header Petani --}}
+                <div class="border-b border-green-100 bg-green-50 p-4">
+                    <h3 class="font-bold text-gray-800">
+                        Pesanan dari {{ $petani->profilPetani->nama_usaha_tani ?? $petani->name ?? 'Petani' }}
+                    </h3>
 
-                <button
-                    type="button"
-                    @click="metode = 'diantar'"
-                    :class="metode === 'diantar'
-                        ? 'border-2 border-green-700 bg-green-50 text-green-800'
-                        : 'border-2 border-green-100 bg-white text-gray-600'"
-                    class="rounded-xl px-3 py-4 text-sm font-bold"
-                >
-                    Diantar
-                </button>
+                    <p class="text-sm text-gray-600">
+                        {{ $itemsPetani->count() }} produk ·
+                        Rp {{ number_format($subtotalPetani, 0, ',', '.') }}
+                    </p>
+                </div>
 
-                <button
-                    type="button"
-                    @click="metode = 'ambil'"
-                    :class="metode === 'ambil'
-                        ? 'border-2 border-green-700 bg-green-50 text-green-800'
-                        : 'border-2 border-green-100 bg-white text-gray-600'"
-                    class="rounded-xl px-3 py-4 text-sm font-bold"
-                >
-                    Ambil Sendiri (Siap Diambil)
-                </button>
+                {{-- Daftar Produk --}}
+                <div class="space-y-3 p-4">
 
-            </div>
+                    @foreach ($itemsPetani as $item)
 
-            {{-- Jika memilih Diantar --}}
-            <div x-show="metode === 'diantar'" x-transition class="space-y-3">
+                        @php
+                            $produk = $item['produk'];
+                            $foto = $produk->fotoUtama?->path;
+                        @endphp
 
-                {{-- Kendaraan Sendiri --}}
-                <button
-                    type="button"
-                    @click="kurir = 'kendaraan'"
-                    :class="kurir === 'kendaraan'
-                        ? 'border-2 border-green-700 bg-green-50'
-                        : 'border-2 border-green-100 bg-white'"
-                    class="flex w-full items-center gap-3 rounded-xl p-3 text-left"
-                >
-                    <span
-                        class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gray-400"
-                        :class="kurir === 'kendaraan' ? 'border-green-700' : ''"
+                        <div class="flex items-center gap-3 border-b border-gray-100 pb-3 last:border-0 last:pb-0">
+
+                            @if ($foto)
+                                <img
+                                    src="{{ \Illuminate\Support\Str::startsWith($foto, ['http://', 'https://']) ? $foto : asset($foto) }}"
+                                    alt="{{ $produk->nama }}"
+                                    class="h-16 w-16 shrink-0 rounded-lg object-cover"
+                                >
+                            @else
+                                <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-400">
+                                    Tanpa foto
+                                </div>
+                            @endif
+
+                            <div class="min-w-0 flex-1">
+                                <p class="font-semibold text-gray-800">
+                                    {{ $produk->nama }}
+                                </p>
+
+                                <p class="text-sm text-gray-500">
+                                    {{ $item['jumlah'] }} kg ×
+                                    Rp {{ number_format($produk->harga_per_kg, 0, ',', '.') }}
+                                </p>
+                            </div>
+
+                            <p class="shrink-0 text-sm font-bold text-gray-800">
+                                Rp {{ number_format($item['subtotal'], 0, ',', '.') }}
+                            </p>
+
+                        </div>
+
+                    @endforeach
+
+                </div>
+
+                {{-- Pilihan Metode Pengiriman --}}
+                <div class="border-t border-green-100 p-4">
+
+                    <h3 class="mb-1 font-bold text-gray-800">
+                        Metode Pengiriman
+                    </h3>
+
+                    <p class="mb-4 text-sm text-gray-600">
+                        Pesanan dari {{ $petani->profilPetani->nama_usaha_tani ?? $petani->name ?? 'Petani' }}
+                    </p>
+
+                    {{-- Pilihan jenis pengiriman --}}
+                    <div class="grid grid-cols-2 gap-2">
+
+                        <button
+                            type="button"
+                            @click="pengiriman[{{ $petaniId }}].metode = 'diantar'"
+                            :class="pengiriman[{{ $petaniId }}].metode === 'diantar'
+                                ? 'border-2 border-green-700 bg-green-50 text-green-800'
+                                : 'border-2 border-green-100 bg-white text-gray-600'"
+                            class="rounded-xl px-3 py-4 text-sm font-bold"
+                        >
+                            Diantar
+                        </button>
+
+                        <button
+                            type="button"
+                            @click="pengiriman[{{ $petaniId }}].metode = 'ambil'"
+                            :class="pengiriman[{{ $petaniId }}].metode === 'ambil'
+                                ? 'border-2 border-green-700 bg-green-50 text-green-800'
+                                : 'border-2 border-green-100 bg-white text-gray-600'"
+                            class="rounded-xl px-3 py-4 text-sm font-bold"
+                        >
+                            Ambil Sendiri
+                        </button>
+
+                    </div>
+
+                    {{-- Pilihan kurir --}}
+                    <div
+                        x-show="pengiriman[{{ $petaniId }}].metode === 'diantar'"
+                        x-transition
+                        class="mt-3 space-y-3"
                     >
-                        <span
-                            x-show="kurir === 'kendaraan'"
-                            class="h-3 w-3 rounded-full bg-green-700"
-                        ></span>
-                    </span>
 
-                    <span class="text-xl">🚚</span>
+                        <button
+                            type="button"
+                            @click="pengiriman[{{ $petaniId }}].kurir = 'kendaraan'"
+                            :class="pengiriman[{{ $petaniId }}].kurir === 'kendaraan'
+                                ? 'border-2 border-green-700 bg-green-50'
+                                : 'border-2 border-green-100 bg-white'"
+                            class="flex w-full items-center gap-3 rounded-xl p-3 text-left"
+                        >
+                            <span class="text-xl">🚚</span>
 
-                    <span class="flex-1">
-                        <span class="block text-sm font-bold text-gray-800">
-                            Kendaraan Sendiri
-                        </span>
-                        <span class="block text-xs text-gray-500">
-                            Pengiriman mandiri, hanya Bali
-                        </span>
-                    </span>
+                            <span class="flex-1">
+                                <span class="block text-sm font-bold text-gray-800">
+                                    Kendaraan Petani
+                                </span>
+                                <span class="block text-xs text-gray-500">
+                                    Pengiriman mandiri oleh petani, hanya di Bali
+                                </span>
+                            </span>
 
-                    <span class="text-sm font-bold text-green-700">
-                        Gratis
-                    </span>
-                </button>
+                            <span class="text-sm font-bold text-green-700">
+                                Rp15.000
+                            </span>
+                        </button>
 
-                {{-- J&T Express --}}
-                <button
-                    type="button"
-                    @click="kurir = 'jnt'"
-                    :class="kurir === 'jnt'
-                        ? 'border-2 border-green-700 bg-green-50'
-                        : 'border-2 border-green-100 bg-white'"
-                    class="flex w-full items-center gap-3 rounded-xl p-3 text-left"
-                >
-                    <span
-                        class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gray-400"
-                        :class="kurir === 'jnt' ? 'border-green-700' : ''"
+                        <button
+                            type="button"
+                            @click="pengiriman[{{ $petaniId }}].kurir = 'jnt'"
+                            :class="pengiriman[{{ $petaniId }}].kurir === 'jnt'
+                                ? 'border-2 border-green-700 bg-green-50'
+                                : 'border-2 border-green-100 bg-white'"
+                            class="flex w-full items-center gap-3 rounded-xl p-3 text-left"
+                        >
+                            <span class="text-xl">📦</span>
+
+                            <span class="flex-1">
+                                <span class="block text-sm font-bold text-gray-800">
+                                    J&T Express
+                                </span>
+                                <span class="block text-xs text-gray-500">
+                                    Estimasi 1–2 hari kerja
+                                </span>
+                            </span>
+
+                            <span class="text-sm font-bold text-green-700">
+                                Rp12.000
+                            </span>
+                        </button>
+
+                    </div>
+
+                    {{-- Informasi ambil sendiri --}}
+                    <div
+                        x-show="pengiriman[{{ $petaniId }}].metode === 'ambil'"
+                        x-transition
+                        class="mt-3 rounded-xl bg-green-50 p-3 text-sm leading-relaxed text-gray-600"
                     >
-                        <span
-                            x-show="kurir === 'jnt'"
-                            class="h-3 w-3 rounded-full bg-green-700"
-                        ></span>
-                    </span>
+                        Anda mengambil sendiri pesanan di kebun petani. Tanpa ongkos kirim.
+                    </div>
 
-                    <span class="text-xl">📦</span>
-
-                    <span class="flex-1">
-                        <span class="block text-sm font-bold text-gray-800">
-                            J&T Express
-                        </span>
-                        <span class="block text-xs text-gray-500">
-                            Estimasi 1–2 hari kerja
-                        </span>
-                    </span>
-
-                    <span class="text-sm font-bold text-green-700">
-                        Rp 12.000
-                    </span>
-                </button>
+                </div>
 
             </div>
 
-            {{-- Jika memilih Ambil Sendiri --}}
-            <div
-                x-show="metode === 'ambil'"
-                x-transition
-                class="rounded-xl bg-green-50 p-3 text-sm leading-relaxed text-gray-600"
-            >
-                Anda mengambil sendiri pesanan di kebun petani.
-                Tanpa ongkos kirim. Petani akan menandai pesanan
-                "Siap Diambil".
-            </div>
-
-        </div>
+        @endforeach
 
     </div>
 
     {{-- Tombol Lanjut ke Pembayaran --}}
     <a
-        :href="'{{ route('pengusaha.pembayaran') }}?metode=' + metode + '&kurir=' + kurir + '&ongkir=' + biayaKirim"
+        :href="'{{ route('pengusaha.pembayaran') }}?alamat_id=' + daftarAlamat[alamatAktif].id + '&pengiriman=' + encodeURIComponent(JSON.stringify(pengiriman)) + '&ongkir=' + biayaKirim"
         class="mt-4 block w-full rounded-xl bg-amber-500 px-4 py-4 text-center text-sm font-bold text-gray-900 transition hover:bg-amber-600"
     >
         Lanjut ke Pembayaran
@@ -361,21 +414,62 @@
                     Ringkasan
                 </h2>
 
-                {{-- Produk --}}
-                <div class="flex items-center justify-between gap-2 border-b border-gray-200 pb-3">
-                    <p class="truncate text-sm text-gray-600">
-                        Cabai Rawit Merah
+
+                {{-- Daftar Produk --}}
+                <div class="space-y-3 border-b border-gray-200 pb-3">
+
+                    <p class="text-sm font-semibold text-gray-700">
+                        Produk ({{ $itemsCheckout->count() }})
                     </p>
-                    <p class="shrink-0 text-sm font-bold text-gray-800">
-                        Rp 90.000
-                    </p>
+
+                    @foreach ($itemsCheckout as $item)
+
+                        @php
+                            $produk = $item['produk'];
+                            $foto = $produk->fotoUtama?->path;
+                        @endphp
+
+                        <div class="flex items-center gap-3">
+
+                            @if ($foto)
+                                <img
+                                    src="{{ \Illuminate\Support\Str::startsWith($foto, ['http://', 'https://']) ? $foto : asset($foto) }}"
+                                    alt="{{ $produk->nama }}"
+                                    class="h-14 w-14 shrink-0 rounded-lg object-cover"
+                                >
+                            @else
+                                <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-400">
+                                    Tanpa foto
+                                </div>
+                            @endif
+
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-sm font-medium text-gray-700">
+                                    {{ $produk->nama }}
+                                </p>
+
+                                <p class="text-xs text-gray-500">
+                                    {{ $item['jumlah'] }} kg
+                                </p>
+                            </div>
+
+                            <p class="shrink-0 text-sm font-bold text-gray-800">
+                                Rp {{ number_format($item['subtotal'], 0, ',', '.') }}
+                            </p>
+
+                        </div>
+
+                    @endforeach
+
                 </div>
 
                 {{-- Subtotal dan Ongkos Kirim --}}
                 <div class="mt-3 space-y-2 text-sm">
                     <div class="flex justify-between">
                         <span class="text-gray-600">Subtotal</span>
-                        <span class="text-gray-700">Rp 90.000</span>
+                        <span class="text-gray-700">
+                            Rp {{ number_format($subtotal, 0, ',', '.') }}
+                        </span>
                     </div>
 
                     <div class="flex justify-between">
