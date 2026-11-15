@@ -10,6 +10,10 @@ use App\Http\Controllers\Petani\DashboardController as PetaniDashboardController
 use App\Http\Controllers\Petani\PesananController as PetaniPesananController;
 use App\Http\Controllers\Petani\ProdukController as PetaniProdukController;
 
+use App\Http\Controllers\Petani\KatalogController as PetaniKatalogController;
+use App\Http\Controllers\Petani\PesanController as PetaniPesanController;
+
+
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'auth.landing')->name('landing');
@@ -343,8 +347,12 @@ Route::middleware(['auth', 'peran:petani'])->prefix('petani')->name('petani.')->
     Route::delete('/produk/{produk}', [PetaniProdukController::class, 'destroy'])->whereNumber('produk')->name('produk.destroy');
 
     // Halaman yang belum disambungkan ke database
-    Route::view('/katalog', 'petani.katalog')->name('katalog');
-    Route::view('/pesan', 'petani.pesan')->name('pesan');
+Route::get('/katalog', [PetaniKatalogController::class, 'index'])->name('katalog');
+
+    Route::get('/pesan', [PetaniPesanController::class, 'index'])->name('pesan');
+    Route::get('/pesan/{percakapan}', [PetaniPesanController::class, 'show'])->whereNumber('percakapan')->name('pesan.show');
+    Route::post('/pesan/{percakapan}/kirim', [PetaniPesanController::class, 'kirim'])->whereNumber('percakapan')->name('pesan.kirim');
+
     Route::view('/bantuan', 'petani.bantuan')->name('bantuan');
 
     // Pesanan Masuk
