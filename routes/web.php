@@ -8,6 +8,8 @@ use App\Http\Controllers\Pengusaha\ProdukController;
 use App\Http\Controllers\Pengusaha\ProfilUsahaController;
 use App\Http\Controllers\Pengusaha\KeranjangController;
 use App\Http\Controllers\Admin\VerifikasiController;
+use App\Http\Controllers\Pengusaha\VerifikasiController as VerifikasiPengusahaController;
+use App\Http\Controllers\Pengusaha\AlamatController;
 
 Route::view('/', 'auth.landing')->name('landing');
 
@@ -57,7 +59,8 @@ Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengu
     Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan');
     Route::get('/pesanan/{id}', [PesananController::class, 'show'])->name('pesanan.detail');
     Route::post('/pesanan/{id}/batalkan', [PesananController::class, 'cancel'])->name('pesanan.cancel');
-
+   Route::get('/verifikasi', [VerifikasiPengusahaController::class, 'index'])->name('verifikasi');
+    Route::post('/verifikasi', [VerifikasiPengusahaController::class, 'ajukan'])->name('verifikasi.ajukan');
     Route::view('/akun', 'pengusaha.akun')->name('akun');
     Route::get('/profil-usaha', [ProfilUsahaController::class, 'edit'])->name('profil');
     Route::post('/profil-usaha', [ProfilUsahaController::class, 'simpan'])->name('profil.simpan');
@@ -81,22 +84,10 @@ Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengu
             'longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
-        session()->put('alamat_pengusaha', $data);
-
-        return redirect()
-            ->route('pengusaha.alamat')
-            ->with('sukses', 'Alamat berhasil disimpan!');
-    })->name('alamat.simpan');
-
-    // Menghapus alamat
-    Route::post('/alamat/hapus', function () {
-
-        session()->forget('alamat_pengusaha');
-
-        return redirect()
-            ->route('pengusaha.alamat')
-            ->with('sukses', 'Alamat berhasil dihapus!');
-    })->name('alamat.hapus');
+       // Alamat usaha
+    Route::get('/alamat', [AlamatController::class, 'index'])->name('alamat');
+    Route::post('/alamat', [AlamatController::class, 'simpan'])->name('alamat.simpan');
+    Route::post('/alamat/hapus', [AlamatController::class, 'hapus'])->name('alamat.hapus');
     Route::view('/bantuan', 'pengusaha.bantuan')->name('bantuan');
 });
 
