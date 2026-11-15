@@ -28,11 +28,15 @@
 
 <div
     x-data="{
-            tampilkanPenawaran: {{ request('tawar') == '1' && ($penawaranAktif || !$percakapan->pesan->where('tipe', 'penawaran')->last() || !in_array($percakapan->pesan->where('tipe', 'penawaran')->last()->status_penawaran, ['disepakati', 'ditolak'])) ? 'true' : 'false' }},
-            hargaPenawaran: @js((float) ($produk?->harga_per_kg ?? 0)),
-            jumlah: @js((float) ($produk?->min_order_kg ?? 1)),
+            tampilkanPenawaran: {{ request('tawar') == '1' ? 'true' : 'false' }},
+
+            hargaPenawaran: @js((float) ($penawaranAktif?->harga_penawaran ?? $produk?->harga_per_kg ?? 0)),
+
+            jumlah: @js((float) ($penawaranAktif?->jumlah_penawaran ?? $produk?->min_order_kg ?? 1)),
+
             minimalPembelian: @js((float) ($produk?->min_order_kg ?? 1)),
-            hargaNormal: @js((float) ($produk?->harga_per_kg ?? 0)),
+
+            hargaNormal: @js((float) ($penawaranAktif?->harga_normal ?? $produk?->harga_per_kg ?? 0)),
             pesanBaru: '',
 
             // Status negosiasi
@@ -352,15 +356,39 @@
                                     x-text="(pesan.arah === 'keluar' ? 'Anda' : pesan.pengirim) + ' · ' + pesan.waktu">
                                 </p>
 
-                                <template x-if="pesan.arah === 'masuk' && pesan.status === 'menunggu' && !penawaranDisepakati">
-                                    <div class="border-t border-green-100 p-3">
-                                        <button
-                                            type="button"
-                                            @click="terimaPenawaran(pesan)"
-                                            class="w-full rounded-xl bg-green-700 px-4 py-3 font-bold text-white transition hover:bg-green-800"
+                                <template x-if="pesan.arah === 'masuk' && pesan.status === 'menunggu'">
+                                    <div class="border-t border-green-100 p-3 flex gap-2">
+
+                                        {{-- Tombol Terima --}}
+                                        <form
+                                            method="POST"
+                                            :action="'{{ route('pengusaha.pesan.penawaran.terima', ['id' => $percakapan->id, 'pesan' => '__ID__']) }}'.replace('__ID__', pesan.id)"
+                                            class="flex-1"
                                         >
-                                            Terima
-                                        </button>
+                                            @csrf
+                                            <button
+                                                type="submit"
+                                                class="w-full rounded-xl bg-green-700 px-4 py-3 font-bold text-white transition hover:bg-green-800"
+                                            >
+                                                Terima
+                                            </button>
+                                        </form>
+
+                                        {{-- Tombol Tolak --}}
+                                        <form
+                                            method="POST"
+                                            :action="'{{ route('pengusaha.pesan.penawaran.tolak', ['id' => $percakapan->id, 'pesan' => '__ID__']) }}'.replace('__ID__', pesan.id)"
+                                            class="flex-1"
+                                        >
+                                            @csrf
+                                            <button
+                                                type="submit"
+                                                class="w-full rounded-xl border border-red-300 bg-white px-4 py-3 font-bold text-red-600 transition hover:bg-red-50"
+                                            >
+                                                Tolak
+                                            </button>
+                                        </form>
+
                                     </div>
                                 </template>
 

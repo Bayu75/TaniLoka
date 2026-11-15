@@ -4,6 +4,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Pengusaha\PesananController;
 use App\Http\Controllers\Pengusaha\ChatController;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\VerifikasiController;
 
@@ -39,26 +40,41 @@ Route::middleware('guest')->group(function () {
     'show'
     ])->name('produk.detail');
 
-    // Halaman toko petani
+
+    // Halaman toko petani berdasarkan database
     Route::get('/toko/{petani}', function ($petani) {
 
-        $daftarPetani = [
-            'pak-made-sukartha',
-            'ibu-wayan-sari',
-            'pak-ketut-wirasa',
-            'ibu-nyoman-dewi',
-            'pak-gede-setiawan',
-        ];
+        $toko = User::with([
+            'profilPetani',
+            'produk.kategori',
+            'produk.fotoUtama',
+        ])
+            ->where('peran', 'petani')
+            ->findOrFail($petani);
 
-        abort_unless(in_array($petani, $daftarPetani), 404);
+        $produkToko = $toko->produk()
+            ->with(['kategori', 'fotoUtama'])
+            ->latest()
+            ->get();
 
-        return view('pengusaha.toko-petani', compact('petani'));
-    })->name('toko');
+        return view('pengusaha.toko-petani', compact(
+            'toko',
+            'produkToko'
+        ));
+
+    })->whereNumber('petani')->name('toko');
+
 
     Route::get('/pesan', [ChatController::class, 'index'])->name('pesan');
     Route::get('/pesan/{id}', [ChatController::class, 'show'])->name('pesan.detail');
     Route::post('/pesan/{id}', [ChatController::class, 'kirim'])->name('pesan.kirim');
     Route::post('/pesan/{id}/penawaran', [ChatController::class, 'kirimPenawaran'])->name('pesan.penawaran');
+
+    Route::post('/pesan/{id}/penawaran/{pesan}/terima', [ChatController::class, 'terimaPenawaran'])
+        ->name('pesan.penawaran.terima');
+
+    Route::post('/pesan/{id}/penawaran/{pesan}/tolak', [ChatController::class, 'tolakPenawaran'])
+        ->name('pesan.penawaran.tolak');
 
     // Menambahkan produk ke keranjang dengan validasi stok
     Route::post('/keranjang/tambah', function (\Illuminate\Http\Request $request) {
@@ -633,6 +649,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/konfirmasi', [PesananController::class, 'store'])->name('konfirmasi.store');
     Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan');
     Route::get('/pesanan/{id}', [PesananController::class, 'show'])->name('pesanan.detail');
+    Route::post('/pesanan/{id}/bukti-pembayaran', [PesananController::class, 'uploadBukti'])
+        ->name('pesanan.bukti.upload');
     Route::post('/pesanan/{id}/batalkan', [PesananController::class, 'cancel'])->name('pesanan.cancel');
 
     Route::view('/akun', 'pengusaha.akun')->name('akun');

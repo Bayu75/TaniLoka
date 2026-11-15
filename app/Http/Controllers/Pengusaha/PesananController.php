@@ -9,6 +9,7 @@ use App\Models\Alamat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class PesananController extends Controller
 {
@@ -199,7 +200,7 @@ class PesananController extends Controller
                 'cod' => 'cod',
             ];
 
-            try {
+             try {
                 DB::transaction(function () use (
                     $daftarCheckout,
                     $pilihanPengiriman,
@@ -246,7 +247,7 @@ class PesananController extends Controller
                                 ),
                             ];
                         }
-                    )->values();
+                    )->values();;
 
                     // Kelompokkan produk berdasarkan petani
                     $kelompokPetani = $itemsCheckout->groupBy(
@@ -446,7 +447,7 @@ class PesananController extends Controller
                 'gambar' => 'images/products/tomat.jpg',
                 'jumlah' => '20 kg',
                 'total' => 260000,
-            ],
+                        ],
             [
                 'id' => 'TL-0001',
                 'tanggal' => '14 Okt 2026',
@@ -476,6 +477,7 @@ class PesananController extends Controller
 
             $namaPetani = $data->petani?->profilPetani?->nama_usaha_tani
                 ?: ($data->petani?->name ?? '-');
+                $noWaPetani = $data->petani?->no_wa;
 
             $notifikasi = match ($data->status) {
                 'menunggu_konfirmasi' => 'Menunggu konfirmasi petani',
@@ -490,19 +492,54 @@ class PesananController extends Controller
 
             $gambar = $produk?->fotoUtama?->path;
 
+            $metodePengiriman = match ($data->metode_pengiriman) {
+                'jnt' => 'J&T Express',
+                'kendaraan' => 'Kendaraan Petani',
+                'ambil' => 'Ambil Sendiri',
+                default => 'Belum ditentukan',
+            };
+
+            $metodePembayaran = match ($data->pembayaran?->metode) {
+                'transfer_bank' => 'Transfer Bank',
+                'gopay' => 'GoPay',
+                'ovo' => 'OVO',
+                'cod' => 'Bayar di Tempat (COD)',
+                default => 'Belum ditentukan',
+            };
+
+            $profilPetani = $data->petani?->profilPetani;
+
+$lokasiPetani = implode(', ', array_filter([
+                $profilPetani?->desa,
+                $profilPetani?->kecamatan,
+                $profilPetani?->kabupaten,
+            ]));
+
             return [
                 'id' => $data->kode,
                 'petani_id' => $data->petani_id,
                 'tanggal' => $data->created_at?->format('d M Y'),
                 'status' => $data->status,
                 'nama_petani' => $namaPetani,
+                'no_wa_petani' => $noWaPetani,
                 'produk' => $itemPertama?->nama_produk ?? '-',
                 'gambar' => $gambar,
                 'jumlah' => $jumlahLabel . ' kg',
                 'total' => $data->total,
+                'jumlah_pembayaran' => $data->pembayaran?->jumlah ?? $data->total,
                 'subtotal' => $data->subtotal,
                 'ongkir' => $data->ongkir,
                 'biaya_layanan' => $data->biaya_layanan,
+                'nama_penerima' => $data->nama_penerima,
+                'no_hp_penerima' => $data->no_hp_penerima,
+                'alamat_pengiriman' => $data->alamat_pengiriman,
+                'metode_pengiriman' => $data->metode_pengiriman,
+                'label_pengiriman' => $metodePengiriman,
+                'lokasi_petani' => $lokasiPetani,
+                'metode_pembayaran' => $data->pembayaran?->metode,
+                'label_pembayaran' => $metodePembayaran,
+                'status_pembayaran' => $data->pembayaran?->status,
+                'bukti_path' => $data->pembayaran?->bukti_path,
                 'notifikasi' => $notifikasi,
                 'jenis_notifikasi' => in_array($data->status, [
                     'menunggu_konfirmasi',
@@ -511,9 +548,49 @@ class PesananController extends Controller
                 'tindakan' => $data->status === 'menunggu_pembayaran'
                     ? 'Perlu tindakan: Unggah bukti pembayaran'
                     : null,
-                'metode_pembayaran' => $data->pembayaran?->metode,
                 'items' => $data->item,
             ];
         }
 
+    // Mengunggah bukti pembayaran
+    public function uploadBukti(Request $request, string $id)
+    {
+        $request->validate([
+            'bukti_transfer' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        $pesanan = Pesanan::with('pembayaran')
+            ->where('kode', $id)
+            ->where('pengusaha_id', Auth::id())
+            ->firstOrFail();
+
+        if ($pesanan->status !== 'menunggu_pembayaran') {
+            return back()->with('error', 'Pesanan tidak dapat menerima bukti pembayaran.');
+        }
+
+        $pembayaran = $pesanan->pembayaran;
+
+        if (!$pembayaran) {
+            abort(404, 'Data pembayaran tidak ditemukan.');
+        }
+
+        // Simpan foto ke storage
+        $path = $request->file('bukti_transfer')
+            ->store('bukti-pembayaran', 'public');
+
+        // Hapus foto sebelumnya jika ada
+        if ($pembayaran->bukti_path) {
+            Storage::disk('public')->delete($pembayaran->bukti_path);
+        }
+
+        // Simpan lokasi foto ke database
+        $pembayaran->update([
+            'bukti_path' => $path,
+            'status' => 'menunggu_verifikasi',
+        ]);
+
+        return redirect()
+            ->route('pengusaha.pesanan.detail', $id)
+            ->with('success', 'Bukti pembayaran berhasil diunggah.');
+    }
 }

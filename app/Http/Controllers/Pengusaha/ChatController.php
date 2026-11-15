@@ -91,7 +91,7 @@ class ChatController extends Controller
         $percakapan = Percakapan::with([
             'petani',
             'pesan.pengirim',
-            'pesan.produk',
+            'pesan.produk.fotoUtama',
             'pesanan.item',
         ])
         ->where('pengusaha_id', Auth::id())
@@ -107,10 +107,17 @@ class ChatController extends Controller
 
         $produk = null;
 
+        // Jika chat dibuka dari katalog
         if (request()->filled('produk')) {
-            $produk = Produk::where('slug', request('produk'))
+            $produk = Produk::with('fotoUtama')
+                ->where('slug', request('produk'))
                 ->where('petani_id', $percakapan->petani_id)
                 ->first();
+        }
+
+        // Jika chat dibuka kembali, gunakan produk dari penawaran aktif
+        if (!$produk && $penawaranAktif) {
+            $produk = $penawaranAktif->produk;
         }
 
         $daftarPesan = $percakapan->pesan->map(function ($pesan) {
@@ -123,7 +130,7 @@ class ChatController extends Controller
                 'harga' => $pesan->harga_penawaran,
                 'jumlah' => $pesan->jumlah_penawaran,
                 'total' => $pesan->total_penawaran,
-                'harga_normal' => $pesan->produk?->harga_per_kg ?? 0,
+                'harga_normal' => $pesan->harga_normal ?? $pesan->produk?->harga_per_kg ?? 0,
                 'status' => $pesan->status_penawaran,
                 'waktu' => $pesan->created_at?->format('H:i'),
             ];
@@ -211,6 +218,17 @@ class ChatController extends Controller
             ->where('pengusaha_id', Auth::id())
             ->firstOrFail();
 
+        $penawaranAktif = $percakapan->pesan()
+            ->where('tipe', 'penawaran')
+            ->where('status_penawaran', 'menunggu')
+            ->exists();
+
+        if ($penawaranAktif) {
+            return redirect()->route('pengusaha.pesan.detail', [
+                'id' => $id,
+            ])->with('error', 'Selesaikan penawaran sebelumnya terlebih dahulu.');
+        }
+
         $data = $request->validate([
             'produk' => 'required|string',
             'harga_penawaran' => 'required|numeric|min:1',
@@ -230,6 +248,7 @@ class ChatController extends Controller
             'pengirim_id' => Auth::id(),
             'produk_id' => $produk->id,
             'tipe' => 'penawaran',
+            'harga_normal' => $produk->harga_per_kg,
             'harga_penawaran' => $data['harga_penawaran'],
             'jumlah_penawaran' => $data['jumlah_penawaran'],
             'total_penawaran' => $data['harga_penawaran'] * $data['jumlah_penawaran'],
@@ -245,5 +264,51 @@ class ChatController extends Controller
             'id' => $id,
             'produk' => $produk->slug,
         ]);
+    }
+
+    // Menerima penawaran dari petani
+    public function terimaPenawaran($id, $pesan)
+    {
+        $percakapan = Percakapan::where('id', $id)
+            ->where('pengusaha_id', Auth::id())
+            ->firstOrFail();
+
+        $penawaran = Pesan::where('id', $pesan)
+            ->where('percakapan_id', $percakapan->id)
+            ->where('pengirim_id', $percakapan->petani_id)
+            ->where('tipe', 'penawaran')
+            ->where('status_penawaran', 'menunggu')
+            ->firstOrFail();
+
+        $penawaran->update([
+            'status_penawaran' => 'disepakati',
+        ]);
+
+        return redirect()->route('pengusaha.pesan.detail', [
+            'id' => $id,
+        ])->with('success', 'Penawaran berhasil diterima.');
+    }
+
+    // Menolak penawaran dari petani
+    public function tolakPenawaran($id, $pesan)
+    {
+        $percakapan = Percakapan::where('id', $id)
+            ->where('pengusaha_id', Auth::id())
+            ->firstOrFail();
+
+        $penawaran = Pesan::where('id', $pesan)
+            ->where('percakapan_id', $percakapan->id)
+            ->where('pengirim_id', $percakapan->petani_id)
+            ->where('tipe', 'penawaran')
+            ->where('status_penawaran', 'menunggu')
+            ->firstOrFail();
+
+        $penawaran->update([
+            'status_penawaran' => 'ditolak',
+        ]);
+
+        return redirect()->route('pengusaha.pesan.detail', [
+            'id' => $id,
+        ])->with('success', 'Penawaran berhasil ditolak.');
     }
 }

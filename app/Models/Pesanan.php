@@ -2,7 +2,7 @@
 // app/Models/Pesanan.php
 namespace App\Models;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 
 class Pesanan extends Model
@@ -20,13 +20,19 @@ class Pesanan extends Model
     // Mengubah status sekaligus mencatat riwayatnya untuk timeline
     public function ubahStatus(string $status, ?string $keterangan = null): void
     {
-        $this->update(['status' => $status]);
+        DB::transaction(function () use ($status, $keterangan) {
 
-        $this->riwayat()->create([
-            'status' => $status,
-            'keterangan' => $keterangan,
-            'diubah_oleh' => Auth::id(),
-        ]);
+            $this->update([
+                'status' => $status,
+            ]);
+
+            $this->riwayat()->create([
+                'status' => $status,
+                'keterangan' => $keterangan,
+                'diubah_oleh' => Auth::id(),
+            ]);
+
+        });
     }
 
     public static function buatKode(): string

@@ -1,34 +1,50 @@
 
-@props(['status' => 'menunggu_konfirmasi'])
+@props([
+    'status' => 'menunggu_konfirmasi',
+    'riwayatStatus' => [],
+    'tanggalDibatalkan' => null,
+    'alasanDibatalkan' => null,
+])
 
 @php
+    // Status yang memang tersedia pada migration pesanan
     $tahapan = [
         'menunggu_konfirmasi' => 'Menunggu Konfirmasi',
         'menunggu_pembayaran' => 'Menunggu Pembayaran',
-        'menunggu_verifikasi_pembayaran' => 'Menunggu Verifikasi Pembayaran',
         'diproses' => 'Diproses',
         'dikirim' => 'Dikirim',
-        'terkirim' => 'Terkirim',
         'selesai' => 'Selesai',
     ];
 
+    $riwayat = collect($riwayatStatus);
+
     $dibatalkan = $status === 'dibatalkan';
+    $ditolak = $status === 'ditolak';
 
-    $urutanStatus = array_search($status, array_keys($tahapan));
+    $statusTerakhir = array_search(
+        $status,
+        array_keys($tahapan)
+    );
 
-    if ($urutanStatus === false || $dibatalkan) {
-        $urutanStatus = 0;
+    // Cari riwayat untuk setiap tahapan
+    $riwayatTahapan = [];
+
+    foreach ($tahapan as $key => $nama) {
+        $riwayatTahapan[$key] = $riwayat->firstWhere('status', $key);
     }
 @endphp
 
 <div class="space-y-0">
     @foreach ($tahapan as $key => $nama)
         @php
-            $urutan = $loop->index;
-            $aktif = !$dibatalkan && $urutan === $urutanStatus;
-            $selesai = $dibatalkan
-                ? $urutan === 0
-                : $urutan < $urutanStatus;
+            $catatanStatus = $riwayatTahapan[$key];
+
+            $aktif = $key === $status;
+            $selesai = $catatanStatus !== null && !$aktif;
+
+            $waktu = $catatanStatus?->created_at
+                ? \Carbon\Carbon::parse($catatanStatus->created_at)->format('d M Y, H.i')
+                : null;
         @endphp
 
         <div class="flex gap-4">
@@ -38,11 +54,11 @@
                     @if ($selesai)
                         ✓
                     @else
-                        {{ $urutan + 1 }}
+                        {{ $loop->iteration }}
                     @endif
                 </div>
 
-                @if (!$loop->last)
+                @if (!$loop->last || $dibatalkan || $ditolak)
                     <div class="min-h-8 w-0.5 flex-1 bg-gray-200"></div>
                 @endif
             </div>
@@ -53,12 +69,11 @@
                 </p>
 
                 <p class="mt-1 text-sm {{ $aktif ? 'text-green-700' : 'text-gray-500' }}">
-                    @if ($aktif && $urutan === 0)
-                        26 Okt, 07.57
-                    @elseif ($aktif)
-                        Status pesanan saat ini
-                    @elseif ($selesai)
-                        Selesai
+                    @if ($catatanStatus)
+                        {{ $waktu }}
+                        @if ($catatanStatus->keterangan)
+                            <span class="block mt-1">{{ $catatanStatus->keterangan }}</span>
+                        @endif
                     @else
                         Belum
                     @endif
@@ -67,27 +82,39 @@
         </div>
     @endforeach
 
-        @if ($dibatalkan)
-            <div class="flex gap-4">
-                <div class="flex flex-col items-center">
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-600 text-xl font-bold text-white">
-                        ✕
-                    </div>
-                </div>
+    @if ($dibatalkan || $ditolak)
+        @php
+            $catatanAkhir = $riwayat->firstWhere('status', $status);
 
-                <div class="pb-5 pt-1">
-                    <p class="font-bold text-red-700">
-                        Dibatalkan
-                    </p>
+            $waktuAkhir = $catatanAkhir?->created_at
+                ? \Carbon\Carbon::parse($catatanAkhir->created_at)->format('d M Y, H.i')
+                : ($tanggalDibatalkan ?? null);
 
-                    <p class="mt-1 text-sm text-gray-500">
-                        {{ $tanggalDibatalkan ?? 'Waktu pembatalan' }}
-                    </p>
+            $alasanAkhir = $catatanAkhir?->keterangan
+                ?? $alasanDibatalkan
+                ?? ($dibatalkan ? 'Dibatalkan pembeli' : 'Pesanan ditolak');
+        @endphp
 
-                    <p class="mt-1 text-sm text-red-600">
-                        Alasan: {{ $alasanDibatalkan ?? 'Dibatalkan pembeli' }}
-                    </p>
+        <div class="flex gap-4">
+            <div class="flex flex-col items-center">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-600 text-xl font-bold text-white">
+                    ✕
                 </div>
             </div>
-        @endif
+
+            <div class="pb-5 pt-1">
+                <p class="font-bold text-red-700">
+                    {{ $dibatalkan ? 'Dibatalkan' : 'Ditolak' }}
+                </p>
+
+                <p class="mt-1 text-sm text-gray-500">
+                    {{ $waktuAkhir ?? 'Waktu tidak tersedia' }}
+                </p>
+
+                <p class="mt-1 text-sm text-red-600">
+                    Alasan: {{ $alasanAkhir }}
+                </p>
+            </div>
+        </div>
+    @endif
 </div>

@@ -278,6 +278,7 @@
 
             <x-order-timeline
                 :status="$pesanan['status']"
+                :riwayat-status="$riwayatStatus"
                 :tanggal-dibatalkan="$tanggalDibatalkan"
                 :alasan-dibatalkan="$alasanDibatalkan"
             />
@@ -317,108 +318,228 @@
 
         {{-- Instruksi Pembayaran --}}
         @if ($pesanan['status'] === 'menunggu_pembayaran')
+            @php
+                $metode = $pesanan['metode_pembayaran'] ?? '';
+
+                $instruksiPembayaran = match ($metode) {
+                    'transfer_bank' => [
+                        'judul' => 'Transfer ke rekening berikut:',
+                        'jenis' => 'Bank',
+                        'nama' => 'Bank Central Asia (BCA)',
+                        'label_nomor' => 'No. rekening:',
+                        'nomor' => '883012345678',
+                        'nomor_tampil' => '8830 1234 5678',
+                    ],
+                    'ovo' => [
+                        'judul' => 'Lakukan pembayaran melalui OVO:',
+                        'jenis' => null,
+                        'nama' => 'OVO',
+                        'label_nomor' => 'Nomor akun OVO:',
+                        'nomor' => $pesanan['no_wa_petani'] ?? null,
+                        'nomor_tampil' => $pesanan['no_wa_petani'] ?? 'Nomor Petani belum tersedia',
+                    ],
+
+                    'gopay' => [
+                        'judul' => 'Lakukan pembayaran melalui GoPay:',
+                        'jenis' => null,
+                        'nama' => 'GoPay',
+                        'label_nomor' => 'Nomor akun GoPay:',
+                        'nomor' => $pesanan['no_wa_petani'] ?? null,
+                        'nomor_tampil' => $pesanan['no_wa_petani'] ?? 'Nomor Petani belum tersedia',
+                    ],
+                    default => null,
+                };
+            @endphp
+
             <div class="rounded-2xl border border-green-200 bg-white p-5">
                 <h2 class="mb-3 font-bold text-gray-800">
                     Instruksi Pembayaran
                 </h2>
 
-                <p class="mb-2 text-sm text-gray-600">
-                    Transfer ke rekening berikut:
-                </p>
-
-                <div class="space-y-2 text-sm">
-                    <p>
-                        Bank: <span class="font-bold text-gray-800">Bank Central Asia (BCA)</span>
+                @if ($instruksiPembayaran)
+                    <p class="mb-2 text-sm text-gray-600">
+                        {{ $instruksiPembayaran['judul'] }}
                     </p>
 
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <p class="text-gray-500">No. rekening:</p>
-                            <p class="font-bold text-gray-800">8830 1234 5678</p>
+                    <div class="space-y-2 text-sm">
+                        @if ($instruksiPembayaran['jenis'])
+                            <p>
+                                {{ $instruksiPembayaran['jenis'] }}:
+                                <span class="font-bold text-gray-800">
+                                    {{ $instruksiPembayaran['nama'] }}
+                                </span>
+                            </p>
+                        @endif
+
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <p class="text-gray-500">
+                                    {{ $instruksiPembayaran['label_nomor'] }}
+                                </p>
+
+                                <p class="font-bold text-gray-800">
+                                    {{ $instruksiPembayaran['nomor_tampil'] }}
+                                </p>
+                            </div>
+
+                            @if ($instruksiPembayaran['nomor'])
+                                <button
+                                    type="button"
+                                    onclick="navigator.clipboard.writeText(@js($instruksiPembayaran['nomor']))
+                                        .then(() => alert('Nomor berhasil disalin!'))
+                                        .catch(() => alert('Gagal menyalin nomor.'))"
+                                    class="rounded-lg border border-green-700 px-4 py-2 text-sm font-bold text-green-700 hover:bg-green-50">
+                                    Salin
+                                </button>
+                            @endif
                         </div>
 
-                        <button
-                            type="button"
-                            onclick="navigator.clipboard.writeText('883012345678')"
-                            class="rounded-lg border border-green-700 px-4 py-2 text-sm font-bold text-green-700 hover:bg-green-50">
-                            Salin
-                        </button>
+                        <p>
+                            Atas nama:
+                            <span class="font-bold text-gray-800">
+                                    {{ $pesanan['nama_petani'] }}
+                            </span>
+                        </p>
+
+                        <p>
+                            Jumlah:
+                            <span class="font-bold text-green-700">
+                                Rp{{ number_format($pesanan['jumlah_pembayaran'], 0, ',', '.') }}
+                            </span>
+                        </p>
                     </div>
-
-                    <p>
-                        Atas nama: <span class="font-bold text-gray-800">TaniLoka Escrow</span>
+                @else
+                    <p class="text-sm text-red-600">
+                        Metode pembayaran belum tersedia atau belum dikenali.
                     </p>
+                @endif
 
-                    <p>
-                        Jumlah: <span class="font-bold text-green-700">
-                            Rp{{ number_format($pesanan['total'], 0, ',', '.') }}
-                        </span>
-                    </p>
-                </div>
-
-                <div class="mt-3 inline-flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
-                    ⏱️ {{ $pesanan['notifikasi'] }}
-                </div>
+                @if (!empty($pesanan['bukti_path']))
+                    <div class="mt-3 inline-flex items-center gap-2 rounded-lg bg-yellow-50 px-3 py-2 text-xs font-semibold text-yellow-700">
+                        ⏳ Menunggu konfirmasi Petani
+                    </div>
+                @else
+                    <div class="mt-3 inline-flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
+                        ⏱️ Menunggu pembayaran
+                    </div>
+                @endif
             </div>
         @endif
 
     {{-- Unggah Bukti Pembayaran --}}
     @if ($pesanan['status'] === 'menunggu_pembayaran')
-        <div
-            class="rounded-2xl border border-green-200 bg-white p-5"
-            x-data="{ buktiDipilih: false }">
 
-            <h2 class="mb-3 font-bold text-gray-800">
-                Unggah Bukti Pembayaran
-            </h2>
+        @if (empty($pesanan['bukti_path']))
+            <div
+                class="rounded-2xl border border-green-200 bg-white p-5"
+                x-data="{ buktiDipilih: false }">
 
-            <label
-                for="bukti-transfer"
-                class="flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-green-600 bg-white px-4 py-4 text-center text-sm font-semibold text-green-700 transition hover:bg-green-50">
+                <h2 class="mb-3 font-bold text-gray-800">
+                    Unggah Bukti Pembayaran
+                </h2>
 
-                <span x-text="buktiDipilih ? 'Foto bukti berhasil dipilih' : 'Pilih Foto Bukti Transfer'">
-                    Pilih Foto Bukti Transfer
-                </span>
-            </label>
+                <form
+                    action="{{ route('pengusaha.pesanan.bukti.upload', $pesanan['id']) }}"
+                    method="POST"
+                    enctype="multipart/form-data">
 
-            <input
-                type="file"
-                id="bukti-transfer"
-                accept="image/*"
-                class="hidden"
-                @change="buktiDipilih = $event.target.files.length > 0">
+                    @csrf
 
-            <button
-                type="button"
-                :disabled="!buktiDipilih"
-                class="mt-2 w-full rounded-xl bg-green-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-green-200 disabled:text-green-700">
-                Kirim Bukti Pembayaran
-            </button>
+                    <label
+                        for="bukti-transfer"
+                        class="flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-green-600 bg-white px-4 py-4 text-center text-sm font-semibold text-green-700 transition hover:bg-green-50">
 
-            <p class="mt-2 text-xs text-gray-500">
-                Tombol aktif setelah Anda memilih foto bukti.
-            </p>
-        </div>
+                        <span x-text="buktiDipilih ? 'Foto bukti berhasil dipilih' : 'Pilih Foto Bukti Transfer'">
+                            Pilih Foto Bukti Transfer
+                        </span>
+                    </label>
+
+                    <input
+                        type="file"
+                        id="bukti-transfer"
+                        name="bukti_transfer"
+                        accept="image/jpeg,image/png,image/webp"
+                        class="hidden"
+                        required
+                        @change="buktiDipilih = $event.target.files.length > 0">
+
+                    @error('bukti_transfer')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+
+                    <button
+                        type="submit"
+                        :disabled="!buktiDipilih"
+                        class="mt-2 w-full rounded-xl bg-green-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-green-200 disabled:text-green-700">
+                        Kirim Bukti Pembayaran
+                    </button>
+                </form>
+
+                <p class="mt-2 text-xs text-gray-500">
+                    Format JPG, PNG, atau WEBP. Maksimal 5 MB.
+                </p>
+            </div>
+
+        @else
+            <div class="rounded-2xl border border-green-200 bg-green-50 p-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-11 w-11 items-center justify-center rounded-full bg-green-100 text-green-700">
+                        ✓
+                    </div>
+
+                    <div>
+                        <h2 class="font-bold text-green-800">
+                            Bukti Pembayaran Berhasil Dikirim
+                        </h2>
+
+                        <p class="mt-1 text-sm text-green-700">
+                            Petani akan memeriksa bukti pembayaran Anda.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        @endif
+
     @endif
 
 
     {{-- Pengiriman dan Metode Pembayaran --}}
     <div class="rounded-2xl border border-green-200 bg-white p-5">
 
+
         {{-- Informasi Pengiriman --}}
         <div>
             <h2 class="mb-1 font-bold text-gray-800">
+                Informasi Penerima
+            </h2>
+
+            <p class="text-sm font-semibold text-gray-800">
+                {{ $pesanan['nama_penerima'] ?? '-' }}
+            </p>
+
+            <p class="mt-1 text-sm text-gray-800">
+                {{ $pesanan['no_hp_penerima'] ?? '-' }}
+            </p>
+
+            <p class="mt-1 text-sm text-green-800">
+                {{ $pesanan['alamat_pengiriman'] ?? '-' }}
+            </p>
+
+            <h2 class="mt-3 mb-1 font-bold text-gray-800">
                 Pengiriman
             </h2>
 
             <p class="text-sm text-gray-800">
-                J&T Express
-            </p>
-
-            <p class="mt-1 text-sm text-green-800">
-                Sari Kitchen, Jl. Sunset Road No. 88, Denpasar
+                {{ match($pesanan['metode_pengiriman'] ?? '') {
+                    'kendaraan' => 'Kendaraan Petani',
+                    'jnt' => 'J&T Express',
+                    'ambil' => 'Ambil Sendiri',
+                    default => '-',
+                } }}
             </p>
         </div>
+
 
         {{-- Metode Pembayaran --}}
         <div class="mt-4">
@@ -427,7 +548,7 @@
             </h2>
 
             <p class="text-sm text-gray-800">
-                Transfer Bank
+                {{ $pesanan['label_pembayaran'] ?? $pesanan['metode_pembayaran'] ?? '-' }}
             </p>
         </div>
 
@@ -489,7 +610,7 @@
             </a>
 
             <a
-                href="{{ route('pengusaha.pesan')
+                href="{{ route('pengusaha.pesan') }}"
                 class="flex-1 rounded-xl border border-green-700 bg-white px-4 py-3 text-center text-sm font-bold text-green-700 transition hover:bg-green-50"
             >
                 Hubungi Penjual
