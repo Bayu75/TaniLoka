@@ -5,7 +5,7 @@
 @section('content')
 
 @php
-    $nama = session('nama', 'Pengusaha');
+    $nama = auth()->user()->profilPengusaha?->nama_usaha ?: auth()->user()->name;
     $inisial = strtoupper(substr($nama, 0, 1));
     $keranjang = session('keranjang', []);
     $jumlahKeranjang = count($keranjang);
