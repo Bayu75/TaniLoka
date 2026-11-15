@@ -45,6 +45,12 @@ class User extends Authenticatable
     // Petani
     public function produk() { return $this->hasMany(Produk::class, 'petani_id'); }
     public function pesananMasuk() { return $this->hasMany(Pesanan::class, 'petani_id'); }
+
+    public function ulasanDiterima()
+    {
+        return $this->hasMany(Ulasan::class, 'petani_id');
+    }
+
     public function verifikasi() { return $this->hasMany(VerifikasiAkun::class); }
 
     // Pengusaha

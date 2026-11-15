@@ -5,6 +5,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Pengusaha\PesananController;
 use App\Http\Controllers\Pengusaha\ChatController;
 use App\Models\User;
+use App\Models\KeranjangItem;
+use App\Models\Produk;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\VerifikasiController;
 
@@ -76,16 +78,17 @@ Route::middleware('guest')->group(function () {
     Route::post('/pesan/{id}/penawaran/{pesan}/tolak', [ChatController::class, 'tolakPenawaran'])
         ->name('pesan.penawaran.tolak');
 
-    // Menambahkan produk ke keranjang dengan validasi stok
+
+    // Menambahkan produk ke keranjang dengan database
     Route::post('/keranjang/tambah', function (\Illuminate\Http\Request $request) {
 
         $request->validate([
             'slug' => 'required|string',
-            'jumlah' => 'required|integer|min:1',
+            'jumlah' => 'required|numeric|min:0.01',
         ]);
 
-        // Ambil produk langsung dari database
-        $produk = \App\Models\Produk::aktif()
+        // Ambil produk dari database
+        $produk = Produk::aktif()
             ->where('slug', $request->slug)
             ->first();
 
@@ -95,7 +98,7 @@ Route::middleware('guest')->group(function () {
             ])->withInput();
         }
 
-        $jumlah = (int) $request->jumlah;
+        $jumlah = (float) $request->jumlah;
 
         // Validasi minimal pembelian
         if ($jumlah < $produk->min_order_kg) {
@@ -104,7 +107,7 @@ Route::middleware('guest')->group(function () {
             ])->withInput();
         }
 
-        // Jika pengguna memilih Beli Sekarang
+        // Jika pengguna memilih Beli Sekarang, pertahankan alur lama
         if ($request->aksi === 'beli') {
 
             if ($jumlah > $produk->stok_kg) {
@@ -121,10 +124,14 @@ Route::middleware('guest')->group(function () {
             return redirect()->route('pengusaha.checkout');
         }
 
-        // Jika pengguna memilih Tambah ke Keranjang
-        $keranjang = session()->get('keranjang', []);
+        // Cari produk yang sama di keranjang database
+        $item = KeranjangItem::firstOrNew([
+            'user_id' => \Illuminate\Support\Facades\Auth::id(),
+            'produk_id' => $produk->id,
+        ]);
 
-        $totalJumlah = ($keranjang[$produk->slug] ?? 0) + $jumlah;
+        // Tambahkan jumlah jika produk sudah ada
+        $totalJumlah = (float) $item->jumlah_kg + $jumlah;
 
         if ($totalJumlah > $produk->stok_kg) {
             return back()->withErrors([
@@ -132,9 +139,8 @@ Route::middleware('guest')->group(function () {
             ])->withInput();
         }
 
-        $keranjang[$produk->slug] = $totalJumlah;
-
-        session()->put('keranjang', $keranjang);
+        $item->jumlah_kg = $totalJumlah;
+        $item->save();
 
         return redirect()
             ->route('pengusaha.keranjang')
@@ -142,94 +148,147 @@ Route::middleware('guest')->group(function () {
 
     })->name('keranjang.tambah');
 
-    // Mengubah jumlah produk di keranjang dengan validasi stok
+
+    // Mengubah jumlah produk di keranjang database
     Route::post('/keranjang/update', function (\Illuminate\Http\Request $request) {
 
         $request->validate([
             'slug' => 'required|string',
-            'jumlah' => 'required|integer|min:1',
+            'jumlah' => 'required|numeric|min:0.01',
         ]);
 
-        // Data minimal pembelian dan stok produk
-        $produkList = [
-            'bayam-hijau-organik' => ['minimal' => 5, 'stok' => 120],
-            'cabai-rawit-merah' => ['minimal' => 2, 'stok' => 85],
-            'tomat-segar-grade-a' => ['minimal' => 10, 'stok' => 300],
-            'kangkung-segar' => ['minimal' => 10, 'stok' => 200],
-            'bawang-putih-lokal' => ['minimal' => 5, 'stok' => 150],
-            'kembang-kol-putih' => ['minimal' => 5, 'stok' => 60],
-            'wortel-organik' => ['minimal' => 5, 'stok' => 90],
-            'paprika-merah' => ['minimal' => 3, 'stok' => 0],
-        ];
+        // Cari produk berdasarkan slug
+        $produk = Produk::aktif()
+            ->where('slug', $request->slug)
+            ->first();
 
-        $slug = $request->slug;
-        $jumlah = (int) $request->jumlah;
-
-        // Pastikan produk terdaftar
-        if (!isset($produkList[$slug])) {
+        if (!$produk) {
             return back()->withErrors([
-                'jumlah' => 'Produk tidak ditemukan.',
+                'jumlah' => 'Produk tidak ditemukan atau stok habis.',
             ]);
         }
 
-        $produk = $produkList[$slug];
-
-        // Pastikan stok tersedia
-        if ($produk['stok'] <= 0) {
-            return back()->withErrors([
-                'jumlah' => 'Maaf, stok produk sedang habis.',
-            ]);
-        }
+        $jumlah = (float) $request->jumlah;
 
         // Validasi minimal pembelian
-        if ($jumlah < $produk['minimal']) {
+        if ($jumlah < $produk->min_order_kg) {
             return back()->withErrors([
-                'jumlah' => 'Minimal pembelian adalah ' . $produk['minimal'] . ' kg.',
+                'jumlah' => 'Minimal pembelian adalah ' . $produk->min_order_kg . ' kg.',
             ]);
         }
 
-        // Validasi maksimal stok
-        if ($jumlah > $produk['stok']) {
+        // Validasi stok
+        if ($jumlah > $produk->stok_kg) {
             return back()->withErrors([
                 'jumlah' => 'Jumlah pembelian melebihi stok yang tersedia.',
             ]);
         }
 
-        $keranjang = session()->get('keranjang', []);
+        // Cari item milik pengguna yang sedang login
+        $item = KeranjangItem::where('user_id', \Illuminate\Support\Facades\Auth::id())
+            ->where('produk_id', $produk->id)
+            ->first();
 
-        if (!isset($keranjang[$slug])) {
+        if (!$item) {
             return back()->withErrors([
                 'jumlah' => 'Produk tidak ditemukan di keranjang.',
             ]);
         }
 
-        $keranjang[$slug] = $jumlah;
-
-        session()->put('keranjang', $keranjang);
+        $item->jumlah_kg = $jumlah;
+        $item->save();
 
         return redirect()
             ->route('pengusaha.keranjang')
             ->with('sukses', 'Jumlah produk berhasil diperbarui!');
+
     })->name('keranjang.update');
 
-    // Menghapus produk dari keranjang
+    // Menghapus produk dari keranjang database
     Route::post('/keranjang/hapus', function (\Illuminate\Http\Request $request) {
+
         $request->validate([
             'slug' => 'required|string',
         ]);
 
-        $keranjang = session()->get('keranjang', []);
+        // Cari produk berdasarkan slug
+        $produk = Produk::where('slug', $request->slug)->first();
 
-        unset($keranjang[$request->slug]);
+        if (!$produk) {
+            return back()->withErrors([
+                'slug' => 'Produk tidak ditemukan.',
+            ]);
+        }
 
-        session()->put('keranjang', $keranjang);
+        // Hapus hanya item milik pengguna yang sedang login
+        $item = KeranjangItem::where('user_id', \Illuminate\Support\Facades\Auth::id())
+            ->where('produk_id', $produk->id)
+            ->first();
+
+        if (!$item) {
+            return back()->withErrors([
+                'slug' => 'Produk tidak ditemukan di keranjang.',
+            ]);
+        }
+
+        $item->delete();
 
         return redirect()
             ->route('pengusaha.keranjang')
             ->with('sukses', 'Produk berhasil dihapus dari keranjang!');
+
     })->name('keranjang.hapus');
 
-    Route::view('/keranjang', 'pengusaha.keranjang')->name('keranjang');
+    Route::get('/keranjang', function () {
+
+        // Ambil item keranjang milik pengguna yang sedang login
+        $items = KeranjangItem::with([
+            'produk.petani.profilPetani',
+            'produk.fotoUtama',
+        ])
+            ->where('user_id', \Illuminate\Support\Facades\Auth::id())
+            ->get();
+
+        $produkList = [];
+        $keranjangValid = [];
+
+        foreach ($items as $item) {
+            $produk = $item->produk;
+
+            // Lewati produk yang sudah tidak tersedia
+            if (!$produk || !$produk->aktif || $produk->stok_kg <= 0) {
+                continue;
+            }
+
+            $pathFoto = $produk->fotoUtama?->path;
+
+            $produkList[$produk->slug] = [
+                'nama' => $produk->nama,
+                'gambar' => $pathFoto
+                    ? (filter_var($pathFoto, FILTER_VALIDATE_URL)
+                        ? $pathFoto
+                        : asset($pathFoto))
+                    : asset('images/no-image.png'),
+                'harga' => $produk->harga_per_kg,
+                'minimal' => $produk->min_order_kg,
+                'stok' => $produk->stok_kg,
+                'petani' => $produk->petani?->profilPetani?->nama_usaha_tani
+                    ?? $produk->petani?->name
+                    ?? 'Petani',
+            ];
+
+            $keranjangValid[$produk->slug] = (float) $item->jumlah_kg;
+        }
+
+        $jumlahProduk = count($keranjangValid);
+
+        return view('pengusaha.keranjang', compact(
+            'produkList',
+            'keranjangValid',
+            'jumlahProduk'
+        ));
+
+    })->name('keranjang');
 
     Route::get('/checkout', function () {
 
@@ -652,6 +711,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/pesanan/{id}/bukti-pembayaran', [PesananController::class, 'uploadBukti'])
         ->name('pesanan.bukti.upload');
     Route::post('/pesanan/{id}/batalkan', [PesananController::class, 'cancel'])->name('pesanan.cancel');
+    Route::post('/pesanan/{id}/ulasan', [PesananController::class, 'storeUlasan'])
+    ->name('pesanan.ulasan.store');
 
     Route::view('/akun', 'pengusaha.akun')->name('akun');
     // HALAMAN PROFIL USAHA

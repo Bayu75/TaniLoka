@@ -51,6 +51,7 @@ class PesananController extends Controller
             'item.produk.fotoUtama',
             'riwayat',
             'pembayaran',
+            'ulasan',
         ])
         ->where('pengusaha_id', Auth::id())
         ->where('kode', $id)
@@ -389,14 +390,12 @@ class PesananController extends Controller
                 );
             }
 
-            // Hapus produk yang sudah berhasil dibeli dari keranjang
-            $keranjang = session()->get('keranjang', []);
-
-            foreach (array_keys($daftarCheckout) as $slug) {
-                unset($keranjang[$slug]);
-            }
-
-            session()->put('keranjang', $keranjang);
+            // Hapus produk yang sudah berhasil dibeli dari keranjang database
+            \App\Models\KeranjangItem::where('user_id', Auth::id())
+                ->whereHas('produk', function ($query) use ($daftarCheckout) {
+                    $query->whereIn('slug', array_keys($daftarCheckout));
+                })
+                ->delete();
 
             // Bersihkan data checkout
             session()->forget([
@@ -549,6 +548,9 @@ $lokasiPetani = implode(', ', array_filter([
                     ? 'Perlu tindakan: Unggah bukti pembayaran'
                     : null,
                 'items' => $data->item,
+                'sudah_dinilai' => $data->ulasan !== null,
+                'rating' => $data->ulasan?->rating,
+                'komentar_ulasan' => $data->ulasan?->komentar,
             ];
         }
 
@@ -592,5 +594,40 @@ $lokasiPetani = implode(', ', array_filter([
         return redirect()
             ->route('pengusaha.pesanan.detail', $id)
             ->with('success', 'Bukti pembayaran berhasil diunggah.');
+    }
+
+    // Menyimpan penilaian dari pengusaha
+    public function storeUlasan(Request $request, string $id)
+    {
+        $data = $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'komentar' => 'nullable|string|max:2000',
+        ]);
+
+        $pesanan = Pesanan::where('kode', $id)
+            ->where('pengusaha_id', Auth::id())
+            ->firstOrFail();
+
+        // Penilaian hanya bisa diberikan untuk pesanan selesai
+        if ($pesanan->status !== 'selesai') {
+            return back()->with('error', 'Pesanan belum selesai dan belum dapat dinilai.');
+        }
+
+        // Cegah penilaian lebih dari satu kali
+        if ($pesanan->ulasan()->exists()) {
+            return back()->with('error', 'Pesanan ini sudah diberikan penilaian.');
+        }
+
+        // Simpan penilaian ke database
+        $pesanan->ulasan()->create([
+            'pengusaha_id' => Auth::id(),
+            'petani_id' => $pesanan->petani_id,
+            'rating' => $data['rating'],
+            'komentar' => $data['komentar'],
+        ]);
+
+        return redirect()
+            ->route('pengusaha.pesanan.detail', $id)
+            ->with('success', 'Terima kasih! Penilaian berhasil dikirim.');
     }
 }

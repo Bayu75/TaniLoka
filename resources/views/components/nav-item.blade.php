@@ -1,4 +1,10 @@
-@props(['route', 'label', 'icon', 'mobile' => false])
+@props([
+    'route',
+    'label',
+    'icon',
+    'mobile' => false,
+    'jumlahNotifikasi' => 0,
+])
 
 @php
     $aktif = request()->routeIs($route) || request()->routeIs($route . '.*');
@@ -23,5 +29,14 @@
        'text-text-muted hover:bg-cream-dark hover:text-primary' => ! $aktif,
    ])>
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{!! $ikon !!}</svg>
-    <span>{{ $label }}</span>
+
+    <span class="inline-flex items-center gap-1">
+        {{ $label }}
+
+        @if ($jumlahNotifikasi > 0)
+            <span class="inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-[#FFB100] px-1 text-[10px] font-bold leading-none text-black">
+                {{ $jumlahNotifikasi > 99 ? '99+' : $jumlahNotifikasi }}
+            </span>
+        @endif
+    </span>
 </a>

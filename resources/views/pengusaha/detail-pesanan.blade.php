@@ -147,10 +147,9 @@
 
     @endif
 
-
-    @if ($pesanan['status'] === 'selesai')
+    @if ($pesanan['status'] === 'selesai' && !$pesanan['sudah_dinilai'])
         <div
-            x-data="{ bukaUlasan: false, rating: 0, ulasan: '', terkirim: false }"
+            x-data="{ bukaUlasan: false, rating: {{ old('rating', 0) }} }"
             class="space-y-4">
 
             {{-- Tombol Beri Penilaian --}}
@@ -175,49 +174,88 @@
                     Bagaimana pengalaman Anda dengan produk ini?
                 </p>
 
-                {{-- Rating Bintang --}}
-                <div class="mb-4 flex gap-2">
-                    <template x-for="bintang in [1, 2, 3, 4, 5]" :key="bintang">
-                        <button
-                            type="button"
-                            @click="rating = bintang"
-                            class="text-3xl transition"
-                            :class="rating >= bintang ? 'text-yellow-400' : 'text-gray-300'">
-                            ★
-                        </button>
-                    </template>
-                </div>
+                <form
+                    method="POST"
+                    action="{{ route('pengusaha.pesanan.ulasan.store', $pesanan['id']) }}"
+                    @submit.prevent="
+                        if (rating > 0) {
+                            $el.submit();
+                        } else {
+                            alert('Pilih rating dan tulis ulasan terlebih dahulu.');
+                        }
+                    ">
 
-                {{-- Kolom Ulasan --}}
-                <label class="mb-2 block text-sm font-semibold text-gray-800">
-                    Tulis Ulasan
-                </label>
+                    @csrf
 
-                <textarea
-                    x-model="ulasan"
-                    rows="4"
-                    placeholder="Ceritakan pengalaman Anda..."
-                    class="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-green-600 focus:outline-none">
-                </textarea>
+                    {{-- Rating Bintang --}}
+                    <div class="mb-4 flex gap-2">
+                        <template x-for="bintang in [1, 2, 3, 4, 5]" :key="bintang">
+                            <button
+                                type="button"
+                                @click="rating = bintang"
+                                class="text-3xl transition"
+                                :class="rating >= bintang ? 'text-yellow-400' : 'text-gray-300'">
+                                ★
+                            </button>
+                        </template>
+                    </div>
 
-                {{-- Tombol Kirim --}}
-                <button
-                    type="button"
-                    @click="if (rating > 0 && ulasan.trim() !== '') { terkirim = true; bukaUlasan = false; } else { alert('Pilih rating dan tulis ulasan terlebih dahulu.'); }"
-                    class="mt-3 w-full rounded-xl bg-green-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-green-800">
-                    Kirim Penilaian
-                </button>
+                    <input type="hidden" name="rating" :value="rating">
 
-                <p
-                    x-show="terkirim"
-                    class="mt-3 text-center text-sm font-semibold text-green-700">
-                    Terima kasih atas penilaian Anda!
-                </p>
+                    {{-- Kolom Ulasan --}}
+                    <label class="mb-2 block text-sm font-semibold text-gray-800">
+                        Tulis Ulasan
+                    </label>
+
+                    <textarea
+                        x-ref="komentar"
+                        name="komentar"
+                        rows="4"
+                        maxlength="2000"
+                        placeholder="Ceritakan pengalaman Anda..."
+                        class="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-green-600 focus:outline-none">{{ old('komentar') }}</textarea>
+
+                    {{-- Pesan Validasi --}}
+                    @error('rating')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+
+                    @error('komentar')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+
+                    {{-- Tombol Kirim --}}
+                    <button
+                        type="submit"
+                        class="mt-3 w-full rounded-xl bg-green-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-green-800">
+                        Kirim Penilaian
+                    </button>
+                </form>
             </div>
         </div>
     @endif
 
+    @if ($pesanan['status'] === 'selesai' && $pesanan['sudah_dinilai'])
+        <div class="rounded-2xl border border-green-200 bg-green-50 p-5">
+            <h2 class="font-bold text-green-800">
+                Penilaian Berhasil Dikirim
+            </h2>
 
+            <div class="my-3 flex gap-1 text-2xl text-yellow-400">
+                @for ($i = 1; $i <= 5; $i++)
+                    <span>{{ $i <= $pesanan['rating'] ? '★' : '☆' }}</span>
+                @endfor
+            </div>
+
+            <p class="text-sm text-gray-700">
+                {{ $pesanan['komentar_ulasan'] }}
+            </p>
+
+            <p class="mt-3 text-xs font-medium text-green-700">
+                Terima kasih telah memberikan penilaian!
+            </p>
+        </div>
+    @endif
 
     {{-- Tombol dan Konfirmasi Pembatalan Pesanan --}}
     @if (in_array($pesanan['status'], ['menunggu_konfirmasi', 'menunggu_pembayaran']))
@@ -281,6 +319,7 @@
                 :riwayat-status="$riwayatStatus"
                 :tanggal-dibatalkan="$tanggalDibatalkan"
                 :alasan-dibatalkan="$alasanDibatalkan"
+                :sudah-dinilai="$pesanan['sudah_dinilai']"
             />
     </div>
 

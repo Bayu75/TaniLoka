@@ -12,6 +12,10 @@ class KatalogController extends Controller
     {
         $produkList = Produk::with([
             'petani.profilPetani',
+            'petani' => function ($query) {
+                $query->withAvg('ulasanDiterima', 'rating')
+                    ->withCount('ulasanDiterima');
+            },
             'kategori',
             'fotoUtama',
         ])
@@ -33,7 +37,10 @@ class KatalogController extends Controller
                 'petani' => $produk->petani?->profilPetani?->nama_usaha_tani
                     ?? $produk->petani?->name
                     ?? 'Petani',
-                'rating' => 0,
+                'rating' => $produk->petani?->ulasan_diterima_avg_rating !== null
+                    ? round((float) $produk->petani->ulasan_diterima_avg_rating, 1)
+                    : null,
+                'jumlah_ulasan' => $produk->petani?->ulasan_diterima_count ?? 0,
                 'kabupaten' => $produk->petani?->profilPetani?->kabupaten
                     ?? '-',
                 'badge' => $produk->grade,
@@ -66,6 +73,10 @@ class KatalogController extends Controller
     {
         $data = Produk::with([
             'petani.profilPetani',
+            'petani' => function ($query) {
+                $query->withAvg('ulasanDiterima', 'rating')
+                    ->withCount('ulasanDiterima');
+            },
             'kategori',
             'fotoUtama',
         ])
@@ -85,7 +96,10 @@ class KatalogController extends Controller
             'petani' => $data->petani?->profilPetani?->nama_usaha_tani
                 ?? $data->petani?->name
                 ?? 'Petani',
-            'rating' => 0,
+            'rating' => $data->petani?->ulasan_diterima_avg_rating !== null
+                ? round((float) $data->petani->ulasan_diterima_avg_rating, 1)
+                : null,
+            'jumlah_ulasan' => $data->petani?->ulasan_diterima_count ?? 0,
             'kabupaten' => $data->petani?->profilPetani?->kabupaten ?? '-',
             'deskripsi' => $data->deskripsi,
         ];

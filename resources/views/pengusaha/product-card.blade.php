@@ -7,7 +7,8 @@
     'satuan' => 'kg',
     'minimalPesan' => 1,
     'petani',
-    'rating' => 0,
+    'rating' => null,
+    'jumlahUlasan' => 0,
     'kabupaten',
     'badge' => null,
     'bisaNego' => false,
@@ -76,8 +77,14 @@
             </div>
 
             <div class="mt-0.5 flex items-center gap-1 text-sm text-[#5A7A5A]">
-                <span class="text-[#F4B400]">★</span>
-                <span>{{ number_format($rating, 1) }}</span>
+                @if ($jumlahUlasan > 0)
+                    <span class="text-[#F4B400]">★</span>
+                    <span>{{ number_format($rating, 1, ',', '.') }}</span>
+                    <span>({{ $jumlahUlasan }} ulasan)</span>
+                @else
+                    <span>Belum ada ulasan</span>
+                @endif
+
                 <span>•</span>
                 <span class="truncate">{{ $kabupaten }}</span>
             </div>

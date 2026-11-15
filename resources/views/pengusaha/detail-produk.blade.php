@@ -110,10 +110,20 @@
     </p>
 
     <p class="mt-1 text-sm text-[#EAB308]">
-        ★★★★★
-        <span class="text-xs text-[#5A7A5A]">
-            {{ $produk['rating'] }} · Petani lokal
-        </span>
+        @if ($produk['jumlah_ulasan'] > 0)
+            @for ($i = 1; $i <= 5; $i++)
+                {{ $i <= round($produk['rating']) ? '★' : '☆' }}
+            @endfor
+
+            <span class="text-xs text-[#5A7A5A]">
+                {{ number_format($produk['rating'], 1, ',', '.') }}
+                · {{ $produk['jumlah_ulasan'] }} ulasan
+            </span>
+        @else
+            <span class="text-xs text-[#5A7A5A]">
+                Belum ada ulasan
+            </span>
+        @endif
     </p>
 </div>
 

@@ -218,6 +218,7 @@
                         :minimal-pesan="$produk['minimal']"
                         :petani="$produk['petani']"
                         :rating="$produk['rating']"
+                        :jumlah-ulasan="$produk['jumlah_ulasan']"
                         :kabupaten="$produk['kabupaten']"
                         :badge="$produk['badge']"
                         :bisa-nego="$produk['nego']"

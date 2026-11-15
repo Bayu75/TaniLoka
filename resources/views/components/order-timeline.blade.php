@@ -4,6 +4,7 @@
     'riwayatStatus' => [],
     'tanggalDibatalkan' => null,
     'alasanDibatalkan' => null,
+    'sudahDinilai' => false,
 ])
 
 @php
@@ -41,6 +42,12 @@
 
             $aktif = $key === $status;
             $selesai = $catatanStatus !== null && !$aktif;
+
+            // Tahapan selesai baru dicentang setelah pengusaha memberi penilaian
+            if ($key === 'selesai') {
+                $selesai = $catatanStatus !== null && $sudahDinilai;
+                $aktif = !$sudahDinilai && $key === $status;
+            }
 
             $waktu = $catatanStatus?->created_at
                 ? \Carbon\Carbon::parse($catatanStatus->created_at)->format('d M Y, H.i')

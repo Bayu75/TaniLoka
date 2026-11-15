@@ -5,46 +5,6 @@
 
 @section('content')
 
-@php
-    // Ambil data keranjang dari session
-    $keranjang = session()->get('keranjang', []);
-
-    // Ambil produk dari database berdasarkan slug di keranjang
-    $produkList = \App\Models\Produk::with([
-        'petani.profilPetani',
-        'fotoUtama',
-    ])
-    ->whereIn('slug', array_keys($keranjang))
-    ->get()
-    ->mapWithKeys(function ($produk) {
-        $pathFoto = $produk->fotoUtama?->path;
-
-        return [
-            $produk->slug => [
-                'nama' => $produk->nama,
-                'gambar' => $pathFoto
-                    ? (filter_var($pathFoto, FILTER_VALIDATE_URL)
-                        ? $pathFoto
-                        : asset($pathFoto))
-                    : asset('images/no-image.png'),
-                'harga' => $produk->harga_per_kg,
-                'minimal' => $produk->min_order_kg,
-                'stok' => $produk->stok_kg,
-                'petani' => $produk->petani?->profilPetani?->nama_usaha_tani
-                    ?? $produk->petani?->name
-                    ?? 'Petani',
-            ],
-        ];
-    })
-    ->all();
-
-    // Hanya tampilkan produk yang masih tersedia di database
-    $keranjangValid = array_intersect_key($keranjang, $produkList);
-
-    $jumlahProduk = count($keranjangValid);
-@endphp
-
-
 {{-- HEADER KERANJANG --}}
 <div class="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-[#D4E8D0] bg-white">
     <div class="mx-auto max-w-5xl px-4 py-3">

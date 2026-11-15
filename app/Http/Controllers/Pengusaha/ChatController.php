@@ -98,6 +98,14 @@ class ChatController extends Controller
         ->where('id', $id)
         ->firstOrFail();
 
+        // Tandai pesan masuk dari petani sebagai sudah dibaca
+        $percakapan->pesan()
+            ->where('pengirim_id', '!=', Auth::id())
+            ->whereNull('dibaca_pada')
+            ->update([
+                'dibaca_pada' => now(),
+            ]);
+
         $namaPetani = $percakapan->petani?->name ?? 'Petani';
 
         $penawaranAktif = $percakapan->pesan
