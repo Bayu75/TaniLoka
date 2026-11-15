@@ -59,6 +59,20 @@
         </span>
     </div>
 
+        {{-- VERIFIKASI AKUN --}}
+    <a href="{{ route('pengusaha.verifikasi') }}"
+       class="mb-5 flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+        <div>
+            <p class="font-semibold text-gray-800">Verifikasi Akun</p>
+            <p class="text-xs text-gray-500">Lengkapi data dan dokumen agar bisa checkout</p>
+        </div>
+        @if (auth()->user()->terverifikasi())
+            <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-[#2E7D32]">Terverifikasi</span>
+        @else
+            <span class="rounded-full bg-[#F5C400]/20 px-3 py-1 text-xs font-semibold text-yellow-700">Ajukan</span>
+        @endif
+    </a>
+
     {{-- STATISTIK --}}
     <div class="mb-6 grid grid-cols-2 gap-3">
 

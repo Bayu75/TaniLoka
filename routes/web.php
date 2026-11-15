@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Pengusaha\PesananController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\VerifikasiController;
+use App\Http\Controllers\Pengusaha\VerifikasiController as VerifikasiPengusahaController;
 
 Route::view('/', 'auth.landing')->name('landing');
 
@@ -215,8 +216,10 @@ Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengu
     Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan');
     Route::get('/pesanan/{id}', [PesananController::class, 'show'])->name('pesanan.detail');
     Route::post('/pesanan/{id}/batalkan', [PesananController::class, 'cancel'])->name('pesanan.cancel');
-
+   Route::get('/verifikasi', [VerifikasiPengusahaController::class, 'index'])->name('verifikasi');
+    Route::post('/verifikasi', [VerifikasiPengusahaController::class, 'ajukan'])->name('verifikasi.ajukan');
     Route::view('/akun', 'pengusaha.akun')->name('akun');
+
     // HALAMAN PROFIL USAHA
     Route::get('/profil-usaha', function () {
 
