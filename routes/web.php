@@ -4,6 +4,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Pengusaha\PesananController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\VerifikasiController;
 
 Route::view('/', 'auth.landing')->name('landing');
 
@@ -21,7 +22,9 @@ Route::middleware('guest')->group(function () {
 Route::post('/keluar', [AuthController::class, 'logout'])->middleware('auth')->name('keluar');
 
 Route::middleware(['auth', 'peran:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::view('/verifikasi', 'admin.verifikasi')->name('verifikasi');
+    Route::get('/verifikasi', [VerifikasiController::class, 'index'])->name('verifikasi');
+    Route::get('/verifikasi/{verifikasi}', [VerifikasiController::class, 'show'])->name('verifikasi.show');
+    Route::patch('/verifikasi/{verifikasi}', [VerifikasiController::class, 'putuskan'])->name('verifikasi.putuskan');
 });
 
 Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengusaha.')->group(function () {
