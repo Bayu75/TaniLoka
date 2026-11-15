@@ -1,4 +1,10 @@
-@props(['route', 'label', 'icon', 'mobile' => false])
+@props([
+    'route',
+    'label',
+    'icon',
+    'mobile' => false,
+    'badgeCount' => 0
+])
 
 @php
     $aktif = request()->routeIs($route) || request()->routeIs($route . '.*');
@@ -22,5 +28,13 @@
        'text-text-muted hover:bg-cream-dark hover:text-primary' => ! $aktif,
    ])>
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{!! $ikon !!}</svg>
-    <span>{{ $label }}</span>
+    <span class="relative inline-flex items-center gap-1.5">
+    {{ $label }}
+
+    @if ($badgeCount > 0)
+        <span class="flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[11px] font-bold leading-none text-gray-900">
+            {{ $badgeCount }}
+        </span>
+    @endif
+    </span>
 </a>

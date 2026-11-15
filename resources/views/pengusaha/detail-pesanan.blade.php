@@ -466,19 +466,20 @@
         </p>
 
         <div class="flex gap-3">
-            <button
-                type="button"
-                onclick="alert('Halaman toko akan segera tersedia.')"
-                class="flex-1 rounded-xl border border-green-700 bg-white px-4 py-3 text-sm font-bold text-green-700 transition hover:bg-green-50">
+            <a
+                href="{{ route('pengusaha.toko', 'ibu-wayan-sari') }}"
+                class="flex-1 rounded-xl border border-green-700 bg-white px-4 py-3 text-center text-sm font-bold text-green-700 transition hover:bg-green-50"
+            >
                 Lihat Toko
-            </button>
+            </a>
 
-            <button
-                type="button"
-                onclick="alert('Fitur chat penjual akan segera tersedia.')"
-                class="flex-1 rounded-xl border border-green-700 bg-white px-4 py-3 text-sm font-bold text-green-700 transition hover:bg-green-50">
+            <a
+                href="{{ route('pengusaha.pesan.detail', 'ibu-wayan-sari') }}"
+                class="flex-1 rounded-xl border border-green-700 bg-white px-4 py-3 text-center text-sm font-bold text-green-700 transition hover:bg-green-50"
+            >
                 Hubungi Penjual
-            </button>
+            </a>
+
         </div>
     </div>
 

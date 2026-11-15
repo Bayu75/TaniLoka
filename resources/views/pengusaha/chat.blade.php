@@ -28,76 +28,130 @@
 
 <div
     x-data="{
-        tampilkanPenawaran: false,
-        hargaPenawaran: 31500,
-        jumlah: 5,
-        hargaNormal: 35000,
-        pesanBaru: '',
-        daftarPesan: [],
+            tampilkanPenawaran: false,
+            hargaPenawaran: 31500,
+            jumlah: 10,
+            minimalPembelian: 10,
+            hargaNormal: 35000,
+            pesanBaru: '',
 
-        get totalPenawaran() {
-            return Math.max(0, Number(this.hargaPenawaran) || 0)
-                * Math.max(0, Number(this.jumlah) || 0);
-        },
+            // Status negosiasi
+            penawaranDisepakati: false,
+            hargaDisepakati: null,
+            jumlahDisepakati: null,
+            waktuDisepakati: null,
+            produkDiKeranjang: false,
 
-        formatRupiah(nilai) {
-            return 'Rp ' + Number(nilai).toLocaleString('id-ID');
-        },
-
-        kirimPesan() {
-            if (this.tampilkanPenawaran) {
-                if (
-                    Number(this.hargaPenawaran) <= 0 ||
-                    Number(this.jumlah) <= 0
-                ) {
-                    return;
-                }
-
-                this.daftarPesan.push({
+            // Simulasi penawaran balik dari petani
+            daftarPesan: [
+                {
+                    id: 1,
                     tipe: 'penawaran',
-                    status: 'menunggu_jawaban',
-                    harga: Number(this.hargaPenawaran),
-                    jumlah: Number(this.jumlah),
-                    total: this.totalPenawaran,
-                    isi: this.pesanBaru.trim(),
-                    waktu: new Date().toLocaleTimeString('id-ID', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })
-                });
+                    arah: 'masuk',
+                    status: 'menunggu',
+                    pengirim: @js($namaPetani),
+                    harga: 8000,
+                    jumlah: 20,
+                    total: 160000,
+                    isi: 'Salam, terima kasih minatnya. Untuk 20 kg saya bisa kasih Rp8.000/kg ya. Sudah termasuk sortir dan packing.',
+                    waktu: '09:32'
+                }
+            ],
 
-                this.tampilkanPenawaran = false;
-                this.pesanBaru = '';
+            get totalPenawaran() {
+                return Math.max(0, Number(this.hargaPenawaran) || 0) *
+                    Math.max(0, Number(this.jumlah) || 0);
+            },
 
-            } else {
-                if (!this.pesanBaru.trim()) {
-                    return;
+            formatRupiah(nilai) {
+                return 'Rp ' + Number(nilai).toLocaleString('id-ID');
+            },
+
+            kirimPesan() {
+                if (this.penawaranDisepakati) return;
+
+                if (this.tampilkanPenawaran) {
+                    if (
+                        Number(this.hargaPenawaran) <= 0 ||
+                        Number(this.jumlah) < this.minimalPembelian
+                    ) {
+                        return;
+                    }
+
+                    this.daftarPesan.push({
+                        id: Date.now(),
+                        tipe: 'penawaran',
+                        arah: 'keluar',
+                        status: 'menunggu',
+                        pengirim: 'Anda',
+                        harga: Number(this.hargaPenawaran),
+                        jumlah: Number(this.jumlah),
+                        total: this.totalPenawaran,
+                        isi: this.pesanBaru.trim(),
+                        waktu: new Date().toLocaleTimeString('id-ID', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })
+                    });
+
+                    this.tampilkanPenawaran = false;
+                    this.pesanBaru = '';
+
+                } else {
+                    if (!this.pesanBaru.trim()) return;
+
+                    this.daftarPesan.push({
+                        id: Date.now(),
+                        tipe: 'teks',
+                        arah: 'keluar',
+                        pengirim: 'Anda',
+                        isi: this.pesanBaru.trim(),
+                        waktu: new Date().toLocaleTimeString('id-ID', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })
+                    });
+
+                    this.pesanBaru = '';
                 }
 
-                this.daftarPesan.push({
-                    tipe: 'teks',
-                    isi: this.pesanBaru.trim(),
-                    waktu: new Date().toLocaleTimeString('id-ID', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })
+                this.$nextTick(() => {
+                    const area = this.$refs.areaPesan;
+                    area.scrollTop = area.scrollHeight;
+                });
+            },
+
+            terimaPenawaran(pesan) {
+                if (this.penawaranDisepakati) return;
+
+                pesan.status = 'disepakati';
+                this.penawaranDisepakati = true;
+                this.hargaDisepakati = pesan.harga;
+                this.jumlahDisepakati = pesan.jumlah;
+                this.waktuDisepakati = new Date().toLocaleTimeString('id-ID', {
+                    hour: '2-digit',
+                    minute: '2-digit'
                 });
 
-                this.pesanBaru = '';
+                this.$nextTick(() => {
+                    const area = this.$refs.areaPesan;
+                    area.scrollTop = area.scrollHeight;
+                });
+            },
+
+            tambahKeKeranjang() {
+                if (!this.penawaranDisepakati || this.produkDiKeranjang) return;
+
+                this.produkDiKeranjang = true;
             }
-
-            this.$nextTick(() => {
-                const area = this.$refs.areaPesan;
-                area.scrollTop = area.scrollHeight;
-            });
-        }
-
     }"
 >
 
+
+
     {{-- HEADER CHAT --}}
-    <div class="sticky top-0 z-50 relative left-1/2 -mt-4 w-screen -translate-x-1/2 border-b border-green-100 bg-white">
-        <div class="mx-auto flex max-w-3xl items-center gap-5 px-4 py-3">
+    <div class="fixed top-[65px] left-0 right-0 z-40 w-full border-b border-green-100 bg-white">
+        <div class="mx-auto flex w-full max-w-3xl items-center gap-5 px-4 py-3">
 
             <a
                 href="{{ route('pengusaha.pesan') }}"
@@ -109,8 +163,9 @@
 
             <div class="min-w-0">
                 <h1 class="font-bold text-gray-900">
-                    Pak Made Sukartha
+                    {{ $namaPetani }}
                 </h1>
+
                 <p class="text-sm text-green-700">
                     Bayam Hijau Organik
                 </p>
@@ -118,6 +173,8 @@
 
         </div>
     </div>
+
+
 
 
     {{-- AREA PERCAKAPAN --}}
@@ -171,12 +228,17 @@
 
             <template x-for="(pesan, index) in daftarPesan" :key="index">
 
-                <div class="flex justify-end">
+                <div :class="pesan.arah === 'masuk' ? 'flex justify-start' : 'flex justify-end'">
 
                     {{-- PESAN TEKS --}}
                     <template x-if="pesan.tipe === 'teks'">
 
-                        <div class="max-w-[85%] rounded-2xl rounded-tr-none bg-green-100 p-3">
+                        <div
+                            class="max-w-[85%] rounded-2xl p-3"
+                            :class="pesan.arah === 'masuk'
+                                ? 'rounded-tl-none bg-sky-100'
+                                : 'rounded-tr-none bg-green-100'"
+                        >
 
                             <p
                                 class="break-words text-sm text-gray-800"
@@ -194,23 +256,36 @@
 
                     {{-- PESAN PENAWARAN --}}
                     <template x-if="pesan.tipe === 'penawaran'">
-                        <div class="flex justify-end">
-                            <div class="w-fit max-w-[85%] overflow-hidden rounded-2xl rounded-tr-none border-2 border-green-700 bg-white">
+                        <div class="flex w-full"
+                            :class="pesan.arah === 'masuk' ? 'justify-start' : 'justify-end'">
 
+                            <div
+                                class="w-full max-w-[420px] overflow-hidden rounded-2xl border-2 bg-white"
+                                :class="pesan.arah === 'masuk'
+                                    ? 'rounded-tl-none border-sky-200'
+                                    : 'rounded-tr-none border-green-200'"
+                            >
                                 {{-- Header hijau --}}
-                                <div class="flex items-center justify-between rounded-t-xl bg-green-700 px-4 py-3">
-                                    <h3 class="font-bold text-white">
-                                        Penawaran Harga
-                                    </h3>
+                                <div
+                                    class="flex items-center justify-between rounded-t-xl px-4 py-3"
+                                    :class="pesan.arah === 'masuk' ? 'bg-sky-100' : 'bg-green-700'"
+                                >
+                                <h3
+                                    class="font-bold"
+                                    :class="pesan.arah === 'masuk' ? 'text-sky-900' : 'text-white'"
+                                >
+                                    Penawaran Harga
+                                </h3>
 
                                     <span
-                                        class="rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-green-800"
+                                        class="rounded-full bg-white px-3 py-1 text-xs font-semibold"
+                                        :class="pesan.arah === 'masuk' ? 'text-sky-800' : 'text-green-800'"
                                         x-text="
-                                            pesan.status === 'menunggu_jawaban'
+                                            pesan.status === 'menunggu'
                                                 ? 'Menunggu jawaban'
                                                 : pesan.status === 'ditawar_balik'
                                                     ? 'Ditawar balik'
-                                                    : 'Disetujui'
+                                                    : 'Disepakati'
                                         "
                                     ></span>
                                 </div>
@@ -267,8 +342,20 @@
                                 {{-- Waktu --}}
                                 <p
                                     class="px-4 pb-2 text-right text-xs text-gray-400"
-                                    x-text="'Anda · ' + pesan.waktu">
+                                    x-text="pesan.pengirim + ' · ' + pesan.waktu">
                                 </p>
+
+                                <template x-if="pesan.arah === 'masuk' && pesan.status === 'menunggu' && !penawaranDisepakati">
+                                    <div class="border-t border-green-100 p-3">
+                                        <button
+                                            type="button"
+                                            @click="terimaPenawaran(pesan)"
+                                            class="w-full rounded-xl bg-green-700 px-4 py-3 font-bold text-white transition hover:bg-green-800"
+                                        >
+                                            Terima
+                                        </button>
+                                    </div>
+                                </template>
 
                             </div>
                         </div>
@@ -277,6 +364,70 @@
                 </div>
 
             </template>
+
+            {{-- NOTIFIKASI KESEPAKATAN --}}
+            <div
+                x-show="penawaranDisepakati"
+                x-cloak
+                class="my-5 flex justify-center"
+            >
+                <div class="w-full max-w-[365px] rounded-2xl border-2 border-green-700 bg-green-50 px-4 py-3 text-center">
+                    <p class="font-bold text-green-800">
+                        Disepakati oleh Anda
+                    </p>
+
+                    <p class="mt-1 text-sm text-green-800">
+                        Penawaran
+                        <strong x-text="formatRupiah(hargaDisepakati) + '/kg'"></strong>
+                        untuk
+                        <strong x-text="jumlahDisepakati + ' kg'"></strong>
+                        diterima.
+                    </p>
+
+                    <p
+                        class="mt-1 text-xs text-green-700"
+                        x-text="waktuDisepakati"
+                    ></p>
+
+
+                    <form
+                        method="POST"
+                        action="{{ route('pengusaha.keranjang.tambah') }}"
+                        class="mt-3"
+                    >
+                        @csrf
+
+                        <input
+                            type="hidden"
+                            name="slug"
+                            value="bayam-hijau-organik"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="jumlah"
+                            :value="jumlahDisepakati"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="harga_nego"
+                            :value="hargaDisepakati"
+                        >
+
+                        <button
+                            type="submit"
+                            :disabled="produkDiKeranjang"
+                            class="w-full rounded-xl bg-amber-500 px-4 py-3 font-bold text-gray-900 transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+                            x-text="produkDiKeranjang
+                                ? 'Sudah Ditambahkan'
+                                : 'Tambah ke Keranjang (harga nego)'"
+                        >
+                        </button>
+                    </form>
+
+                </div>
+            </div>
 
 
             {{-- TAMPILAN CHAT KOSONG --}}
@@ -378,7 +529,7 @@
 
                         <button
                             type="button"
-                            @click="jumlah = Math.max(1, jumlah - 1)"
+                            @click="jumlah = Math.max(1, Number(jumlah || 1) - 1)"
                             class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 font-bold text-gray-800 hover:bg-gray-200"
                         >
                             −
@@ -386,7 +537,7 @@
 
                         <input
                             type="number"
-                            min="1"
+                            min="10"
                             x-model.number="jumlah"
                             class="w-full min-w-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none border-0 bg-transparent px-1 text-center text-sm font-bold text-gray-900 outline-none focus:ring-0"
                         >
@@ -406,13 +557,24 @@
 
             {{-- Total dan harga normal --}}
             <div class="mt-3 border-t border-amber-200 pt-2 text-xs text-gray-700">
-                <p>
-                    Total:
-                    <span
-                        class="font-bold text-green-700"
-                        x-text="formatRupiah(totalPenawaran)"
-                    ></span>
-                </p>
+
+                <div class="flex items-center justify-between gap-2">
+                    <p>
+                        Total:
+                        <span
+                            class="font-bold text-green-700"
+                            x-text="formatRupiah(totalPenawaran)"
+                        ></span>
+                    </p>
+
+                    <p
+                        x-show="Number(jumlah) < minimalPembelian"
+                        x-cloak
+                        class="text-right font-medium text-red-600"
+                    >
+                        ⚠ Minimal pembelian 10 kg.
+                    </p>
+                </div>
 
                 <p class="mt-1">
                     Harga normal:
@@ -421,6 +583,7 @@
                         x-text="formatRupiah(hargaNormal) + '/kg'"
                     ></span>
                 </p>
+
             </div>
         </div>
 
@@ -440,10 +603,13 @@
             <button
                 type="button"
                 @click="tampilkanPenawaran = !tampilkanPenawaran"
-                :class="tampilkanPenawaran
-                    ? 'bg-amber-100 text-amber-700'
-                    : 'bg-white text-gray-600'"
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full shadow-sm transition hover:bg-amber-100"
+                :disabled="penawaranDisepakati || !daftarPesan.some(p => p.tipe === 'penawaran' && p.status === 'menunggu')"
+                :class="penawaranDisepakati || !daftarPesan.some(p => p.tipe === 'penawaran' && p.status === 'menunggu')
+                    ? 'cursor-not-allowed bg-gray-200 text-gray-400'
+                    : tampilkanPenawaran
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-white text-gray-600'"
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full shadow-sm transition"
                 title="Ajukan penawaran"
             >
                 <span class="text-lg">🏷️</span>
@@ -453,6 +619,10 @@
             <button
                 type="button"
                 @click="kirimPesan()"
+                :disabled="tampilkanPenawaran && Number(jumlah) < minimalPembelian"
+                :class="tampilkanPenawaran && Number(jumlah) < minimalPembelian
+                    ? 'cursor-not-allowed opacity-40'
+                    : ''"
                 class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-700 text-white shadow-sm transition hover:bg-green-800"
                 title="Kirim pesan"
             >
