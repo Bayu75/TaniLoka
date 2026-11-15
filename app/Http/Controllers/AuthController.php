@@ -111,7 +111,7 @@ class AuthController extends Controller
         $data = $request->validate(['peran' => 'required|in:petani,pengusaha']);
 
         $email = $data['peran'] === 'petani' ? 'made@taniloka.test' : 'resto@taniloka.test';
-        $user = User::where('email', $email)->first();
+        $user = User::where('email', $email)->first();  
 
         if (! $user) {
             return back()->withErrors(['login' => 'Akun demo belum ada. Jalankan php artisan migrate:fresh --seed.']);

@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\{User, Kategori, Produk, FotoProduk, Alamat, KeranjangItem, Pesanan};
+use App\Models\{User, Kategori, Produk, FotoProduk, Alamat, KeranjangItem, Pesanan, VerifikasiAkun};
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -115,6 +115,15 @@ class DatabaseSeeder extends Seeder
         // ===== CONTOH PESANAN (untuk tes Pesanan Masuk Gede) =====
         $this->buatPesanan($resto, $made, $alamatResto, [[$produk['Wortel Bedugul'], 10]], 'menunggu_konfirmasi');
         $this->buatPesanan($resto, $ketut, $alamatResto, [[$produk['Bawang Merah'], 5], [$produk['Tomat'], 5]], 'selesai');
+
+        foreach (['wayan@taniloka.test' => ['ktp', 'foto_lahan'], 'kafe@taniloka.test' => ['nib', 'foto_tempat_usaha']] as $email => $jenisList) {
+            $u = User::where('email', $email)->first();
+            $u->update(['status_verifikasi' => 'menunggu']);
+            $v = VerifikasiAkun::create(['user_id' => $u->id, 'status' => 'menunggu']);
+            foreach ($jenisList as $jenis) {
+                $v->bukti()->create(['jenis' => $jenis, 'path' => 'verifikasi/contoh.jpg']);
+            }
+        }
     }
 
     private function buatPesanan(User $pengusaha, User $petani, Alamat $alamat, array $items, string $status): void
@@ -155,4 +164,6 @@ class DatabaseSeeder extends Seeder
             'status' => 'lunas', 'dibayar_pada' => now(),
         ]);
     }
+
+    
 }
