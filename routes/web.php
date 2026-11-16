@@ -6,6 +6,7 @@ use App\Http\Controllers\Pengusaha\PesananController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\VerifikasiController;
 use App\Http\Controllers\Pengusaha\VerifikasiController as VerifikasiPengusahaController;
+use App\Http\Controllers\Pengusaha\AlamatController;
 
 Route::view('/', 'auth.landing')->name('landing');
 
@@ -292,41 +293,11 @@ Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengu
             ->route('pengusaha.profil')
             ->with('sukses', 'Profil usaha berhasil diperbarui!');
     })->name('profil.simpan');
-    // Menampilkan alamat
-    Route::get('/alamat', function () {
-        return view('pengusaha.alamat');
-    })->name('alamat');
 
-    // Menyimpan atau mengubah alamat
-    Route::post('/alamat', function (\Illuminate\Http\Request $request) {
-
-        $data = $request->validate([
-            'label' => 'required|string|max:50',
-            'nama' => 'required|string|max:100',
-            'telepon' => 'required|string|max:20',
-            'alamat' => 'required|string|max:500',
-            'kota' => 'required|string|max:100',
-            'catatan' => 'nullable|string|max:255',
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
-        ]);
-
-        session()->put('alamat_pengusaha', $data);
-
-        return redirect()
-            ->route('pengusaha.alamat')
-            ->with('sukses', 'Alamat berhasil disimpan!');
-    })->name('alamat.simpan');
-
-    // Menghapus alamat
-    Route::post('/alamat/hapus', function () {
-
-        session()->forget('alamat_pengusaha');
-
-        return redirect()
-            ->route('pengusaha.alamat')
-            ->with('sukses', 'Alamat berhasil dihapus!');
-    })->name('alamat.hapus');
+       // Alamat usaha
+    Route::get('/alamat', [AlamatController::class, 'index'])->name('alamat');
+    Route::post('/alamat', [AlamatController::class, 'simpan'])->name('alamat.simpan');
+    Route::post('/alamat/hapus', [AlamatController::class, 'hapus'])->name('alamat.hapus');
     Route::view('/bantuan', 'pengusaha.bantuan')->name('bantuan');
 });
 

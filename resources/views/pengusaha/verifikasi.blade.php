@@ -1,54 +1,61 @@
 @extends('layouts.pengusaha')
 
 @section('content')
-<div class="max-w-2xl mx-auto px-4 py-6">
-   <a href="{{ route('pengusaha.akun') }}"
-   class="mb-2 inline-flex items-center gap-1 text-sm font-extrabold text-[#087C3E] hover:text-green-800">
-    <span class="text-2xl font-black leading-none">&lt;</span>
-    <span>Kembali</span>
-</a>
-    <h1 class="text-2xl font-semibold mt-2 mb-1">Verifikasi Akun</h1>
-    <p class="text-sm text-gray-500 mb-6">Lengkapi langkah berikut agar akunmu bisa melakukan checkout.</p>
+<div class="min-h-screen bg-[#F8FAF5]">
+<div class="mx-auto max-w-3xl px-4 py-5 md:py-6">
 
-    @if (session('sukses'))
-        <div class="mb-4 rounded-lg bg-green-50 text-green-700 px-4 py-3 text-sm">{{ session('sukses') }}</div>
-    @endif
-    @if (session('error'))
-        <div class="mb-4 rounded-lg bg-red-50 text-red-700 px-4 py-3 text-sm">{{ session('error') }}</div>
-    @endif
+    {{-- TOMBOL KEMBALI (di luar kotak) --}}
+    <a href="{{ route('pengusaha.akun') }}"
+       class="mb-3 inline-flex items-center gap-1 text-sm font-extrabold text-[#087C3E] hover:text-green-800">
+        <span class="text-2xl font-black leading-none">&lt;</span>
+        <span>Kembali</span>
+    </a>
 
-    {{-- Status --}}
-    @if ($verifikasi)
-        @php
-            $label = [
-                'menunggu'        => ['Menunggu ditinjau', 'bg-yellow-50 text-yellow-700'],
-                'perlu_perbaikan' => ['Perlu perbaikan', 'bg-orange-50 text-orange-700'],
-                'terverifikasi'   => ['Terverifikasi', 'bg-green-50 text-green-700'],
-                'ditolak'         => ['Ditolak', 'bg-red-50 text-red-700'],
-            ][$verifikasi->status];
-        @endphp
-        <div class="mb-6 rounded-xl px-4 py-3 {{ $label[1] }}">
-            <p class="font-medium">Status: {{ $label[0] }}</p>
-            @if ($verifikasi->catatan_admin)
-                <p class="text-sm mt-1">Catatan admin: {{ $verifikasi->catatan_admin }}</p>
-            @endif
-        </div>
-    @endif
+    {{-- KOTAK: judul, status, checklist --}}
+    <div class="mb-6 rounded-2xl border border-green-100 bg-white p-5 shadow-sm md:p-7">
 
-    {{-- Checklist --}}
-    <div class="space-y-3 mb-6">
-        <div class="flex items-center justify-between rounded-xl border px-4 py-3">
-            <span>{{ $cek['profil'] ? '✅' : '⬜' }} Profil usaha lengkap</span>
-            @unless ($cek['profil'])
-                <a href="{{ route('pengusaha.profil') }}" class="text-sm text-green-700 font-medium">Lengkapi</a>
-            @endunless
+        <h1 class="text-xl font-extrabold text-[#1A2A1A]">Verifikasi Akun</h1>
+        <p class="mt-1 mb-5 text-sm text-[#6B806B]">Lengkapi langkah berikut agar akunmu bisa melakukan checkout.</p>
+
+        @if (session('sukses'))
+            <div class="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{{ session('sukses') }}</div>
+        @endif
+        @if (session('error'))
+            <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{{ session('error') }}</div>
+        @endif
+
+        @if ($verifikasi)
+            @php
+                $label = [
+                    'menunggu'        => ['Menunggu ditinjau', 'bg-yellow-50 text-yellow-700'],
+                    'perlu_perbaikan' => ['Perlu perbaikan', 'bg-orange-50 text-orange-700'],
+                    'terverifikasi'   => ['Terverifikasi', 'bg-green-50 text-green-700'],
+                    'ditolak'         => ['Ditolak', 'bg-red-50 text-red-700'],
+                ][$verifikasi->status];
+            @endphp
+            <div class="mb-4 rounded-xl px-4 py-3 {{ $label[1] }}">
+                <p class="font-medium">Status: {{ $label[0] }}</p>
+                @if ($verifikasi->catatan_admin)
+                    <p class="mt-1 text-sm">Catatan admin: {{ $verifikasi->catatan_admin }}</p>
+                @endif
+            </div>
+        @endif
+
+        <div class="space-y-3">
+            <div class="flex items-center justify-between rounded-xl border px-4 py-3">
+                <span>{{ $cek['profil'] ? '✅' : '⬜' }} Profil usaha lengkap</span>
+                @unless ($cek['profil'])
+                    <a href="{{ route('pengusaha.profil') }}" class="text-sm font-medium text-green-700">Lengkapi</a>
+                @endunless
+            </div>
+            <div class="flex items-center justify-between rounded-xl border px-4 py-3">
+                <span>{{ $cek['alamat'] ? '✅' : '⬜' }} Alamat usaha sudah diisi</span>
+                @unless ($cek['alamat'])
+                    <a href="{{ route('pengusaha.alamat') }}" class="text-sm font-medium text-green-700">Isi alamat</a>
+                @endunless
+            </div>
         </div>
-        <div class="flex items-center justify-between rounded-xl border px-4 py-3">
-            <span>{{ $cek['alamat'] ? '✅' : '⬜' }} Alamat usaha sudah diisi</span>
-            @unless ($cek['alamat'])
-                <a href="{{ route('pengusaha.alamat') }}" class="text-sm text-green-700 font-medium">Isi alamat</a>
-            @endunless
-        </div>
+
     </div>
 
     @if ($bisaAjukan)

@@ -5,10 +5,20 @@
 @section('content')
 
 @php
-    $nama = session('nama', 'Pengusaha');
-    $inisial = strtoupper(substr($nama, 0, 1));
-    $keranjang = session('keranjang', []);
-    $jumlahKeranjang = count($keranjang);
+    $user    = auth()->user();
+    $profil  = $user->profilPengusaha;
+    $nama    = $profil?->nama_usaha ?: $user->name;
+    $inisial = strtoupper(mb_substr($nama, 0, 1));
+
+    $jenisList = [
+        'restoran' => 'Restoran', 'kafe' => 'Kafe', 'hotel' => 'Hotel',
+        'katering' => 'Katering', 'warung' => 'Warung Makan', 'lainnya' => 'Usaha Kuliner Lainnya',
+    ];
+    $jenisUsaha = $jenisList[$profil?->jenis_usaha] ?? 'Pengusaha Kuliner';
+    $kota = $user->alamatUtama?->kabupaten ?? 'Bali';
+
+    $jumlahKeranjang = \App\Models\KeranjangItem::where('user_id', $user->id)->count();
+    $jumlahPesanan   = \App\Models\Pesanan::where('pengusaha_id', $user->id)->count();
 @endphp
 
 
@@ -45,12 +55,12 @@
                 {{ $nama }}
             </h2>
 
-            <p class="text-sm text-green-100">
-                Pengusaha Kuliner
+                        <p class="text-sm text-green-100">
+                {{ $jenisUsaha }}
             </p>
 
             <p class="mt-1 text-xs text-green-100">
-                Pasar Tani Bali
+                {{ $user->name }} · {{ $kota }}
             </p>
         </div>
 
@@ -82,7 +92,7 @@
             <div class="mb-2 text-2xl">📋</div>
 
             <h3 class="text-2xl font-extrabold text-[#1A2A1A]">
-                0
+                {{ $jumlahPesanan }}
             </h3>
 
             <p class="mt-1 text-sm text-[#6B806B]">

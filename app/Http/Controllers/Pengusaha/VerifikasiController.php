@@ -53,13 +53,19 @@ class VerifikasiController extends Controller
             return back()->with('error', 'Pengajuan verifikasi kamu sudah ada.');
         }
 
-        $request->validate([
+               $request->validate([
             'nib'               => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
             'foto_tempat_usaha' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
             'setuju_sk'         => ['accepted'],
         ], [
             'nib.required'               => 'Dokumen NIB wajib diunggah.',
+            'nib.file'                   => 'Dokumen NIB harus berupa file.',
+            'nib.mimes'                  => 'Dokumen NIB harus berformat JPG, PNG, atau PDF.',
+            'nib.max'                    => 'Ukuran dokumen NIB maksimal 2 MB.',
             'foto_tempat_usaha.required' => 'Foto tempat usaha wajib diunggah.',
+            'foto_tempat_usaha.image'    => 'Foto tempat usaha harus berupa gambar.',
+            'foto_tempat_usaha.mimes'    => 'Foto tempat usaha harus berformat JPG atau PNG.',
+            'foto_tempat_usaha.max'      => 'Ukuran foto tempat usaha maksimal 2 MB.',
             'setuju_sk.accepted'         => 'Kamu harus menyetujui Syarat & Ketentuan.',
         ]);
 
