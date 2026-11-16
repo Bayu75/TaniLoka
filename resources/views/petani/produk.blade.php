@@ -226,62 +226,30 @@
 <script>
   function produkPage() {
     return {
-      produk: [
-        {
-          id: 1,
-          nama: "Bayam Hijau Organik",
-          kategori: "Sayuran",
-          harga: 8500,
-          stok: 120,
-          stokAsli: 120,
-          min: 5,
-          kabupaten: "Tabanan",
-          periode: "Tersedia sepanjang tahun, panen tiap 3 minggu",
-          tersedia: true,
-          gambar:
-            "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=200&h=200&fit=crop",
-        },
-        {
-          id: 2,
-          nama: "Wortel Organik",
-          kategori: "Umbi-umbian",
-          harga: 14000,
-          stok: 90,
-          stokAsli: 90,
-          min: 5,
-          kabupaten: "Tabanan",
-          periode: "Panen setiap 2 bulan",
-          tersedia: true,
-          gambar:
-            "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=600&h=400&fit=crop",
-        },
-      ],
-      kategori: ["Sayuran", "Umbi-umbian", "Bumbu & Rempah", "Buah-buahan"],
-      kabupaten: [
-        "Badung",
-        "Bangli",
-        "Buleleng",
-        "Gianyar",
-        "Jembrana",
-        "Karangasem",
-        "Klungkung",
-        "Tabanan",
-        "Kota Denpasar",
-      ],
-      langkah: [
-        "Foto & Nama",
-        "Harga & Stok",
-        "Lokasi & Panen",
-        "Tersedia sampai",
-        "Tinjau",
-      ],
+      // Data dari Petani\ProdukController@index (database).
+      produk: @js($produk),
+      kategori: @js($kategori),
+      kabupatenPetani: @js($kabupatenPetani),
+      terverifikasi: @js($terverifikasi),
+      url: {
+        simpan: @js(route('petani.produk.store')),
+        ubah: @js(route('petani.produk.update', ['produk' => '__ID__'])),
+        tersedia: @js(route('petani.produk.tersedia', ['produk' => '__ID__'])),
+        hapus: @js(route('petani.produk.destroy', ['produk' => '__ID__'])),
+      },
+      csrf: @js(csrf_token()),
+      // TODO(tersedia_sampai): tabel produk belum punya kolom tersedia_sampai.
+      // Langkah "Tersedia sampai" dan label kedaluwarsa disembunyikan selama nilai ini false.
+      // Kalau Bayu menambah kolom date nullable `tersedia_sampai`, ubah ke true lalu simpan nilainya di ProdukController.
+      fiturTersediaSampai: false,
+      menyimpan: false,
       formTambah: false,
       formUbah: false,
       editId: null,
       edit: null,
       baru: null,
       step: 1,
-      pesan: "",
+      pesan: @js(session('sukses') ?? session('gagal') ?? ''),
       error: "",
       fotoError: "",
       fotoLoading: false,
@@ -297,7 +265,16 @@
       dayTimer: null,
       editDateError: "",
       editDateBadInput: false,
+      get langkah() {
+        return this.fiturTersediaSampai
+          ? ["Foto & Nama", "Harga & Stok", "Lokasi & Panen", "Tersedia sampai", "Tinjau"]
+          : ["Foto & Nama", "Harga & Stok", "Lokasi & Panen", "Tinjau"];
+      },
+      get stepTinjau() {
+        return this.langkah.length;
+      },
       init() {
+        if (this.pesan) this.notify(this.pesan, 3500);
         this.refreshToday();
         this.dayTimer = setInterval(() => this.refreshToday(), 60000);
         this.$watch("formTambah", (v) => {
@@ -323,14 +300,17 @@
       kosong() {
         return {
           nama: "",
-          kategori: "Sayuran",
+          kategori_id: this.kategori.length ? this.kategori[0].id : "",
           harga: 10000,
           stok: 50,
           min: 5,
-          kabupaten: "",
+          grade: "",
+          kabupaten: this.kabupatenPetani,
           periode: "",
+          tanggalPanen: "",
           tersedia: true,
           gambar: "",
+          file: null,
           tersediaSampai: "",
         };
       },
@@ -440,12 +420,16 @@
           return !!b.nama.trim() && !this.fotoLoading && !this.fotoError;
         if (s === 2)
           return (
-            this.kategori.includes(b.kategori) &&
+            this.kategori.some((k) => String(k.id) === String(b.kategori_id)) &&
             ["harga", "stok", "min"].every((k) => this.positif(b[k])) &&
             Number(b.min) <= Number(b.stok)
           );
         if (s === 3)
-          return this.kabupaten.includes(b.kabupaten) && !!b.periode.trim();
+          return (
+            !!b.periode.trim() &&
+            (b.tanggalPanen === "" || Number.isFinite(this.epoch(b.tanggalPanen)))
+          );
+        if (s === 4 && !this.fiturTersediaSampai) return true;
         if (s === 4)
           return (
             Number.isFinite(this.epoch(b.tersediaSampai)) &&
@@ -458,7 +442,7 @@
         );
       },
       lanjut() {
-        if (this.valid(this.step) && this.step < 5) {
+        if (this.valid(this.step) && this.step < this.stepTinjau) {
           this.step++;
           this.error = "";
         }
@@ -500,6 +484,7 @@
             /^data:image\/(jpeg|png|webp|gif);base64,/.test(r.result)
           ) {
             target.gambar = r.result;
+            target.file = f;
           } else this[err] = "Foto tidak dapat dibaca.";
           this[loading] = false;
         };
@@ -520,48 +505,88 @@
       onFotoUbah(e) {
         this.foto(e, "edit");
       },
-      simpanTambah() {
-        if (this.step !== 5) return false;
-        for (let s = 1; s <= 4; s++) {
+      namaKategori(id) {
+        const k = this.kategori.find((x) => String(x.id) === String(id));
+        return k ? k.nama : "-";
+      },
+      formData(d, metode) {
+        const fd = new FormData();
+        if (metode) fd.append("_method", metode);
+        fd.append("nama", d.nama.trim());
+        fd.append("kategori_id", d.kategori_id);
+        fd.append("harga", d.harga);
+        fd.append("stok", d.stok);
+        fd.append("min", d.min);
+        fd.append("periode", (d.periode || "").trim());
+        fd.append("grade", d.grade || "");
+        fd.append("tanggal_panen", d.tanggalPanen || "");
+        if (d.file) fd.append("foto", d.file);
+        return fd;
+      },
+      async kirim(url, body, metode = "POST") {
+        const res = await fetch(url, {
+          method: metode,
+          headers: { Accept: "application/json", "X-CSRF-TOKEN": this.csrf, "X-Requested-With": "XMLHttpRequest" },
+          body,
+          credentials: "same-origin",
+        });
+        let data = {};
+        try {
+          data = await res.json();
+        } catch (e) {}
+        if (!res.ok) {
+          const errs = data.errors ? Object.values(data.errors).flat() : [];
+          throw new Error(
+            errs[0] || data.message || (res.status === 419 ? "Sesi habis. Muat ulang halaman lalu coba lagi." : "Gagal menyimpan. Silakan coba lagi."),
+          );
+        }
+        return data;
+      },
+      async simpanTambah() {
+        if (this.step !== this.stepTinjau || this.menyimpan) return false;
+        for (let s = 1; s < this.stepTinjau; s++) {
           if (!this.valid(s)) {
             this.step = s;
             this.error = "Lengkapi isian yang valid sebelum menyimpan.";
             return false;
           }
         }
-        const b = this.baru;
-        this.produk.push({
-          ...b,
-          id: Math.max(Date.now(), ...this.produk.map((p) => p.id + 1)),
-          nama: b.nama.trim(),
-          periode: b.periode.trim(),
-          harga: Number(b.harga),
-          stok: Number(b.stok),
-          min: Number(b.min),
-          stokAsli: Number(b.stok),
-          tersedia: true,
-        });
-        this.session++;
-        this.formTambah = false;
-        this.baru = null;
-        this.notify("Produk ditambahkan");
-        return true;
+        this.menyimpan = true;
+        this.error = "";
+        try {
+          await this.kirim(this.url.simpan, this.formData(this.baru));
+          this.session++;
+          window.location.reload(); // pesan sukses tampil dari session setelah dimuat ulang
+          return true;
+        } catch (e) {
+          this.error = e.message;
+          return false;
+        } finally {
+          this.menyimpan = false;
+        }
       },
-      notify(s) {
+      notify(s, ms = 2000) {
         this.pesan = s;
         setTimeout(() => {
           if (this.pesan === s) this.pesan = "";
-        }, 2000);
+        }, ms);
       },
-      setTersedia(p, on) {
-        if (on) {
-          p.tersedia = true;
-          p.stok = p.stokAsli > 0 ? p.stokAsli : p.stok > 0 ? p.stok : 1;
-          p.stokAsli = p.stok;
-        } else {
-          p.tersedia = false;
-          if (p.stok > 0) p.stokAsli = p.stok;
-          p.stok = 0;
+      async setTersedia(p, on) {
+        if (!this.terverifikasi) {
+          this.notify("Akun belum terverifikasi. Status produk belum bisa diubah.", 3500);
+          return;
+        }
+        const lama = p.tersedia;
+        p.tersedia = on; // ubah dulu di layar, kembalikan kalau server menolak
+        const fd = new FormData();
+        fd.append("_method", "PATCH");
+        fd.append("aktif", on ? "1" : "0");
+        try {
+          const data = await this.kirim(this.url.tersedia.replace("__ID__", p.id), fd);
+          this.notify(data.message || "Status produk diperbarui");
+        } catch (e) {
+          p.tersedia = lama;
+          this.notify(e.message, 3500);
         }
       },
       bukaUbah(p) {
@@ -569,7 +594,7 @@
         this.editId = p.id;
         this.edit = {
           ...p,
-          stok: p.tersedia ? p.stokAsli || p.stok : p.stok,
+          file: null,
           tersediaSampai: p.tersediaSampai || "",
         };
         this.editDateError = "";
@@ -584,51 +609,54 @@
         this.editFotoLoading = false;
         this.formUbah = false;
       },
-      simpanUbah() {
-        if (this.editFotoLoading) return;
-        // Existing products may have no date or a date in the past.
+      async simpanUbah() {
+        if (this.editFotoLoading || this.menyimpan) return;
+        // TODO(tersedia_sampai): validasi tanggal kedaluwarsa hanya berlaku kalau fiturnya aktif.
         if (
-          this.editDateBadInput ||
-          (this.edit.tersediaSampai !== "" &&
-            !Number.isFinite(this.epoch(this.edit.tersediaSampai)))
+          this.fiturTersediaSampai &&
+          (this.editDateBadInput ||
+            (this.edit.tersediaSampai !== "" &&
+              !Number.isFinite(this.epoch(this.edit.tersediaSampai))))
         ) {
           this.editDateError =
             "Masukkan tanggal kedaluwarsa yang valid atau kosongkan.";
           return false;
         }
         this.editDateError = "";
-        const p = this.produk.find((x) => x.id === this.editId);
-        if (!p) return;
-        for (const k of ["nama", "kategori", "kabupaten", "periode", "gambar"])
-          p[k] = this.edit[k];
-        p.tersediaSampai = this.edit.tersediaSampai;
-        p.harga = parseInt(this.edit.harga, 10) || 0;
-        p.min = parseInt(this.edit.min, 10) || 1;
-        const s = parseInt(this.edit.stok, 10) || 0;
-        if (this.edit.tersedia) {
-          p.tersedia = true;
-          p.stok = s > 0 ? s : 1;
-          p.stokAsli = p.stok;
-        } else {
-          p.tersedia = false;
-          p.stokAsli = s > 0 ? s : p.stokAsli || 1;
-          p.stok = 0;
+        const fd = this.formData(this.edit, "PUT");
+        fd.append("tersedia", this.edit.tersedia ? "1" : "0");
+        this.menyimpan = true;
+        this.editFotoError = "";
+        try {
+          await this.kirim(this.url.ubah.replace("__ID__", this.editId), fd);
+          window.location.reload();
+        } catch (e) {
+          this.editFotoError = e.message;
+        } finally {
+          this.menyimpan = false;
         }
-        this.tutupUbah();
-        this.notify("Produk diperbarui");
       },
-      hapus(id) {
-        this.produk = this.produk.filter((p) => p.id !== id);
-        this.notify("Produk dihapus");
+      async hapus(id) {
+        const p = this.produk.find((x) => x.id === id);
+        if (!p || !confirm("Hapus produk " + p.nama + "?")) return;
+        const fd = new FormData();
+        fd.append("_method", "DELETE");
+        try {
+          await this.kirim(this.url.hapus.replace("__ID__", id), fd);
+          this.produk = this.produk.filter((x) => x.id !== id);
+          this.notify("Produk dihapus");
+        } catch (e) {
+          this.notify(e.message, 3500);
+        }
       },
       jumlah() {
         return this.produk.length;
       },
       aktif() {
-        return this.produk.filter((p) => p.tersedia && p.stok > 0).length;
+        return this.produk.filter((p) => p.tersedia && Number(p.stok) > 0).length;
       },
       habis() {
-        return this.produk.filter((p) => !p.tersedia || p.stok === 0).length;
+        return this.produk.filter((p) => !p.tersedia || Number(p.stok) <= 0).length;
       },
       rupiah(v) {
         return "Rp " + Number(v).toLocaleString("id-ID") + " / kg";
@@ -642,6 +670,15 @@
         <h1 class="text-2xl font-extrabold">Kelola Produk</h1>
     </header>
     <p class="text-sm text-text-muted mb-5">Atur produk yang Anda jual</p>
+    @unless ($terverifikasi)
+      <div class="mb-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="status">
+        <p class="font-semibold">Akun Anda belum terverifikasi</p>
+        <p class="mt-1">
+          Produk baru bisa ditambah atau diubah setelah admin menyetujui verifikasi akun
+          (status saat ini: {{ str_replace('_', ' ', $statusVerifikasi) }}).
+        </p>
+      </div>
+    @endunless
     <div class="grid grid-cols-3 gap-3 mb-5">
       <div class="bg-white border border-border rounded-2xl p-4 text-center">
         <p class="text-2xl font-semibold text-gray-900" x-text="jumlah()"></p>
@@ -659,10 +696,14 @@
     <button
       type="button"
       @click="bukaTambah()"
-      class="w-full bg-yellow-400 text-gray-900 font-semibold rounded-xl py-3 mb-5"
+      :disabled="!terverifikasi"
+      class="w-full bg-yellow-400 text-gray-900 font-semibold rounded-xl py-3 mb-5 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       + Tambah Produk Baru
     </button>
+    <p x-show="produk.length === 0" class="rounded-2xl border border-border bg-white p-6 text-center text-sm text-text-muted">
+      Belum ada produk. Tekan "Tambah Produk Baru" untuk mulai berjualan.
+    </p>
     <div class="grid md:grid-cols-2 gap-4">
       <template x-for="p in produk" :key="p.id"
         ><div class="bg-white border border-border rounded-2xl overflow-hidden">
@@ -711,18 +752,27 @@
             <div class="flex justify-between gap-2">
               <span class="text-text-muted">Kabupaten</span
               ><span class="font-medium text-gray-900 text-right max-w-[60%]"
-                ><span x-text="p.kabupaten"></span
+                ><span x-text="p.kabupaten || 'Belum diatur di Akun'"></span
                 ></span
               >
             </div>
             <div class="flex justify-between gap-2">
               <span class="text-text-muted">Periode Panen</span
               ><span class="font-medium text-gray-900 text-right max-w-[60%]"
-                ><span x-text="p.periode"></span
+                ><span x-text="p.periode || '-'"></span
                 ></span
               >
             </div>
-            <div class="flex justify-between gap-2">
+            <div x-show="p.tanggalPanen" class="flex justify-between gap-2">
+              <span class="text-text-muted">Tanggal Panen</span>
+              <span class="font-medium text-gray-900 text-right max-w-[60%]" x-text="tanggal(p.tanggalPanen)"></span>
+            </div>
+            <div x-show="p.grade" class="flex justify-between gap-2">
+              <span class="text-text-muted">Grade</span>
+              <span class="font-medium text-gray-900 text-right max-w-[60%]" x-text="p.grade"></span>
+            </div>
+            {{-- TODO(tersedia_sampai): tampil lagi kalau kolom tersedia_sampai sudah ada --}}
+            <div x-show="fiturTersediaSampai" class="flex justify-between gap-2">
               <span class="text-text-muted">Kedaluwarsa</span>
               <span
                 class="font-medium text-gray-900 text-right max-w-[60%]"
@@ -730,7 +780,7 @@
               ></span>
             </div>
             <p
-              x-show="peringatanKedaluwarsa(p.tersediaSampai)"
+              x-show="fiturTersediaSampai && peringatanKedaluwarsa(p.tersediaSampai)"
               x-text="peringatanKedaluwarsa(p.tersediaSampai)"
               :class="hariKedaluwarsa(p.tersediaSampai) < 0 ? 'tl-expired' : 'tl-expiring'"
               role="status"
@@ -759,7 +809,8 @@
             <button
               type="button"
               @click="bukaUbah(p)"
-              class="w-full mt-2 border border-green-700 text-green-700 rounded-xl py-2 font-medium hover:bg-green-50"
+              :disabled="!terverifikasi"
+              class="w-full mt-2 disabled:opacity-50 disabled:cursor-not-allowed border border-green-700 text-green-700 rounded-xl py-2 font-medium hover:bg-green-50"
             >
               Ubah Produk
             </button>
@@ -791,7 +842,7 @@
               Batal
             </button>
           </div>
-          <ol class="tl-steps">
+          <ol class="tl-steps" :style="'grid-template-columns: repeat(' + langkah.length + ', minmax(0, 1fr))'">
             <template x-for="(label,i) in langkah" :key="i"
               ><li class="tl-step" :aria-current="step===i+1 ? 'step' : null">
                 <span
@@ -856,10 +907,17 @@
           </div>
           <div x-show="step===2">
             <label class="tl-field" for="tl-kategori">Kategori *</label
-            ><select id="tl-kategori" class="tl-input" x-model="baru.kategori">
-              <template x-for="k in kategori" :key="k"
-                ><option :value="k" x-text="k"></option
+            ><select id="tl-kategori" class="tl-input" x-model="baru.kategori_id">
+              <template x-for="k in kategori" :key="k.id"
+                ><option :value="k.id" x-text="k.nama" :selected="String(k.id) === String(baru.kategori_id)"></option
               ></template></select
+            ><label class="tl-field" for="tl-grade">Grade <span class="tl-muted">(opsional)</span></label
+            ><select id="tl-grade" class="tl-input" x-model="baru.grade">
+              <option value="">Tanpa grade</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+            </select
             ><label class="tl-field" for="tl-harga">Harga per kg (Rp) *</label>
             <div class="tl-counter">
               <button
@@ -937,17 +995,13 @@
             </p>
           </div>
           <div x-show="step===3">
-            <label class="tl-field" for="tl-kabupaten">Kabupaten / Kota *</label
-            ><select
-              id="tl-kabupaten"
-              class="tl-input"
-              x-model="baru.kabupaten"
-              required
-            >
-              <option value="">Pilih kabupaten / kota</option>
-              <template x-for="k in kabupaten" :key="k"
-                ><option :value="k" x-text="k"></option
-              ></template></select
+            {{-- Tabel produk tidak punya kolom kabupaten: lokasi diambil dari profil_petani (diubah di menu Akun). --}}
+            <p class="tl-field">Kabupaten / Kota</p>
+            <p class="tl-input" x-text="kabupatenPetani || 'Belum diatur'"></p>
+            <p class="tl-muted mt-2">
+              Lokasi mengikuti profil usaha tani Anda.
+              <a href="{{ url('/petani/akun') }}" class="font-semibold text-green-700 underline">Ubah di Akun</a>
+            </p
             ><label class="tl-field" for="tl-periode">Periode Panen *</label
             ><input
               id="tl-periode"
@@ -956,9 +1010,16 @@
               x-model="baru.periode"
               placeholder="Contoh: Panen tiap 2 minggu"
               required
+            /><label class="tl-field" for="tl-panen">Tanggal Panen <span class="tl-muted">(opsional)</span></label
+            ><input
+              id="tl-panen"
+              type="date"
+              class="tl-input"
+              x-model="baru.tanggalPanen"
             />
           </div>
-          <div x-show="step===4">
+          {{-- TODO(tersedia_sampai): langkah ini disembunyikan sampai kolom tersedia_sampai ada di tabel produk. --}}
+          <div x-show="fiturTersediaSampai && step===4">
             <p class="tl-field" id="tl-date-heading">
               Produk tersedia sampai kapan? *
             </p>
@@ -990,7 +1051,7 @@
               ></p>
             </div>
           </div>
-          <div x-show="step===5">
+          <div x-show="step===stepTinjau">
             <div class="tl-review">
               <img
                 x-show="baru.gambar"
@@ -1001,7 +1062,10 @@
                 <span>Nama Produk</span><span x-text="baru.nama.trim()"></span>
               </div>
               <div class="tl-row">
-                <span>Kategori</span><span x-text="baru.kategori"></span>
+                <span>Kategori</span><span x-text="namaKategori(baru.kategori_id)"></span>
+              </div>
+              <div class="tl-row" x-show="baru.grade">
+                <span>Grade</span><span x-text="baru.grade"></span>
               </div>
               <div class="tl-row">
                 <span>Harga per kg</span
@@ -1015,13 +1079,16 @@
               </div>
               <div class="tl-row">
                 <span>Kabupaten / Kota</span
-                ><span x-text="baru.kabupaten"></span>
+                ><span x-text="kabupatenPetani || 'Belum diatur'"></span>
               </div>
               <div class="tl-row">
                 <span>Periode Panen</span
                 ><span x-text="baru.periode.trim()"></span>
               </div>
-              <div class="tl-row">
+              <div class="tl-row" x-show="baru.tanggalPanen">
+                <span>Tanggal Panen</span><span x-text="tanggal(baru.tanggalPanen)"></span>
+              </div>
+              <div class="tl-row" x-show="fiturTersediaSampai">
                 <span>Tersedia sampai</span
                 ><span
                   x-text="tanggal(baru.tersediaSampai)+' (Sisa '+sisa()+' hari)'"
@@ -1041,7 +1108,7 @@
             x-text="step===1?'Batal':'Kembali'"
           ></button
           ><button
-            x-show="step<5"
+            x-show="step<stepTinjau"
             type="button"
             class="tl-btn tl-next"
             :disabled="!valid(step)"
@@ -1049,13 +1116,13 @@
           >
             Lanjut</button
           ><button
-            x-show="step===5"
+            x-show="step===stepTinjau"
             type="button"
             class="tl-btn tl-next"
-            :disabled="!valid(5)"
+            :disabled="!valid(5) || menyimpan"
             @click="simpanTambah()"
           >
-            Simpan Produk
+            <span x-text="menyimpan ? 'Menyimpan…' : 'Simpan Produk'"></span>
           </button>
         </footer>
       </div>
@@ -1119,12 +1186,21 @@
               >Kategori</label
             ><select
               id="edit-kategori"
-              x-model="edit.kategori"
+              x-model="edit.kategori_id"
               class="w-full border border-border rounded-xl px-4 py-2"
             >
-              <template x-for="k in kategori" :key="k"
-                ><option :value="k" x-text="k"></option
+              <template x-for="k in kategori" :key="k.id"
+                ><option :value="k.id" x-text="k.nama" :selected="String(k.id) === String(edit.kategori_id)"></option
               ></template>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="edit-grade">Grade (opsional)</label
+            ><select id="edit-grade" x-model="edit.grade" class="w-full border border-border rounded-xl px-4 py-2">
+              <option value="">Tanpa grade</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
             </select>
           </div>
           <div>
@@ -1160,12 +1236,11 @@
           <div>
             <label class="block text-sm font-medium mb-1" for="edit-kabupaten"
               >Kabupaten</label
-            ><input
+            ><p
               id="edit-kabupaten"
-              type="text"
-              x-model="edit.kabupaten"
-              class="w-full border border-border rounded-xl px-4 py-2"
-            />
+              class="w-full border border-border rounded-xl px-4 py-2 bg-gray-50 text-text-muted"
+              x-text="(kabupatenPetani || 'Belum diatur') + ' · ubah di menu Akun'"
+            ></p>
           </div>
           <div>
             <label class="block text-sm font-medium mb-1" for="edit-periode"
@@ -1178,6 +1253,16 @@
             />
           </div>
           <div>
+            <label class="block text-sm font-medium mb-1" for="edit-panen">Tanggal Panen (opsional)</label
+            ><input
+              id="edit-panen"
+              type="date"
+              x-model="edit.tanggalPanen"
+              class="w-full border border-border rounded-xl px-4 py-2"
+            />
+          </div>
+          {{-- TODO(tersedia_sampai): field ini disembunyikan sampai kolom tersedia_sampai ada. --}}
+          <div x-show="fiturTersediaSampai">
             <label
               class="block text-sm font-medium mb-1"
               for="edit-kedaluwarsa"
@@ -1231,10 +1316,10 @@
             ><button
               type="button"
               @click="simpanUbah()"
-              :disabled="editFotoLoading"
-              class="flex-1 bg-primary text-white rounded-xl py-2"
+              :disabled="editFotoLoading || menyimpan"
+              class="flex-1 bg-primary text-white rounded-xl py-2 disabled:opacity-60"
             >
-              Simpan
+              <span x-text="menyimpan ? 'Menyimpan…' : 'Simpan'"></span>
             </button>
           </div>
         </div></template

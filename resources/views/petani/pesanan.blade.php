@@ -8,7 +8,7 @@
 <div class="mx-auto max-w-3xl py-4" x-data="{
     tab: 'semua',
     detail: null,
-    pesan: '',
+    pesan: @js(session('sukses') ?? session('gagal') ?? ($errors->any() ? $errors->first() : '')),
     timer: null,
     tabs: [
         { id: 'semua', nama: 'Semua' },
@@ -16,25 +16,31 @@
         { id: 'diproses', nama: 'Diproses' },
         { id: 'dikirim', nama: 'Dikirim' },
         { id: 'selesai', nama: 'Selesai' },
+        { id: 'pembayaran', nama: 'Belum Dibayar' },
+        { id: 'ditolak', nama: 'Ditolak' },
         { id: 'dibatalkan', nama: 'Dibatalkan' }
     ],
-    orders: [
-        { nomor: 'TL-0012', pembeli: 'Warung Bu Komang', tanggal: '2 Nov 2026', status: 'menunggu', pengiriman: 'Kendaraan Sendiri', alamat: 'Denpasar Barat', produk: [{ nama: 'Bayam Hijau Organik', jumlah: 10, harga: 8500 }], total: 85000, riwayat: [] },
-        { nomor: 'TL-0011', pembeli: 'Resto Segara', tanggal: '1 Nov 2026', status: 'diproses', pengiriman: 'JNE', alamat: 'Kuta, Badung', produk: [{ nama: 'Tomat Segar Grade A', jumlah: 20, harga: 12000 }, { nama: 'Kangkung Segar', jumlah: 5, harga: 6000 }], total: 270000, riwayat: [] },
-        { nomor: 'TL-0010', pembeli: 'Katering Sari Rasa', tanggal: '30 Okt 2026', status: 'dikirim', pengiriman: 'J&T Express', alamat: 'Gianyar', produk: [{ nama: 'Tomat Segar Grade A', jumlah: 15, harga: 12000 }], total: 180000, riwayat: [] },
-        { nomor: 'TL-0009', pembeli: 'Kafe Daun', tanggal: '28 Okt 2026', status: 'selesai', pengiriman: 'Ambil Sendiri', alamat: 'Tabanan', produk: [{ nama: 'Bayam Hijau Organik', jumlah: 8, harga: 8500 }], total: 68000, riwayat: [] }
-    ],
+    {{-- Data dari Petani\PesananController (tabel pesanan, pesanan_item, riwayat_status_pesanan). --}}
+    orders: @js($orders),
+    detailAwal: @js($detailAwal),
+    tabAwal: @js($tabAwal),
+    urlAksi: {
+        terima: @js(route('petani.pesanan.terima', ['pesanan' => '__ID__'])),
+        tolak: @js(route('petani.pesanan.tolak', ['pesanan' => '__ID__'])),
+        kirim: @js(route('petani.pesanan.kirim', ['pesanan' => '__ID__']))
+    },
     tahapan: [
-        { id: 'menunggu', nama: 'Menunggu Konfirmasi' },
         { id: 'pembayaran', nama: 'Menunggu Pembayaran' },
-        { id: 'verifikasi', nama: 'Menunggu Verifikasi Pembayaran' },
+        { id: 'menunggu', nama: 'Menunggu Konfirmasi' },
         { id: 'diproses', nama: 'Diproses' },
-        { id: 'siap', nama: 'Siap Diambil' },
-        { id: 'dikirim', nama: 'Terkirim' },
+        { id: 'dikirim', nama: 'Dikirim' },
         { id: 'selesai', nama: 'Selesai' }
     ],
     init() {
         this.bacaHash();
+        if (this.tabAwal && this.tabs.some(t => t.id === this.tabAwal)) this.tab = this.tabAwal;
+        if (this.detailAwal) this.detail = this.orders.find(o => o.id === this.detailAwal) || null;
+        if (this.pesan) this.kabar(this.pesan);
     },
     bacaHash() {
         const hash = window.location.hash.slice(1);
@@ -44,13 +50,13 @@
         return 'Rp ' + Number(n).toLocaleString('id-ID');
     },
     label(s) {
-        return { menunggu: 'Menunggu Konfirmasi', diproses: 'Diproses', dikirim: 'Dikirim', selesai: 'Selesai', dibatalkan: 'Dibatalkan' }[s] || s;
+        return { pembayaran: 'Menunggu Pembayaran', menunggu: 'Menunggu Konfirmasi', diproses: 'Diproses', dikirim: 'Dikirim', selesai: 'Selesai', dibatalkan: 'Dibatalkan', ditolak: 'Ditolak' }[s] || s;
     },
     warna(s) {
-        return { menunggu: 'bg-yellow-100 text-yellow-900', diproses: 'bg-blue-100 text-blue-800', dikirim: 'bg-indigo-100 text-indigo-800', selesai: 'bg-emerald-100 text-emerald-800', dibatalkan: 'bg-red-100 text-red-800' }[s] || 'bg-gray-100 text-gray-800';
+        return { pembayaran: 'bg-gray-100 text-gray-800', menunggu: 'bg-yellow-100 text-yellow-900', diproses: 'bg-blue-100 text-blue-800', dikirim: 'bg-indigo-100 text-indigo-800', selesai: 'bg-emerald-100 text-emerald-800', dibatalkan: 'bg-red-100 text-red-800', ditolak: 'bg-red-100 text-red-800' }[s] || 'bg-gray-100 text-gray-800';
     },
     ikon(s) {
-        return { menunggu: '⌛', diproses: '📦', dikirim: '🚚', selesai: '🎉', dibatalkan: '✕' }[s] || '📋';
+        return { pembayaran: '💳', menunggu: '⌛', diproses: '📦', dikirim: '🚚', selesai: '🎉', dibatalkan: '✕', ditolak: '✕' }[s] || '📋';
     },
     jumlah(s) {
         return this.orders.filter(o => s === 'semua' || o.status === s).length;
@@ -67,10 +73,11 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     },
     aksi(s) {
-        return { menunggu: 'Terima Pesanan', diproses: 'Tandai Dikirim', dikirim: 'Tandai Selesai' }[s] || '';
+        // Petani hanya: terima/tolak (menunggu) dan tandai dikirim (diproses). Status selesai dikonfirmasi pembeli.
+        return { menunggu: 'Terima Pesanan', diproses: 'Tandai Dikirim' }[s] || '';
     },
     petunjuk(s) {
-        return { menunggu: 'Perlu tindakan: Terima atau tolak pesanan', diproses: 'Perlu tindakan: Siapkan pesanan untuk pengiriman', dikirim: 'Pesanan sedang dalam pengiriman', selesai: 'Pesanan sudah selesai', dibatalkan: 'Pesanan telah dibatalkan' }[s] || '';
+        return { pembayaran: 'Menunggu pembeli membayar. Pesanan belum bisa diproses.', menunggu: 'Perlu tindakan: Terima atau tolak pesanan', diproses: 'Perlu tindakan: Siapkan pesanan untuk pengiriman', dikirim: 'Pesanan sedang dalam pengiriman', selesai: 'Pesanan sudah selesai', dibatalkan: 'Pesanan telah dibatalkan', ditolak: 'Pesanan telah ditolak' }[s] || '';
     },
     kabar(teks) {
         clearTimeout(this.timer);
@@ -81,13 +88,19 @@
         const o = this.detail;
         if (!o) return;
         if (tolak && o.status !== 'menunggu') return;
-        const tujuan = tolak ? 'dibatalkan' : { menunggu: 'diproses', diproses: 'dikirim', dikirim: 'selesai' }[o.status];
-        if (!tujuan) return;
-        const tanya = tolak ? 'Tolak pesanan ' + o.nomor + '?' : this.aksi(o.status) + ' ' + o.nomor + '?';
-        if (!window.confirm(tanya)) return;
-        o.status = tujuan;
-        o.riwayat.push({ status: tujuan, waktu: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Makassar' }) + ' WITA' });
-        this.kabar('Status ' + o.nomor + ' menjadi ' + this.label(tujuan));
+        const aksi = tolak ? 'tolak' : { menunggu: 'terima', diproses: 'kirim' }[o.status];
+        if (!aksi) return;
+        const f = this.$refs.formStatus;
+        if (tolak) {
+            const alasan = window.prompt('Tolak pesanan ' + o.nomor + '? Tulis alasan (boleh dikosongkan):', '');
+            if (alasan === null) return;
+            this.$refs.alasan.value = alasan;
+        } else {
+            if (!window.confirm(this.aksi(o.status) + ' ' + o.nomor + '?')) return;
+            this.$refs.alasan.value = '';
+        }
+        f.action = this.urlAksi[aksi].replace('__ID__', o.id);
+        f.submit();
     },
     waktuTahap(id) {
         if (!this.detail) return '';
@@ -119,7 +132,7 @@
         </div>
 
         <div class="space-y-4">
-            <template x-for="o in orders" :key="o.nomor">
+            <template x-for="o in orders" :key="o.id">
                 <article x-show="terlihat(o)" class="overflow-hidden rounded-2xl border border-green-200 bg-white">
                     <header class="flex items-center gap-3 p-4" :class="warna(o.status)">
                         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/70 text-2xl" aria-hidden="true" x-text="ikon(o.status)"></div>
@@ -150,9 +163,8 @@
 
                         <p class="text-sm font-bold">Total: <span class="text-green-700" x-text="rupiah(o.total)"></span></p>
 
-                        <div x-show="o.status === 'menunggu' || o.status === 'diproses'"
+                        <div x-show="o.status === 'menunggu' || o.status === 'diproses' || o.status === 'pembayaran'"
                             class="space-y-2 text-xs">
-                            <p class="inline-block rounded-lg bg-amber-50 px-3 py-2 text-amber-800">Tenggat belum tersedia</p>
                             <p class="rounded-lg bg-amber-50 px-3 py-2 font-semibold text-amber-800" x-text="petunjuk(o.status)"></p>
                         </div>
 
@@ -198,9 +210,9 @@
                     </div>
                 </div>
 
-                <div x-show="detail.status === 'menunggu' || detail.status === 'diproses'" class="rounded-xl border border-amber-300 bg-white p-4 text-xs text-amber-800">
-                    <p class="font-semibold">Tenggat belum tersedia</p>
-                    <p class="mt-1">Batas waktu belum terhubung ke data pesanan. Tidak ada pembatalan otomatis pada tampilan ini.</p>
+                <div x-show="detail.status === 'pembayaran'" class="rounded-xl border border-amber-300 bg-white p-4 text-xs text-amber-800">
+                    <p class="font-semibold">Menunggu pembayaran pembeli</p>
+                    <p class="mt-1">Pesanan baru bisa diterima atau ditolak setelah pembeli membayar.</p>
                 </div>
 
                 <div x-show="aksi(detail.status)" class="space-y-2">
@@ -216,7 +228,8 @@
 
                 <section class="rounded-xl border border-green-200 bg-white p-4">
                     <h2 class="mb-4 text-sm font-bold">Perjalanan Pesanan</h2>
-                    <p x-show="detail.status === 'dibatalkan'" class="mb-4 rounded-lg bg-red-50 p-3 text-xs font-semibold text-red-700">Pesanan dibatalkan.</p>
+                    <p x-show="detail.status === 'dibatalkan' || detail.status === 'ditolak'" class="mb-4 rounded-lg bg-red-50 p-3 text-xs font-semibold text-red-700"
+                        x-text="(detail.status === 'ditolak' ? 'Pesanan ditolak.' : 'Pesanan dibatalkan.') + (detail.riwayat.length && detail.riwayat[detail.riwayat.length - 1].keterangan ? ' ' + detail.riwayat[detail.riwayat.length - 1].keterangan : '')"></p>
                     <ol>
                         <template x-for="(tahap, i) in tahapan" :key="tahap.id">
                             <li class="relative flex gap-3 pb-5 last:pb-0">
@@ -233,7 +246,7 @@
                         </template>
                     </ol>
                     <p class="mt-4 border-t border-gray-100 pt-3 text-[11px] text-gray-500">
-                        Tahap pembayaran dan siap diambil belum terhubung ke sistem. Riwayat perubahan pada tampilan ini hanya dicatat selama halaman terbuka.
+                        Waktu setiap tahap diambil dari riwayat status pesanan (WITA).
                     </p>
                 </section>
 
@@ -260,8 +273,9 @@
 
                 <section class="rounded-xl border border-green-200 bg-white p-4 text-xs">
                     <h2 class="text-sm font-bold">Pengiriman</h2>
-                    <p class="mt-2 font-medium" x-text="detail.pengiriman"></p>
-                    <p class="mt-1 text-gray-500" x-text="detail.pembeli + ', ' + detail.alamat"></p>
+                    <p class="mt-2 font-medium" x-text="detail.penerima + ' · ' + detail.telepon"></p>
+                    <p class="mt-1 text-gray-500" x-text="detail.alamat"></p>
+                    <p x-show="detail.catatan" class="mt-2 text-gray-500" x-text="'Catatan: ' + detail.catatan"></p>
                     <h3 class="mt-4 font-bold">Metode Pembayaran</h3>
                     <p class="mt-1 text-gray-500" x-text="detail.pembayaran || 'Belum tersedia'"></p>
                 </section>
@@ -295,6 +309,12 @@
             </div>
         </section>
     </template>
+
+    {{-- Form tersembunyi untuk aksi status (POST + CSRF) --}}
+    <form x-ref="formStatus" method="POST" class="hidden">
+        @csrf
+        <input type="hidden" name="alasan" x-ref="alasan">
+    </form>
 
     <div x-show="pesan" x-cloak x-transition role="status" aria-live="polite"
         class="fixed bottom-20 left-1/2 z-50 w-max max-w-[90vw] -translate-x-1/2 rounded-xl bg-gray-900 px-4 py-3 text-sm text-white shadow-lg"
