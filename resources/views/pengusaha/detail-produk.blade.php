@@ -205,8 +205,8 @@
                     Beli Sekarang
                 </button>
 
-                <a href="{{ route('pengusaha.pesan', ['produk' => $produk->id]) }}"
-                   class="flex min-h-12 items-center justify-center rounded-xl border-2 border-[#F4D36B] bg-[#FFF9E6] px-4 font-bold text-[#806000] transition hover:bg-[#FFF1C2] md:col-span-2">
+                <a href="{{ route('pengusaha.pesan', ['produk' => $produk->slug]) }}"
+                    class="flex min-h-12 items-center justify-center rounded-xl border-2 border-[#F4D36B] bg-[#FFF9E6] px-4 font-bold text-[#806000] transition hover:bg-[#FFF1C2] md:col-span-2">
                     Tawar Harga
                 </a>
             </div>

@@ -20,6 +20,7 @@ use App\Http\Controllers\Pengusaha\KeranjangController;
 use App\Http\Controllers\Admin\VerifikasiController;
 use App\Http\Controllers\Pengusaha\VerifikasiController as VerifikasiPengusahaController;
 use App\Http\Controllers\Pengusaha\AlamatController;
+use App\Http\Controllers\Pengusaha\ChatController;
 
 Route::view('/', 'auth.landing')->name('landing');
 
@@ -60,7 +61,13 @@ Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengu
     Route::patch('/keranjang/item/{item}', [KeranjangController::class, 'ubah'])->name('keranjang.ubah');
     Route::delete('/keranjang/item/{item}', [KeranjangController::class, 'hapus'])->name('keranjang.hapus');
 
-    Route::view('/pesan', 'pengusaha.pesan')->name('pesan');
+    // Chat dan penawaran pengusaha
+    Route::get('/pesan', [ChatController::class, 'index'])->name('pesan');
+    Route::get('/pesan/{id}', [ChatController::class, 'show'])->name('pesan.detail');
+    Route::post('/pesan/{id}', [ChatController::class, 'kirim'])->name('pesan.kirim');
+    Route::post('/pesan/{id}/penawaran', [ChatController::class, 'kirimPenawaran'])->name('pesan.penawaran');
+    Route::post('/pesan/{id}/penawaran/{pesan}/terima', [ChatController::class, 'terimaPenawaran'])->name('pesan.penawaran.terima');
+    Route::post('/pesan/{id}/penawaran/{pesan}/tolak', [ChatController::class, 'tolakPenawaran'])->name('pesan.penawaran.tolak');
 
     Route::view('/checkout', 'pengusaha.checkout')->name('checkout');
     Route::view('/pembayaran', 'pengusaha.pembayaran')->name('pembayaran');
@@ -74,7 +81,7 @@ Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengu
     Route::view('/akun', 'pengusaha.akun')->name('akun');
     Route::get('/profil-usaha', [ProfilUsahaController::class, 'edit'])->name('profil');
     Route::post('/profil-usaha', [ProfilUsahaController::class, 'simpan'])->name('profil.simpan');
-   
+
     // Menampilkan alamat
     Route::get('/alamat', function () {
         return view('pengusaha.alamat');
