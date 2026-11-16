@@ -121,7 +121,14 @@
                         @endforeach
                     </select>
                 </div>
-
+                            {{-- DESKRIPSI USAHA --}}
+                <div class="md:col-span-2">
+                    <label class="mb-2 block text-sm font-semibold text-gray-700">Deskripsi Usaha</label>
+                    <textarea name="deskripsi" rows="4" maxlength="500"
+                              class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100"
+                              placeholder="Ceritakan sedikit tentang usaha kuliner Anda...">{{ old('deskripsi', $profil?->deskripsi) }}</textarea>
+                    <p class="mt-1 text-xs text-gray-400">Maksimal 500 karakter.</p>
+                </div>
             </div>
 
             {{-- TOMBOL --}}

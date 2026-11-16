@@ -36,6 +36,7 @@ class ProfilUsahaController extends Controller
             'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
             'no_wa' => ['nullable', 'string', 'max:20'],
             'jenis_usaha' => ['required', Rule::in(['restoran', 'kafe', 'hotel', 'katering', 'warung', 'lainnya'])],
+            'deskripsi' => ['nullable', 'string', 'max:500'],
         ], [
             'nama.required' => 'Nama pemilik wajib diisi.',
             'nama_usaha.required' => 'Nama usaha wajib diisi.',
@@ -44,6 +45,7 @@ class ProfilUsahaController extends Controller
             'email.unique' => 'Email sudah dipakai akun lain.',
             'jenis_usaha.required' => 'Jenis usaha wajib dipilih.',
             'jenis_usaha.in' => 'Jenis usaha tidak valid.',
+            'deskripsi.max' => 'Deskripsi usaha maksimal 500 karakter.',
         ]);
 
         $user->update([
@@ -57,6 +59,7 @@ class ProfilUsahaController extends Controller
             [
                 'nama_usaha' => $data['nama_usaha'],
                 'jenis_usaha' => $data['jenis_usaha'],
+                'deskripsi' => $data['deskripsi'] ?? null,
             ]
         );
 
