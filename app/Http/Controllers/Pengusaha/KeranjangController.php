@@ -48,9 +48,11 @@ class KeranjangController extends Controller
 
         $item->jumlah_kg = $jumlahBaru;
 
-        // Simpan harga nego jika dikirim dari halaman chat
+        // Simpan harga negosiasi jika dikirim dari halaman chat
         if ($request->filled('harga_per_kg')) {
             $item->harga_per_kg = $data['harga_per_kg'];
+        } elseif (!$item->exists) {
+            $item->harga_per_kg = null;
         }
 
         $item->save();
