@@ -186,9 +186,8 @@
 
                 <div class="mt-6">
                     @if ($bisaCheckout)
-                        {{-- Ganti href="#" jadi route('pengusaha.checkout') setelah branch Ayudia di-merge --}}
-                        <a href="#"
-                           class="block w-full rounded-xl bg-primary px-5 py-3 text-center text-sm font-semibold text-white hover:bg-primary-dark">
+                        <a href="{{ route('pengusaha.checkout') }}"
+                        class="block w-full rounded-xl bg-primary px-5 py-3 text-center text-sm font-semibold text-white hover:bg-primary-dark">
                             Lanjutkan Pesanan
                         </a>
                     @else

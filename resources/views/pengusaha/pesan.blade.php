@@ -81,31 +81,25 @@
                         class="mt-1 text-sm font-semibold text-gray-800"
                         x-text="item.pesan"
                     ></p>
-                    {{-- STATUS --}}
-                    <template x-if="item.status === 'terbuka' || item.status === 'menunggu'">
-                        <span
-                            class="mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
-                            style="border: 1px solid #F59E0B; background-color: #FFF7E6; color: #B45309;"
-                        >
-                            Terbuka
-                        </span>
-                    </template>
-                    <template x-if="item.status === 'disepakati'">
-                        <span
-                            class="mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
-                            style="border: 1px solid #16A34A; background-color: #ECFDF3; color: #15803D;"
-                        >
-                            Disepakati
-                        </span>
-                    </template>
-                    <template x-if="item.status === 'ditolak'">
-                        <span
-                            class="mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
-                            style="border: 1px solid #DC2626; background-color: #FEF2F2; color: #B91C1C;"
-                        >
-                            Ditolak
-                        </span>
-                    </template>
+
+                {{-- STATUS --}}
+                <template x-if="item.status === 'terbuka'">
+                    <span
+                        class="mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
+                        style="border: 1px solid #F59E0B; background-color: #FFF7E6; color: #B45309;"
+                    >
+                        Terbuka
+                    </span>
+                </template>
+
+                <template x-if="item.status === 'tertutup'">
+                    <span
+                        class="mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
+                        style="border: 1px solid #16A34A; background-color: #ECFDF3; color: #15803D;"
+                    >
+                        Tertutup
+                    </span>
+                </template>
 
                 </div>
                 {{-- WAKTU --}}

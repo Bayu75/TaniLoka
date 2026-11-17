@@ -29,6 +29,7 @@ class KeranjangController extends Controller
 
         $data = $request->validate([
             'jumlah_kg' => ['required', 'numeric', 'min:' . $produk->min_order_kg, 'max:' . $produk->stok_kg],
+            'harga_per_kg' => ['nullable', 'numeric', 'min:1'],
         ], [
             'jumlah_kg.min' => "Minimal pembelian {$produk->min_order_kg} kg.",
             'jumlah_kg.max' => "Stok tersedia hanya {$produk->stok_kg} kg.",
@@ -46,6 +47,12 @@ class KeranjangController extends Controller
         }
 
         $item->jumlah_kg = $jumlahBaru;
+
+        // Simpan harga nego jika dikirim dari halaman chat
+        if ($request->filled('harga_per_kg')) {
+            $item->harga_per_kg = $data['harga_per_kg'];
+        }
+
         $item->save();
 
         if ($request->input('aksi') === 'beli') {

@@ -476,6 +476,36 @@
                         telah disepakati.
                     </p>
 
+                    {{-- TOMBOL MASUKKAN KE KERANJANG --}}
+                    <form
+                        method="POST"
+                        action="{{ route('pengusaha.keranjang.tambah', $produk?->id ?? 0) }}"
+                        class="mt-3"
+                    >
+                        @csrf
+
+                        <input
+                            type="hidden"
+                            name="jumlah_kg"
+                            :value="penawaranDiterima?.jumlah"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="harga_per_kg"
+                            :value="penawaranDiterima?.harga"
+                        >
+
+                        <input type="hidden" name="aksi" value="beli">
+
+                        <button
+                            type="submit"
+                            class="w-full rounded-xl bg-orange-500 px-4 py-3 font-bold text-white transition hover:bg-orange-600"
+                        >
+                            🛒 Masukkan ke Keranjang
+                        </button>
+                    </form>
+
                 </div>
             </div>
 

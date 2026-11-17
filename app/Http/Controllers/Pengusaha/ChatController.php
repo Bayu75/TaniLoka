@@ -331,6 +331,7 @@ class ChatController extends Controller
             ]);
 
             $percakapan->update([
+                'status' => 'tertutup',
                 'pesan_terakhir_pada' => now(),
             ]);
 
@@ -359,6 +360,7 @@ class ChatController extends Controller
             ]);
 
             $percakapan->update([
+                'status' => 'tertutup',
                 'pesan_terakhir_pada' => now(),
             ]);
 
