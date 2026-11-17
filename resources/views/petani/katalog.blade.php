@@ -167,19 +167,46 @@
         width: 100%;
       }
     }
+    /* Pita putih (header/footer) melebar ke tepi jendela, meski layout petani
+       punya padding horizontal di <main>. Isi di dalamnya tetap di container.
+       overflow-x:clip dipasang di html, bukan di pembungkus, supaya pita
+       100vw tidak terpotong tapi tidak memunculkan scrollbar horizontal. */
+    html { overflow-x: clip; }
+    .tl-bleed {
+      width: 100vw;
+      max-width: 100vw;
+      margin-left: calc(50% - 50vw);
+      margin-right: calc(50% - 50vw);
+      box-sizing: border-box;
+    }
+    .tl-bleed-fixed {
+      position: fixed;
+      left: 0;
+      right: auto;
+      bottom: 0;
+      z-index: 30;
+      width: 100vw;
+      max-width: 100vw;
+      margin-left: calc(50% - 50vw);
+      margin-right: 0;
+      box-sizing: border-box;
+    }
 </style>
-<div x-data="{
-    // Mengetik/menghapus hanya mengubah draft, bukan hasil yang sedang ditampilkan.
-    pencarianAktif: '',
-    pencarianDraft: '',
-    kategoriOverflow: false,
-    kategoriBisaKiri: false,
-    kategoriBisaKanan: false,
-    // Hanya tombol Cari, Enter, atau submit form yang menerapkan draft.
-    cariProduk() {
+<script>
+  function katalogPage() {
+    return {
+      // Data dari Petani\KatalogController@index (database).
+      // Mengetik/menghapus hanya mengubah draft, bukan hasil yang sedang ditampilkan.
+      pencarianAktif: '',
+      pencarianDraft: '',
+      kategoriOverflow: false,
+      kategoriBisaKiri: false,
+      kategoriBisaKanan: false,
+      // Hanya tombol Cari, Enter, atau submit form yang menerapkan draft.
+      cariProduk() {
         this.pencarianAktif = this.pencarianDraft;
-    },
-    updateKategoriScroll() {
+      },
+      updateKategoriScroll() {
         const track = this.$refs.kategoriTrack;
         if (!track || !track.clientWidth) return;
         // Compare natural chip width against the whole row, not the padded track.
@@ -193,8 +220,8 @@
             this.kategoriBisaKiri = this.kategoriOverflow && track.scrollLeft > 1;
             this.kategoriBisaKanan = this.kategoriOverflow && track.scrollLeft < max - 1;
         });
-    },
-    geserKategori(arah) {
+      },
+      geserKategori(arah) {
         const track = this.$refs.kategoriTrack;
         if (!track) return;
         const reduced = window.matchMedia
@@ -203,37 +230,20 @@
             left: arah * Math.max(120, track.clientWidth * 0.75),
             behavior: reduced ? 'auto' : 'smooth'
         });
-    },
-    kategori: 'Semua',
-    urut: '',
-    saringBuka: false,
-    pilih: null,
-    toko: null,
-    riwayatNavigasi: [],
-    tabDetail: 'info',
-    fotoAktif: 0,
-    banner: '{{ asset('images/banner-toko.jpg') }}',
-    namaSaya: 'Pak Made Sukartha',
-    daftarKategori: [
-        { nama: 'Semua', ikon: '' },
-        { nama: 'Sayuran', ikon: '🥬' },
-        { nama: 'Bumbu & Rempah', ikon: '🌶️' },
-        { nama: 'Umbi-umbian', ikon: '🥕' },
-        { nama: 'Buah-buahan', ikon: '🍉' },
-        { nama: 'Serealia', ikon: '🌽' },
-        { nama: 'Jamur', ikon: '🍄' }
-    ],
-    produk: [
-        { nama: 'Bayam Hijau Organik', kategori: 'Sayuran', harga: 8500, minimal: 5, stokKg: 120, petani: 'Pak Made Sukartha', rating: 4.8, transaksi: 234, lokasi: 'Tabanan', label: ['Organik'], nego: true, stok: true, gambar: '{{ asset('images/bayam.jpg') }}', ikon: '🥬', panen: 'Tersedia sepanjang tahun, panen tiap 3 minggu', deskripsi: 'Bayam hijau organik segar, dipanen pagi hari dari kebun bebas pestisida. Cocok untuk restoran dan katering yang mengutamakan bahan alami. Tersertifikasi organik oleh LSO Bali.' },
-        { nama: 'Cabai Rawit Merah', kategori: 'Bumbu & Rempah', harga: 45000, minimal: 2, stokKg: 40, petani: 'Ibu Wayan Sari', rating: 4.9, transaksi: 187, lokasi: 'Bangli', label: [], nego: false, stok: true, gambar: '{{ asset('images/cabai.jpg') }}', ikon: '🌶️', panen: 'Panen tiap 2 minggu', deskripsi: 'Cabai rawit merah pedas dari dataran tinggi Bangli, dipetik saat matang penuh.' },
-        { nama: 'Tomat Segar Grade A', kategori: 'Sayuran', harga: 12000, minimal: 10, stokKg: 200, petani: 'Pak Ketut Wirasa', rating: 4.7, transaksi: 156, lokasi: 'Tabanan', label: ['Grade A'], nego: true, stok: true, gambar: '{{ asset('images/tomat.jpg') }}', ikon: '🍅', panen: 'Panen tiap minggu', deskripsi: 'Tomat segar grade A dengan ukuran seragam, cocok untuk saus dan salad.' },
-        { nama: 'Kangkung Segar', kategori: 'Sayuran', harga: 5500, minimal: 10, stokKg: 90, petani: 'Ibu Nyoman Dewi', rating: 4.6, transaksi: 98, lokasi: 'Gianyar', label: [], nego: true, stok: true, gambar: '{{ asset('images/kangkung.jpg') }}', ikon: '🥬', panen: 'Panen tiap 3 minggu', deskripsi: 'Kangkung segar dari sawah Gianyar, batang renyah dan daun lebar.' },
-        { nama: 'Bawang Putih Lokal', kategori: 'Bumbu & Rempah', harga: 35000, minimal: 5, stokKg: 60, petani: 'Pak Gede Setiawan', rating: 4.5, transaksi: 76, lokasi: 'Karangasem', label: [], nego: true, stok: true, gambar: '{{ asset('images/bawang-putih.jpg') }}', ikon: '🧄', panen: 'Panen musiman', deskripsi: 'Bawang putih lokal Karangasem dengan aroma kuat, sudah dikeringkan.' },
-        { nama: 'Kembang Kol Putih', kategori: 'Sayuran', harga: 15000, minimal: 5, stokKg: 70, petani: 'Pak Ketut Wirasa', rating: 4.7, transaksi: 156, lokasi: 'Tabanan', label: [], nego: false, stok: true, gambar: '{{ asset('images/kembang-kol.jpg') }}', ikon: '🥦', panen: 'Panen tiap 2 bulan', deskripsi: 'Kembang kol putih padat dan bersih, dipanen dari kebun Bedugul.' },
-        { nama: 'Wortel Organik', kategori: 'Umbi-umbian', harga: 14000, minimal: 5, stokKg: 85, petani: 'Pak Made Sukartha', rating: 4.8, transaksi: 234, lokasi: 'Tabanan', label: ['Organik'], nego: true, stok: true, gambar: '{{ asset('images/wortel.jpg') }}', ikon: '🥕', panen: 'Panen tiap 3 bulan', deskripsi: 'Wortel organik manis dan renyah, ditanam tanpa pestisida kimia.' },
-        { nama: 'Paprika Merah', kategori: 'Sayuran', harga: 55000, minimal: 3, stokKg: 0, petani: 'Ibu Wayan Sari', rating: 4.9, transaksi: 187, lokasi: 'Bangli', label: [], nego: true, stok: false, gambar: '{{ asset('images/paprika.jpg') }}', ikon: '🫑', panen: 'Panen tiap 2 bulan', deskripsi: 'Paprika merah segar dari greenhouse Bangli, warna cerah dan daging tebal.' }
-    ],
-    hasil() {
+      },
+      kategori: 'Semua',
+      urut: '',
+      saringBuka: false,
+      pilih: null,
+      toko: null,
+      riwayatNavigasi: [],
+      tabDetail: 'info',
+      fotoAktif: 0,
+      banner: @js($banner),
+      namaSaya: @js($namaSaya),
+      daftarKategori: @js($daftarKategori),
+      produk: @js($produk),
+      hasil() {
         const q = this.pencarianAktif.toLowerCase();
         let list = this.produk.filter(p =>
             (this.kategori === 'Semua' || p.kategori === this.kategori) &&
@@ -243,11 +253,21 @@
         if (this.urut === 'mahal') list = [...list].sort((a, b) => b.harga - a.harga);
         if (this.urut === 'rating') list = [...list].sort((a, b) => b.rating - a.rating);
         return list;
-    },
-    produkToko() { return this.produk.filter(p => p.petani === this.toko); },
-    infoToko() { return this.produkToko()[0] || {}; },
-    // Simpan induk lokal tanpa mengubah pencarian, kategori, atau urutan.
-    buka(p) {
+      },
+      produkToko() { return this.produk.filter(p => p.petani === this.toko); },
+      infoToko() { return this.produkToko()[0] || {}; },
+      daftarFoto(p) {
+        if (p && Array.isArray(p.foto) && p.foto.length) return p.foto;
+        if (p && p.gambar) return [p.gambar];
+        return [''];
+      },
+      fotoUtama(p) {
+        if (!p) return '';
+        const foto = this.daftarFoto(p);
+        return foto[this.fotoAktif] || foto[0] || p.gambar || '';
+      },
+      // Simpan induk lokal tanpa mengubah pencarian, kategori, atau urutan.
+      buka(p) {
         this.riwayatNavigasi.push({
             pilih: this.pilih,
             toko: this.toko,
@@ -259,17 +279,17 @@
         this.tabDetail = 'info';
         this.fotoAktif = 0;
         window.scrollTo(0, 0);
-    },
-    kembaliInduk() {
+      },
+      kembaliInduk() {
         const induk = this.riwayatNavigasi.pop() || { pilih: null, toko: null };
         this.pilih = induk.pilih;
         this.toko = induk.toko;
         if (induk.tabDetail !== undefined) this.tabDetail = induk.tabDetail;
         if (induk.fotoAktif !== undefined) this.fotoAktif = induk.fotoAktif;
         window.scrollTo(0, 0);
-    },
-    tutup() { this.kembaliInduk(); },
-    bukaToko(nama) {
+      },
+      tutup() { this.kembaliInduk(); },
+      bukaToko(nama) {
         this.riwayatNavigasi.push({
             pilih: this.pilih,
             toko: this.toko,
@@ -278,12 +298,22 @@
         });
         this.toko = nama;
         window.scrollTo(0, 0);
-    },
-    tutupToko() { this.kembaliInduk(); },
-    inisial(n) { return n.split(' ').pop().charAt(0); },
-    rupiah(n) { return 'Rp ' + n.toLocaleString('id-ID'); },
-    bintang(r) { return '★★★★★'.slice(0, Math.round(r)) + '☆☆☆☆☆'.slice(0, 5 - Math.round(r)); }
-}">
+      },
+      tutupToko() { this.kembaliInduk(); },
+      inisial(n) {
+        const s = (n || '?').toString().trim();
+        const bagian = s.split(/\s+/).filter(Boolean);
+        return (bagian.pop() || '?').charAt(0);
+      },
+      rupiah(n) { return 'Rp ' + Number(n || 0).toLocaleString('id-ID'); },
+      bintang(r) {
+        const n = Math.round(Number(r || 0));
+        return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, Math.max(0, 5 - n));
+      }
+    };
+  }
+</script>
+<div class="tl-katalog" x-data="katalogPage()">
 
     {{-- ===== DAFTAR KATALOG ===== --}}
     <div x-show="!pilih && !toko">
@@ -338,7 +368,7 @@
         <div class="max-w-5xl mx-auto px-4 py-5 pb-16">
             <p class="text-sm text-gray-600 mb-3"><span class="font-semibold" x-text="hasil().length"></span> produk ditemukan</p>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <template x-for="p in hasil()" :key="p.nama">
+                <template x-for="p in hasil()" :key="p.id">
                     <div @click="buka(p)" class="bg-white border border-gray-200 rounded-2xl overflow-hidden cursor-pointer hover:border-green-600" :class="!p.stok && 'opacity-80'">
                         <div class="relative h-32 bg-green-50 flex items-center justify-center text-5xl">
                             <span x-text="p.ikon"></span>
@@ -371,19 +401,14 @@
     {{-- ===== DETAIL PRODUK ===== --}}
     <template x-if="pilih && !toko">
         <div>
-            <div class="bg-white border-b border-gray-200">
-                <div class="max-w-4xl mx-auto px-4 py-3 grid grid-cols-[5rem_minmax(0,1fr)_5rem] items-center gap-2">
-                    <button type="button" @click="tutup()" class="inline-flex items-center gap-1 py-2 text-sm font-semibold text-green-700 hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 justify-self-start">
+            <div class="tl-bleed -mt-5">
+                <div class="max-w-4xl mx-auto  px-4 py-3 flex items-center gap-4">
+                    <button type="button" @click="tutup()" class="inline-flex items-center gap-1 py-2 text-sm font-semibold text-green-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="shrink-0">
                     <path d="m15 18-6-6 6-6" />
                 </svg>
-                <span>Kembali</span>
+                <span>Kembali ke katalog</span>
             </button>
-                    <div class="min-w-0 break-words text-center">
-                        <p class="font-bold text-sm" x-text="pilih.nama"></p>
-                        <p class="text-xs text-gray-500" x-text="pilih.kategori"></p>
-                    </div>
-                    <span aria-hidden="true"></span>
                 </div>
             </div>
 
@@ -391,7 +416,7 @@
                 <div>
                     <div class="relative h-72 bg-green-50 rounded-2xl overflow-hidden flex items-center justify-center text-7xl">
                         <span x-text="pilih.ikon"></span>
-                        <img x-show="pilih.gambar" :src="pilih.gambar" :alt="pilih.nama" x-on:error="pilih.gambar = ''" class="absolute inset-0 w-full h-full object-cover">
+                        <img x-show="fotoUtama(pilih)" :src="fotoUtama(pilih)" :alt="pilih.nama" x-on:error="$el.style.display='none'" class="absolute inset-0 w-full h-full object-cover">
                         <div class="absolute top-3 left-3 flex flex-col gap-1 items-start">
                             <template x-for="l in pilih.label" :key="l">
                                 <span class="bg-green-700 text-white text-xs font-semibold px-2.5 py-1 rounded-full" x-text="l"></span>
@@ -400,11 +425,11 @@
                         </div>
                         <div x-show="!pilih.stok" class="absolute inset-0 bg-black/55 flex items-center justify-center text-white font-bold">Stok Habis</div>
                     </div>
-                    <div class="flex gap-2 mt-3">
-                        <template x-for="i in [0, 1, 2]" :key="i">
+                    <div class="flex gap-2 mt-3" x-show="daftarFoto(pilih).length">
+                        <template x-for="(url, i) in daftarFoto(pilih)" :key="i">
                             <button type="button" @click="fotoAktif = i" :class="fotoAktif === i ? 'border-green-700' : 'border-transparent opacity-70'" class="w-12 h-12 rounded-lg overflow-hidden border-2 bg-green-50 flex items-center justify-center">
-                                <img x-show="pilih.gambar" :src="pilih.gambar" class="w-full h-full object-cover">
-                                <span x-show="!pilih.gambar" x-text="pilih.ikon"></span>
+                                <img x-show="url" :src="url" class="w-full h-full object-cover" x-on:error="$el.style.display='none'">
+                                <span x-show="!url" x-text="pilih.ikon"></span>
                             </button>
                         </template>
                     </div>
@@ -463,7 +488,7 @@
                 </div>
             </div>
 
-            <div class="fixed bottom-0 left-0 right-0 bg-white/90 border-t border-gray-200">
+            <div class="tl-bleed-fixed fixed bottom-0 z-30 bg-white/90 border-t border-gray-200">
                 <div class="max-w-4xl mx-auto px-4 py-3">
                     <div x-show="pilih.petani === namaSaya" class="flex gap-3">
                         <p class="flex-1 bg-green-50 rounded-xl px-4 py-3 text-sm text-gray-700">Ini produk Anda. Ubah lewat Kelola Produk.</p>
@@ -480,27 +505,26 @@
     {{-- ===== PROFIL TOKO ===== --}}
     <template x-if="toko">
         <div class="pb-16">
-            <div class="bg-white border-b border-gray-200">
-                <div class="max-w-4xl mx-auto px-4 py-3 grid grid-cols-[5rem_minmax(0,1fr)_5rem] items-center gap-2">
-                    <button type="button" @click="tutupToko()" class="inline-flex items-center gap-1 py-2 text-sm font-semibold text-green-700 hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 justify-self-start">
+            <div class="tl-bleed bg-white border-b border-gray-200">
+                <div class="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
+                    <button type="button" @click="tutupToko()" class="inline-flex items-center gap-1 py-2 text-sm font-semibold text-green-700 hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="shrink-0">
                     <path d="m15 18-6-6 6-6" />
                 </svg>
                 <span>Kembali</span>
             </button>
-                    <div class="min-w-0 break-words text-center">
-                        <p class="font-bold text-sm">Profil Toko</p>
-                        <p class="text-xs text-gray-500" x-text="toko"></p>
+                    <div class="min-w-0 text-left">
+                        <p class="font-bold text-sm truncate">Profil Toko</p>
+                        <p class="text-xs text-gray-500 truncate" x-text="toko"></p>
                     </div>
-                    <span aria-hidden="true"></span>
                 </div>
             </div>
 
-            <div class="relative h-32 md:h-40 bg-gradient-to-r from-green-800 to-green-600 overflow-hidden">
+            <div class="tl-bleed relative h-32 md:h-40 bg-gradient-to-r from-green-800 to-green-600 overflow-hidden">
                 <img x-show="banner" :src="banner" alt="Banner toko" x-on:error="banner = ''" class="w-full h-full object-cover">
             </div>
 
-            <div class="bg-white border-b border-gray-200">
+            <div class="tl-bleed bg-white border-b border-gray-200">
                 <div class="max-w-4xl mx-auto px-4 pb-5">
                     <div class="w-16 h-16 -mt-8 relative rounded-full bg-green-700 border-4 border-white text-white flex items-center justify-center text-2xl font-bold" x-text="inisial(toko)"></div>
                     <div class="flex items-start justify-between mt-2">
@@ -508,7 +532,7 @@
                             <h1 class="text-lg font-bold" x-text="toko"></h1>
                             <p class="text-sm text-gray-500" x-text="infoToko().lokasi + ', Bali'"></p>
                         </div>
-                        <span class="bg-green-50 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">✓ Terverifikasi</span>
+                        <span x-show="infoToko().terverifikasi" class="bg-green-50 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">✓ Terverifikasi</span>
                     </div>
                     <div class="flex items-center gap-6 border-t border-gray-100 mt-4 pt-4">
                         <div><p class="font-bold" x-text="produkToko().length"></p><p class="text-xs text-gray-500">Produk</p></div>
@@ -527,7 +551,7 @@
             <div class="max-w-4xl mx-auto px-4 py-5">
                 <h2 class="font-semibold mb-3">Produk dari <span x-text="toko"></span></h2>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <template x-for="p in produkToko()" :key="p.nama">
+                    <template x-for="p in produkToko()" :key="p.id">
                         <div @click="buka(p)" class="bg-white border border-gray-200 rounded-2xl overflow-hidden cursor-pointer hover:border-green-600" :class="!p.stok && 'opacity-80'">
                             <div class="relative h-32 bg-green-50 flex items-center justify-center text-5xl">
                                 <span x-text="p.ikon"></span>

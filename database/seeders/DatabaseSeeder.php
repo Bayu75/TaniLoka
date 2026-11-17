@@ -23,10 +23,14 @@ class DatabaseSeeder extends Seeder
             'status_verifikasi' => 'terverifikasi', 'terverifikasi_pada' => now(),
         ]);
         $made->profilPetani()->create([
-            'nama_usaha_tani' => 'Kebun Sutama', 'kabupaten' => 'Tabanan',
-            'kecamatan' => 'Baturiti', 'desa' => 'Bedugul',
+            'nama_usaha_tani' => 'Kebun Sutama',
             'deskripsi' => 'Sayur dataran tinggi segar dari Bedugul.',
             'nama_bank' => 'BRI', 'no_rekening' => '1234567890', 'atas_nama_rekening' => 'Made Sutama',
+        ]);
+        Alamat::create([
+            'user_id' => $made->id, 'label' => 'Kebun', 'nama_penerima' => 'Made Sutama',
+            'no_hp' => '081200000001', 'alamat_lengkap' => 'Desa Bedugul, Baturiti',
+            'kabupaten' => 'Tabanan', 'kecamatan' => 'Baturiti', 'kode_pos' => '82191', 'utama' => true,
         ]);
 
         $ketut = User::create([
@@ -35,26 +39,33 @@ class DatabaseSeeder extends Seeder
             'status_verifikasi' => 'terverifikasi', 'terverifikasi_pada' => now(),
         ]);
         $ketut->profilPetani()->create([
-            'nama_usaha_tani' => 'Tani Arsana', 'kabupaten' => 'Bangli',
-            'kecamatan' => 'Kintamani', 'desa' => 'Songan',
+            'nama_usaha_tani' => 'Tani Arsana',
             'deskripsi' => 'Cabai, bawang, dan jeruk Kintamani.',
             'nama_bank' => 'BPD Bali', 'no_rekening' => '0987654321', 'atas_nama_rekening' => 'Ketut Arsana',
         ]);
+        Alamat::create([
+            'user_id' => $ketut->id, 'label' => 'Kebun', 'nama_penerima' => 'Ketut Arsana',
+            'no_hp' => '081200000002', 'alamat_lengkap' => 'Desa Songan, Kintamani',
+            'kabupaten' => 'Bangli', 'kecamatan' => 'Kintamani', 'kode_pos' => '80652', 'utama' => true,
+        ]);
 
-        // Petani belum terverifikasi, untuk menguji pembatasan
+        // Petani belum terverifikasi, untuk menguji pembatasan & checklist verifikasi
         $wayan = User::create([
             'name' => 'Wayan Baru', 'email' => 'wayan@taniloka.test', 'no_wa' => '081200000003',
             'peran' => 'petani', 'password' => 'password',
             'status_verifikasi' => 'belum_diajukan',
         ]);
-        $wayan->profilPetani()->create(['kabupaten' => 'Gianyar']);
+        $wayan->profilPetani()->create([]); // profil & alamat sengaja kosong
 
         $resto = User::create([
             'name' => 'Putu Restu', 'email' => 'resto@taniloka.test', 'no_wa' => '081300000001',
             'peran' => 'pengusaha', 'password' => 'password',
             'status_verifikasi' => 'terverifikasi', 'terverifikasi_pada' => now(),
         ]);
-        $resto->profilPengusaha()->create(['nama_usaha' => 'Warung Restu', 'jenis_usaha' => 'restoran']);
+        $resto->profilPengusaha()->create([
+            'nama_usaha' => 'Warung Restu', 'jenis_usaha' => 'restoran',
+            'deskripsi' => 'Warung makan khas Bali di Ubud.',
+        ]);
         $alamatResto = Alamat::create([
             'user_id' => $resto->id, 'label' => 'Warung', 'nama_penerima' => 'Putu Restu',
             'no_hp' => '081300000001', 'alamat_lengkap' => 'Jl. Raya Ubud No. 10',

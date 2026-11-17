@@ -1,90 +1,118 @@
 @extends('layouts.petani')
 
+@section('title', 'Akun - TaniLoka')
+
 @section('content')
-<div class="max-w-3xl mx-auto px-4 py-6 space-y-5 pb-24">
-    <header class="mb-4">
-        <h1 class="text-2xl font-extrabold">Akun</h1>
-    </header>
 
-    <div class="bg-primary text-white rounded-2xl p-4 flex items-center gap-4">
-        <div class="w-14 h-14 rounded-xl bg-yellow-400 text-primary flex items-center justify-center text-2xl font-bold">
-            {{ strtoupper(substr(session('nama', 'P'), 0, 1)) }}
+@php
+    $user    = auth()->user();
+    $profil  = $user->profilPetani;
+    $nama    = $profil?->nama_usaha_tani ?: $user->name;
+    $inisial = strtoupper(mb_substr($nama, 0, 1));
+    $kota = $user->alamatUtama?->kabupaten ?? 'Bali';
+
+    $jumlahProduk  = $user->produk()->count();
+    $jumlahPesanan = $user->pesananMasuk()->count();
+
+    $menuAkun = [
+        ['url' => route('petani.profil'), 'ikon' => '👤', 'judul' => 'Profil Petani', 'ket' => 'Informasi usaha tani dan rekening'],
+        ['url' => route('petani.alamat'), 'ikon' => '📍', 'judul' => 'Alamat Kebun', 'ket' => 'Lokasi kebun dan pengambilan barang'],
+    ];
+    $menuAktivitas = [
+        ['url' => route('petani.produk'),  'ikon' => '🌱', 'judul' => 'Kelola Produk', 'ket' => 'Tambah dan ubah produk jualan'],
+        ['url' => route('petani.pesanan'), 'ikon' => '📦', 'judul' => 'Pesanan Masuk', 'ket' => 'Pesanan dari pengusaha kuliner'],
+        ['url' => route('petani.pesan'),   'ikon' => '💬', 'judul' => 'Pesan', 'ket' => 'Negosiasi harga dan percakapan'],
+    ];
+    $menuBantuan = [
+        ['url' => route('petani.bantuan'), 'ikon' => '❓', 'judul' => 'Bantuan & Informasi', 'ket' => 'WhatsApp, pertanyaan umum, kontak'],
+    ];
+    $grup = ['Akun Saya' => $menuAkun, 'Aktivitas' => $menuAktivitas, 'Bantuan & Lainnya' => $menuBantuan];
+@endphp
+
+{{-- HEADER HALAMAN AKUN --}}
+<x-page-header judul="Akun" :kembali="false" lebar="max-w-3xl"/>
+
+<div class="mx-auto max-w-3xl py-5 md:py-6">
+
+    @if (session('pesan_akun'))
+        <div class="mb-5 rounded-xl bg-green-50 px-4 py-3 text-sm text-[#2E7D32]">{{ session('pesan_akun') }}</div>
+    @endif
+
+    {{-- PROFIL PETANI --}}
+    <div class="mb-5 flex items-center gap-4 rounded-2xl bg-[#2E7D32] p-4 text-white shadow-sm">
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#F5C400] text-2xl font-extrabold text-[#2E7D32]">
+            {{ $inisial }}
         </div>
-        <div class="flex-1">
-            <p class="font-semibold text-lg">{{ session('nama', 'Pak Made Sukartha') }}</p>
-            <p class="text-sm text-white/90">{{ ucfirst(session('peran', 'petani')) }} · Tabanan, Bali</p>
+        <div class="min-w-0 flex-1">
+            <h2 class="truncate text-lg font-bold">{{ $nama }}</h2>
+            <p class="text-sm text-green-100">Petani</p>
+            <p class="mt-1 text-xs text-green-100">{{ $user->name }} · {{ $kota }}</p>
         </div>
-        <span class="text-xs bg-white/20 px-2.5 py-1 rounded-full flex items-center gap-1">✓ Terverifikasi</span>
+        <span class="shrink-0 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Akun Petani</span>
     </div>
 
-    <div class="grid grid-cols-2 gap-3">
-        <a href="{{ url('/petani/pesanan') }}" class="bg-white border border-border rounded-2xl p-4 text-center">
-            <p class="text-2xl">📋</p>
-            <p class="text-2xl font-semibold text-gray-900">5</p>
-            <p class="text-sm text-text-muted">Pesanan Masuk</p>
+    {{-- VERIFIKASI AKUN --}}
+    <a href="{{ route('petani.verifikasi') }}" {{-- TODO: route('petani.verifikasi') --}}
+       class="mb-5 flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+        <div>
+            <p class="font-semibold text-gray-800">Verifikasi Akun</p>
+            <p class="text-xs text-gray-500">Lengkapi data dan dokumen agar bisa menjual produk</p>
+        </div>
+        @if ($user->terverifikasi())
+            <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-[#2E7D32]">Terverifikasi</span>
+        @elseif ($user->status_verifikasi === 'menunggu')
+            <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">Menunggu</span>
+        @else
+            <span class="rounded-full bg-[#F5C400]/20 px-3 py-1 text-xs font-semibold text-yellow-700">Ajukan</span>
+        @endif
+    </a>
+
+    {{-- STATISTIK --}}
+    <div class="mb-6 grid grid-cols-2 gap-3">
+        <a href="{{ route('petani.produk') }}"
+           class="rounded-2xl border border-[#DCE8D8] bg-white p-5 text-center transition hover:border-[#2E7D32]">
+            <div class="mb-2 text-2xl">🌱</div>
+            <h3 class="text-2xl font-extrabold text-[#1A2A1A]">{{ $jumlahProduk }}</h3>
+            <p class="mt-1 text-sm text-[#6B806B]">Produk</p>
         </a>
-        <a href="{{ url('/petani/pesanan') }}#selesai" class="bg-white border border-border rounded-2xl p-4 text-center">
-            <p class="text-2xl">☑️</p>
-            <p class="text-2xl font-semibold text-gray-900">2</p>
-            <p class="text-sm text-text-muted">Selesai</p>
+        <a href="{{ route('petani.pesanan') }}"
+           class="rounded-2xl border border-[#DCE8D8] bg-white p-5 text-center transition hover:border-[#2E7D32]">
+            <div class="mb-2 text-2xl">📦</div>
+            <h3 class="text-2xl font-extrabold text-[#1A2A1A]">{{ $jumlahPesanan }}</h3>
+            <p class="mt-1 text-sm text-[#6B806B]">Pesanan Masuk</p>
         </a>
     </div>
 
-    <div>
-        <p class="text-xs font-semibold text-text-muted tracking-wide mb-2">AKUN SAYA</p>
-        <a href="{{ url('/petani/alamat') }}" class="bg-white border border-border rounded-2xl p-4 flex items-center gap-3">
-            <span class="text-xl">📍</span>
-            <div class="flex-1">
-                <p class="font-semibold text-gray-900">Alamat Saya</p>
-                <p class="text-sm text-text-muted">1 alamat tersimpan</p>
+    {{-- GRUP MENU --}}
+    @foreach ($grup as $judulGrup => $items)
+        <section class="mb-6">
+            <h3 class="mb-3 text-xs font-bold uppercase tracking-wide text-[#6B806B]">{{ $judulGrup }}</h3>
+            <div class="overflow-hidden rounded-2xl border border-[#DCE8D8] bg-white">
+                @foreach ($items as $m)
+                    <a href="{{ $m['url'] }}"
+                       class="flex items-center gap-4 p-4 transition hover:bg-[#F5F9F2] {{ $loop->last ? '' : 'border-b border-[#E5EEE2]' }}">
+                        <span class="text-2xl">{{ $m['ikon'] }}</span>
+                        <div class="min-w-0 flex-1">
+                            <h4 class="font-bold text-[#1A2A1A]">{{ $m['judul'] }}</h4>
+                            <p class="text-sm text-[#829182]">{{ $m['ket'] }}</p>
+                        </div>
+                        <span class="text-lg text-[#829182]">›</span>
+                    </a>
+                @endforeach
             </div>
-            <span class="text-text-muted">›</span>
-        </a>
-    </div>
+        </section>
+    @endforeach
 
-    <div>
-        <p class="text-xs font-semibold text-text-muted tracking-wide mb-2">AKTIVITAS</p>
-        <div class="bg-white border border-border rounded-2xl divide-y divide-border overflow-hidden">
-            <a href="{{ url('/petani/pesanan') }}" class="flex items-center gap-3 p-4">
-                <span class="text-xl">📋</span>
-                <div class="flex-1">
-                    <p class="font-semibold text-gray-900">Pesanan</p>
-                    <p class="text-sm text-text-muted">5 pesanan</p>
-                </div>
-                <span class="text-text-muted">›</span>
-            </a>
-            <a href="{{ url('/petani/pesan') }}" class="flex items-center gap-3 p-4">
-                <span class="text-xl">💬</span>
-                <div class="flex-1">
-                    <p class="font-semibold text-gray-900">Pesan</p>
-                    <p class="text-sm text-text-muted">Negosiasi harga & percakapan</p>
-                </div>
-                <span class="text-text-muted">›</span>
-            </a>
-            <a href="{{ url('/petani/produk') }}" class="flex items-center gap-3 p-4">
-                <span class="text-xl">🛒</span>
-                <div class="flex-1">
-                    <p class="font-semibold text-gray-900">Kelola Produk</p>
-                    <p class="text-sm text-text-muted">Produk, stok, dan harga</p>
-                </div>
-                <span class="text-text-muted">›</span>
-            </a>
-        </div>
-    </div>
+    {{-- KELUAR --}}
+    <form action="{{ route('keluar') }}" method="POST">
+        @csrf
+        <button type="submit"
+                class="w-full rounded-xl border border-red-300 bg-transparent px-5 py-3 font-semibold text-red-600 transition hover:bg-red-50">
+            Keluar
+        </button>
+    </form>
 
-    <div>
-        <p class="text-xs font-semibold text-text-muted tracking-wide mb-2">BANTUAN & LAINNYA</p>
-        <a href="{{ url('/petani/bantuan') }}" class="bg-white border border-border rounded-2xl p-4 flex items-center gap-3">
-            <span class="text-xl text-red-500">❓</span>
-            <div class="flex-1">
-                <p class="font-semibold text-gray-900">Bantuan & Informasi</p>
-                <p class="text-sm text-text-muted">WhatsApp, pertanyaan umum, kontak</p>
-            </div>
-            <span class="text-text-muted">›</span>
-        </a>
-    </div>
-
-    <a href="{{ url('/masuk') }}" class="block w-full text-center border border-red-300 text-red-600 rounded-xl py-3 font-medium">Keluar</a>
-    <p class="text-center text-xs text-text-muted">TaniLoka v1.0.0 MVP · Dibuat di Bali</p>
+    <p class="mt-5 text-center text-xs text-[#829182]">TaniLoka v1.0.0 MVP · Dibuat di Bali</p>
 </div>
+
 @endsection

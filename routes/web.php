@@ -2,6 +2,19 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Pengusaha\PesananController;
+
+use App\Http\Controllers\Petani\AkunController as PetaniAkunController;
+use App\Http\Controllers\Petani\AlamatController as AlamatPetaniController;
+use App\Http\Controllers\Petani\DashboardController as PetaniDashboardController;
+use App\Http\Controllers\Petani\PesananController as PetaniPesananController;
+use App\Http\Controllers\Petani\ProdukController as PetaniProdukController;
+
+use App\Http\Controllers\Petani\KatalogController as PetaniKatalogController;
+use App\Http\Controllers\Petani\PesanController as PetaniPesanController;
+use App\Http\Controllers\Petani\ProfilController as ProfilPetaniController;
+use App\Http\Controllers\Petani\VerifikasiController as VerifikasiPetaniController;
+
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\VerifikasiController;
 use App\Http\Controllers\Pengusaha\VerifikasiController as VerifikasiPengusahaController;
@@ -51,7 +64,6 @@ Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengu
     Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan');
     Route::get('/pesanan/{id}', [PesananController::class, 'show'])->name('pesanan.detail');
     Route::post('/pesanan/{id}/batalkan', [PesananController::class, 'cancel'])->name('pesanan.cancel');
-
     Route::get('/verifikasi', [VerifikasiPengusahaController::class, 'index'])->name('verifikasi');
     Route::post('/verifikasi', [VerifikasiPengusahaController::class, 'ajukan'])->name('verifikasi.ajukan');
     Route::view('/akun', 'pengusaha.akun')->name('akun');
@@ -68,38 +80,43 @@ Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengu
 });
 
 Route::middleware(['auth', 'peran:petani'])->prefix('petani')->name('petani.')->group(function () {
-        Route::view('/', 'petani.dashboard')->name('dashboard');
-        Route::view('/produk', 'petani.produk')->name('produk');
-        Route::view('/katalog', 'petani.katalog')->name('katalog');
-        Route::view('/pesan', 'petani.pesan')->name('pesan');
-        Route::view('/pesanan', 'petani.pesanan')->name('pesanan');
-        Route::view('/akun', 'petani.akun')->name('akun');
-        Route::view('/alamat', 'petani.alamat')->name('alamat');
-        Route::view('/bantuan', 'petani.bantuan')->name('bantuan');
+    // Dashboard
+    Route::get('/', [PetaniDashboardController::class, 'index'])->name('dashboard');
 
-        Route::post('/akun', function (\Illuminate\Http\Request $request) {
-            $aksi = $request->input('aksi');
+    // Kelola Produk
+    Route::get('/produk', [PetaniProdukController::class, 'index'])->name('produk');
+    Route::post('/produk', [PetaniProdukController::class, 'store'])->name('produk.store');
+    Route::put('/produk/{produk}', [PetaniProdukController::class, 'update'])->whereNumber('produk')->name('produk.update');
+    Route::patch('/produk/{produk}/tersedia', [PetaniProdukController::class, 'tersedia'])->whereNumber('produk')->name('produk.tersedia');
+    Route::delete('/produk/{produk}', [PetaniProdukController::class, 'destroy'])->whereNumber('produk')->name('produk.destroy');
 
-            if ($aksi === 'profil') {
-                return redirect()->route('petani.akun')
-                    ->with('pesan_akun', 'Profil disimpan (simulasi)');
-            }
+    // Halaman yang belum disambungkan ke database
+    Route::get('/katalog', [PetaniKatalogController::class, 'index'])->name('katalog');
 
-            if ($aksi === 'tambah_alamat') {
-                return redirect(route('petani.akun') . '#tambah-alamat')
-                    ->with('pesan_akun', 'Alamat ditambahkan (simulasi)');
-            }
+    Route::get('/pesan', [PetaniPesanController::class, 'index'])->name('pesan');
+    Route::get('/pesan/{percakapan}', [PetaniPesanController::class, 'show'])->whereNumber('percakapan')->name('pesan.show');
+    Route::post('/pesan/{percakapan}/kirim', [PetaniPesanController::class, 'kirim'])->whereNumber('percakapan')->name('pesan.kirim');
 
-            if ($aksi === 'utama') {
-                return redirect()->route('petani.akun')
-                    ->with('pesan_akun', 'Alamat utama diperbarui (simulasi)');
-            }
+    Route::view('/bantuan', 'petani.bantuan')->name('bantuan');
 
-            if ($aksi === 'hapus_alamat') {
-                return redirect()->route('petani.akun')
-                    ->with('pesan_akun', 'Alamat dihapus (simulasi)');
-            }
+    // Pesanan Masuk
+    Route::get('/pesanan', [PetaniPesananController::class, 'index'])->name('pesanan');
+    Route::get('/pesanan/{pesanan}', [PetaniPesananController::class, 'show'])->whereNumber('pesanan')->name('pesanan.show');
+    Route::post('/pesanan/{pesanan}/terima', [PetaniPesananController::class, 'terima'])->whereNumber('pesanan')->name('pesanan.terima');
+    Route::post('/pesanan/{pesanan}/tolak', [PetaniPesananController::class, 'tolak'])->whereNumber('pesanan')->name('pesanan.tolak');
+    Route::post('/pesanan/{pesanan}/kirim', [PetaniPesananController::class, 'kirim'])->whereNumber('pesanan')->name('pesanan.kirim');
 
-            return redirect()->route('petani.akun');
-        })->name('akun.simpan');
-    });
+    // Akun
+    Route::get('/akun', [PetaniAkunController::class, 'index'])->name('akun');
+    Route::get('/verifikasi', [VerifikasiPetaniController::class, 'index'])->name('verifikasi');
+    Route::post('/verifikasi', [VerifikasiPetaniController::class, 'ajukan'])->name('verifikasi.ajukan');
+
+    // Profil
+    Route::get('/profil', [ProfilPetaniController::class, 'edit'])->name('profil');
+    Route::post('/profil', [ProfilPetaniController::class, 'simpan'])->name('profil.simpan');
+
+    // Alamat
+    Route::get('/alamat', [AlamatPetaniController::class, 'index'])->name('alamat');
+    Route::post('/alamat', [AlamatPetaniController::class, 'simpan'])->name('alamat.simpan');
+    Route::post('/alamat/hapus', [AlamatPetaniController::class, 'hapus'])->name('alamat.hapus');
+});
