@@ -16,12 +16,12 @@ use App\Http\Controllers\Petani\VerifikasiController as VerifikasiPetaniControll
 
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Pengusaha\ProdukController;
-use App\Http\Controllers\Pengusaha\ProfilUsahaController;
-use App\Http\Controllers\Pengusaha\KeranjangController;
 use App\Http\Controllers\Admin\VerifikasiController;
 use App\Http\Controllers\Pengusaha\VerifikasiController as VerifikasiPengusahaController;
 use App\Http\Controllers\Pengusaha\AlamatController;
+use App\Http\Controllers\Pengusaha\ProdukController;
+use App\Http\Controllers\Pengusaha\ProfilUsahaController;
+use App\Http\Controllers\Pengusaha\KeranjangController;
 
 Route::view('/', 'auth.landing')->name('landing');
 
@@ -45,15 +45,9 @@ Route::middleware(['auth', 'peran:admin'])->prefix('admin')->name('admin.')->gro
 
 Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengusaha.')->group(function () {
 
-    Route::get('/', [ProdukController::class, 'beranda'])
-    ->name('beranda');
-
-    Route::get('/katalog', [ProdukController::class, 'katalog'])
-    ->name('katalog');
-
-
+    Route::get('/', [ProdukController::class, 'beranda'])->name('beranda');
+    Route::get('/katalog', [ProdukController::class, 'katalog'])->name('katalog');
     Route::get('/produk/{produk}', [ProdukController::class, 'detail'])->name('produk.detail');
-
     Route::get('/toko/{petani}', [ProdukController::class, 'toko'])->name('toko');
 
     Route::get('/keranjang', [KeranjangController::class, 'index'])->name('keranjang');
@@ -73,13 +67,10 @@ Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengu
     Route::get('/verifikasi', [VerifikasiPengusahaController::class, 'index'])->name('verifikasi');
     Route::post('/verifikasi', [VerifikasiPengusahaController::class, 'ajukan'])->name('verifikasi.ajukan');
     Route::view('/akun', 'pengusaha.akun')->name('akun');
+
+    // Profil usaha
     Route::get('/profil-usaha', [ProfilUsahaController::class, 'edit'])->name('profil');
     Route::post('/profil-usaha', [ProfilUsahaController::class, 'simpan'])->name('profil.simpan');
-   
-    // Menampilkan alamat
-    Route::get('/alamat', function () {
-        return view('pengusaha.alamat');
-    })->name('alamat');
 
     // Alamat usaha
     Route::get('/alamat', [AlamatController::class, 'index'])->name('alamat');

@@ -23,24 +23,10 @@
 
 
 {{-- HEADER HALAMAN AKUN --}}
-<div class="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-[#D4E8D0] bg-white">
-
-    <div class="mx-auto max-w-3xl px-4 py-3">
-
-        <h1 class="text-xl font-extrabold text-[#1A2A1A]">
-            Akun
-        </h1>
-
-        <p class="mt-1 text-sm text-[#6B806B]">
-            Kelola informasi dan aktivitas akun usaha Anda.
-        </p>
-
-    </div>
-
-</div>
+<x-page-header judul="Akun" :kembali="false" lebar="max-w-3xl" />
 
 {{-- KONTEN HALAMAN AKUN --}}
-<div class="mx-auto max-w-3xl py-5 md:py-6">
+<div class="mx-auto max-w-3xl px-4 py-5 md:py-6">
 
 
     {{-- PROFIL PENGUSAHA --}}
@@ -76,8 +62,14 @@
             <p class="font-semibold text-gray-800">Verifikasi Akun</p>
             <p class="text-xs text-gray-500">Lengkapi data dan dokumen agar bisa checkout</p>
         </div>
-        @if (auth()->user()->terverifikasi())
+                @if ($user->terverifikasi())
             <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-[#2E7D32]">Terverifikasi</span>
+        @elseif ($user->status_verifikasi === 'menunggu')
+            <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Sedang Ditinjau</span>
+        @elseif ($user->status_verifikasi === 'perlu_perbaikan')
+            <span class="rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">Perlu Perbaikan</span>
+        @elseif ($user->status_verifikasi === 'ditolak')
+            <span class="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">Ditolak</span>
         @else
             <span class="rounded-full bg-[#F5C400]/20 px-3 py-1 text-xs font-semibold text-yellow-700">Ajukan</span>
         @endif
@@ -128,7 +120,14 @@
             <a href="{{ route('pengusaha.profil') }}"
                class="flex items-center gap-4 border-b border-[#E5EEE2] p-4 transition hover:bg-[#F5F9F2]">
 
-                <span class="text-2xl">👤</span>
+                               <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E8F5E9] text-[#2E7D32]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l1.5-5h15L21 9" />
+                        <path d="M3 9a3 3 0 0 0 6 0a3 3 0 0 0 6 0a3 3 0 0 0 6 0" />
+                        <path d="M5 11.5V20h14v-8.5" />
+                        <path d="M10 20v-4h4v4" />
+                    </svg>
+                </span>
 
                 <div class="min-w-0 flex-1">
                     <h4 class="font-bold text-[#1A2A1A]">
@@ -145,7 +144,12 @@
             <a href="{{ route('pengusaha.alamat') }}"
                class="flex items-center gap-4 p-4 transition hover:bg-[#F5F9F2]">
 
-                <span class="text-2xl">📍</span>
+                                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#E8F5E9] text-[#2E7D32]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" />
+                        <circle cx="12" cy="9.5" r="2.5" />
+                    </svg>
+                </span>
 
                 <div class="min-w-0 flex-1">
                     <h4 class="font-bold text-[#1A2A1A]">
@@ -174,7 +178,13 @@
             <a href="{{ route('pengusaha.pesanan') }}"
                class="flex items-center gap-4 border-b border-[#E5EEE2] p-4 transition hover:bg-[#F5F9F2]">
 
-                <span class="text-2xl">📋</span>
+                                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#E8F5E9] text-[#2E7D32]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="5" y="4" width="14" height="17" rx="2" />
+                        <path d="M9 4V3h6v1" />
+                        <path d="M9 10h6M9 14h6M9 18h3" />
+                    </svg>
+                </span>
 
                 <div class="min-w-0 flex-1">
                     <h4 class="font-bold text-[#1A2A1A]">
@@ -191,7 +201,12 @@
             <a href="{{ route('pengusaha.pesan') }}"
                class="flex items-center gap-4 border-b border-[#E5EEE2] p-4 transition hover:bg-[#F5F9F2]">
 
-                <span class="text-2xl">💬</span>
+                                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#E8F5E9] text-[#2E7D32]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 5h16v11H9l-5 4z" />
+                        <path d="M8 9h8M8 12h5" />
+                    </svg>
+                </span>
 
                 <div class="min-w-0 flex-1">
                     <h4 class="font-bold text-[#1A2A1A]">
@@ -208,7 +223,13 @@
             <a href="{{ route('pengusaha.keranjang') }}"
                class="flex items-center gap-4 p-4 transition hover:bg-[#F5F9F2]">
 
-                <span class="text-2xl">🛒</span>
+                                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#E8F5E9] text-[#2E7D32]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 4h2l2.4 11h11L21 8H6.2" />
+                        <circle cx="9" cy="19" r="1.5" />
+                        <circle cx="17" cy="19" r="1.5" />
+                    </svg>
+                </span>
 
                 <div class="min-w-0 flex-1">
                     <h4 class="font-bold text-[#1A2A1A]">
@@ -237,8 +258,13 @@
             <a href="{{ route('pengusaha.bantuan') }}"
                class="flex items-center gap-4 p-4 transition hover:bg-[#F5F9F2]">
 
-                <span class="text-2xl">❓</span>
-
+                                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#E8F5E9] text-[#2E7D32]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7" />
+                        <path d="M12 17h.01" />
+                    </svg>
+                </span>
                 <div class="min-w-0 flex-1">
                     <h4 class="font-bold text-[#1A2A1A]">
                         Bantuan & Informasi

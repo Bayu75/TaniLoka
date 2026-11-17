@@ -75,6 +75,7 @@ class VerifikasiController extends Controller
                 'status'  => 'menunggu',
             ]);
 
+            $user->forceFill(['status_verifikasi' => 'menunggu'])->save();
             foreach (['nib', 'foto_tempat_usaha'] as $jenis) {
                 BuktiVerifikasi::create([
                     'verifikasi_id' => $verifikasi->id,

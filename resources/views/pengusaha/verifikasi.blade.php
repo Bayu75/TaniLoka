@@ -1,22 +1,15 @@
 @extends('layouts.pengusaha')
 
+@section('title', 'Verifikasi Akun - TaniLoka')
+
 @section('content')
-<div class="min-h-screen bg-[#F8FAF5]">
-<div class="mx-auto max-w-3xl px-4 py-5 md:py-6">
+<x-page-header judul="Verifikasi Akun" :kembali="route('pengusaha.akun')" lebar="max-w-3xl" />
 
-    {{-- TOMBOL KEMBALI (di luar kotak) --}}
-    <a href="{{ route('pengusaha.akun') }}"
-       class="mb-3 inline-flex items-center gap-1 text-sm font-extrabold text-[#087C3E] hover:text-green-800">
-        <span class="text-2xl font-black leading-none">&lt;</span>
-        <span>Kembali</span>
-    </a>
+<div class="mx-auto max-w-3xl px-4 py-6">
+    <div class="rounded-2xl border border-[#A8CFA0] bg-white p-5 shadow-sm md:p-7">
+        <p class="mb-5 text-sm text-[#6B806B]">Lengkapi langkah berikut agar akunmu bisa melakukan checkout.</p>
 
-    {{-- KOTAK: judul, status, checklist --}}
-    <div class="mb-6 rounded-2xl border border-green-100 bg-white p-5 shadow-sm md:p-7">
-
-        <h1 class="text-xl font-extrabold text-[#1A2A1A]">Verifikasi Akun</h1>
-        <p class="mt-1 mb-5 text-sm text-[#6B806B]">Lengkapi langkah berikut agar akunmu bisa melakukan checkout.</p>
-
+        {{-- Notifikasi --}}
         @if (session('sukses'))
             <div class="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{{ session('sukses') }}</div>
         @endif
@@ -24,6 +17,7 @@
             <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{{ session('error') }}</div>
         @endif
 
+        {{-- Status pengajuan --}}
         @if ($verifikasi)
             @php
                 $label = [
@@ -31,9 +25,9 @@
                     'perlu_perbaikan' => ['Perlu perbaikan', 'bg-orange-50 text-orange-700'],
                     'terverifikasi'   => ['Terverifikasi', 'bg-green-50 text-green-700'],
                     'ditolak'         => ['Ditolak', 'bg-red-50 text-red-700'],
-                ][$verifikasi->status];
+                ][$verifikasi->status] ?? ['-', 'bg-gray-50 text-gray-600'];
             @endphp
-            <div class="mb-4 rounded-xl px-4 py-3 {{ $label[1] }}">
+            <div class="mb-5 rounded-xl px-4 py-3 {{ $label[1] }}">
                 <p class="font-medium">Status: {{ $label[0] }}</p>
                 @if ($verifikasi->catatan_admin)
                     <p class="mt-1 text-sm">Catatan admin: {{ $verifikasi->catatan_admin }}</p>
@@ -41,82 +35,114 @@
             </div>
         @endif
 
-        <div class="space-y-3">
-            <div class="flex items-center justify-between rounded-xl border px-4 py-3">
-                <span>{{ $cek['profil'] ? '✅' : '⬜' }} Profil usaha lengkap</span>
-                @unless ($cek['profil'])
-                    <a href="{{ route('pengusaha.profil') }}" class="text-sm font-medium text-green-700">Lengkapi</a>
-                @endunless
-            </div>
-            <div class="flex items-center justify-between rounded-xl border px-4 py-3">
-                <span>{{ $cek['alamat'] ? '✅' : '⬜' }} Alamat usaha sudah diisi</span>
-                @unless ($cek['alamat'])
-                    <a href="{{ route('pengusaha.alamat') }}" class="text-sm font-medium text-green-700">Isi alamat</a>
-                @endunless
-            </div>
-        </div>
-
-    </div>
-
-    @if ($bisaAjukan)
-    <form method="POST" action="{{ route('pengusaha.verifikasi.ajukan') }}" enctype="multipart/form-data"
-          x-data="{ bukaSk: false, sudahBaca: false, setuju: false }" class="space-y-4">
-        @csrf
-
-        <div class="rounded-xl border px-4 py-3">
-            <label class="block font-medium mb-1">Dokumen NIB</label>
-            <p class="text-xs text-gray-500 mb-2">Format JPG, PNG, atau PDF, maksimal 2 MB.</p>
-            <input type="file" name="nib" accept=".jpg,.jpeg,.png,.pdf" class="text-sm">
-            @error('nib') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-        </div>
-
-        <div class="rounded-xl border px-4 py-3">
-            <label class="block font-medium mb-1">Foto Tempat Usaha</label>
-            <p class="text-xs text-gray-500 mb-2">Foto tampak depan tempat usaha, JPG atau PNG, maksimal 2 MB.</p>
-            <input type="file" name="foto_tempat_usaha" accept=".jpg,.jpeg,.png" class="text-sm">
-            @error('foto_tempat_usaha') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-        </div>
-
-        {{-- Syarat & Ketentuan --}}
-        <div class="rounded-xl border px-4 py-3">
-            <label class="flex items-start gap-2" :class="!sudahBaca && 'opacity-60'">
-                <input type="checkbox" name="setuju_sk" value="1" x-model="setuju" :disabled="!sudahBaca" class="mt-1">
-                <span class="text-sm">
-                    Saya telah membaca dan menyetujui
-                    <button type="button" @click="bukaSk = true" class="text-green-700 font-medium underline">Syarat & Ketentuan TaniLoka</button>.
-                </span>
-            </label>
-            <p x-show="!sudahBaca" class="text-xs text-gray-500 mt-1">Baca Syarat & Ketentuan sampai selesai untuk bisa mencentang.</p>
-            @error('setuju_sk') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-        </div>
-
-        <button type="submit"
-                :disabled="!setuju || {{ ($cek['profil'] && $cek['alamat']) ? 'false' : 'true' }}"
-                class="w-full rounded-xl bg-green-700 text-white py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
-            Ajukan Verifikasi
-        </button>
-
-        {{-- Modal S&K --}}
-        <div x-show="bukaSk" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-            <div class="bg-white rounded-2xl max-w-lg w-full p-5" @click.outside="bukaSk = false">
-                <h2 class="text-lg font-semibold mb-3">Syarat & Ketentuan Verifikasi Akun Pengusaha</h2>
-                <div class="h-72 overflow-y-auto text-sm text-gray-700 space-y-3 pr-2"
-                     @scroll="if ($el.scrollTop + $el.clientHeight >= $el.scrollHeight - 10) sudahBaca = true">
-                    <p><b>1. Kebenaran data.</b> Saya menyatakan bahwa semua data yang saya isi (identitas, profil usaha, alamat, NIB, dan foto tempat usaha) benar, milik saya atau usaha saya, dan masih berlaku.</p>
-                    <p><b>2. Penggunaan data.</b> Saya menyetujui TaniLoka menyimpan dan memeriksa data tersebut untuk verifikasi akun dan kelancaran transaksi. Data tidak dibagikan ke pihak lain di luar keperluan transaksi, misalnya alamat pengiriman kepada petani.</p>
-                    <p><b>3. Proses verifikasi.</b> Admin TaniLoka akan meninjau pengajuan saya. Pengajuan bisa disetujui, atau dikembalikan dengan catatan perbaikan. Selama menunggu, saya tetap bisa melihat katalog dan menggunakan keranjang, tetapi belum bisa checkout.</p>
-                    <p><b>4. Perubahan data.</b> Jika saya mengubah nama usaha, alamat usaha, atau dokumen setelah terverifikasi, akun saya dapat perlu diverifikasi ulang.</p>
-                    <p><b>5. Kewajiban transaksi.</b> Saya bersedia membayar pesanan sesuai ketentuan, menerima barang sesuai alamat yang saya berikan, dan berkomunikasi dengan sopan kepada petani.</p>
-                    <p><b>6. Pelanggaran.</b> Jika data terbukti palsu atau saya menyalahgunakan platform (penipuan, pesanan fiktif, dan sejenisnya), TaniLoka berhak menolak verifikasi, menangguhkan, atau menonaktifkan akun saya.</p>
-                    <p><b>7. Perubahan ketentuan.</b> TaniLoka dapat memperbarui ketentuan ini, dan pemberitahuannya akan disampaikan melalui platform.</p>
+        {{-- Checklist kelengkapan --}}
+        @php
+            $daftarCek = [
+                [
+                    'ok'    => $cek['profil'],
+                    'sudah' => 'Profil usaha sudah lengkap',
+                    'belum' => 'Profil usaha belum lengkap',
+                    'link'  => route('pengusaha.profil', ['dari' => 'verifikasi']),
+                    'aksi'  => 'Lengkapi',
+                ],
+                [
+                    'ok'    => $cek['alamat'],
+                    'sudah' => 'Alamat usaha sudah diisi',
+                    'belum' => 'Alamat usaha belum diisi',
+                    'link'  => route('pengusaha.alamat', $cek['alamat'] ? ['edit' => 1, 'dari' => 'verifikasi'] : ['dari' => 'verifikasi']),
+                    'aksi'  => 'Isi alamat',
+                ],
+            ];
+            $lengkap = $cek['profil'] && $cek['alamat'];
+        @endphp
+        <div class="mb-5 space-y-3">
+            @foreach ($daftarCek as $item)
+                <div class="flex items-center justify-between rounded-xl border px-4 py-3
+            {{ $item['ok'] ? 'border-green-400 bg-green-50' : 'border-orange-300 bg-orange-50' }}">
+                    <span class="flex items-center gap-2 text-sm {{ $item['ok'] ? 'text-green-800' : 'text-orange-800' }}">
+                        @if ($item['ok'])
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-green-600" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20m-1.2 14.2l-4-4l1.4-1.4l2.6 2.6l5.6-5.6l1.4 1.4z" />
+                            </svg>
+                        @else
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-orange-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="9" />
+                            </svg>
+                        @endif
+                        {{ $item['ok'] ? $item['sudah'] : $item['belum'] }}
+                    </span>
+                                        @if (! $item['ok'])
+                        <a href="{{ $item['link'] }}" class="text-sm font-medium text-green-700 hover:underline">{{ $item['aksi'] }}</a>
+                    @elseif ($bisaAjukan)
+                        <a href="{{ $item['link'] }}" class="text-sm font-medium text-green-700 hover:underline">Ubah</a>
+                    @endif
                 </div>
-                <button type="button" @click="bukaSk = false" :disabled="!sudahBaca"
-                        class="mt-4 w-full rounded-xl bg-green-700 text-white py-2.5 font-medium disabled:opacity-50">
-                    <span x-text="sudahBaca ? 'Saya Mengerti' : 'Gulir sampai bawah'"></span>
-                </button>
-            </div>
+            @endforeach
         </div>
-    </form>
-    @endif
+
+        {{-- Form pengajuan --}}
+        @if ($bisaAjukan)
+                <form method="POST" action="{{ route('pengusaha.verifikasi.ajukan') }}" enctype="multipart/form-data"
+                  x-data="{ bukaSk: false, sudahBaca: false, setuju: false, mengirim: false }"
+                  @submit="mengirim = true" class="space-y-4">
+                @csrf
+
+                <x-upload-preview name="nib" label="Dokumen NIB"
+                    keterangan="Format JPG, PNG, atau PDF, maksimal 2 MB."
+                    accept=".jpg,.jpeg,.png,.pdf" />
+
+                <x-upload-preview name="foto_tempat_usaha" label="Foto Tempat Usaha"
+                    keterangan="Foto tampak depan tempat usaha, JPG atau PNG, maksimal 2 MB." />
+
+                <div class="rounded-xl border border-[#A8CFA0] px-4 py-3">
+                    <label class="flex items-start gap-2" :class="!sudahBaca && 'opacity-60'">
+                        <input type="checkbox" name="setuju_sk" value="1" x-model="setuju" :disabled="!sudahBaca" class="mt-1">
+                        <span class="text-sm">
+                            Saya telah membaca dan menyetujui
+                            <button type="button" @click="bukaSk = true" class="font-medium text-green-700 underline cursor-pointer">Syarat &amp; Ketentuan TaniLoka</button>.
+                        </span>
+                    </label>
+                    <p x-show="!sudahBaca" class="mt-1 text-xs text-gray-500">Baca Syarat &amp; Ketentuan sampai selesai untuk bisa mencentang.</p>
+                    @error('setuju_sk') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                               <button type="submit"
+                        :disabled="!setuju || mengirim || {{ $lengkap ? 'false' : 'true' }}"
+                        class="w-full rounded-xl bg-green-700 py-3 font-medium text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50">
+                    <span x-text="mengirim ? 'Mengirim...' : 'Ajukan Verifikasi'"></span>
+                </button>
+
+                {{-- Modal Syarat & Ketentuan --}}
+                @php
+                    $syarat = [
+                        'Kebenaran data' => 'Saya menyatakan bahwa semua data yang saya isi (identitas, profil usaha, alamat, NIB, dan foto tempat usaha) benar, milik saya atau usaha saya, dan masih berlaku.',
+                        'Penggunaan data' => 'Saya menyetujui TaniLoka menyimpan dan memeriksa data tersebut untuk verifikasi akun dan kelancaran transaksi. Data tidak dibagikan ke pihak lain di luar keperluan transaksi, misalnya alamat pengiriman kepada petani.',
+                        'Proses verifikasi' => 'Admin TaniLoka akan meninjau pengajuan saya. Pengajuan bisa disetujui, atau dikembalikan dengan catatan perbaikan. Selama menunggu, saya tetap bisa melihat katalog dan menggunakan keranjang, tetapi belum bisa checkout.',
+                        'Perubahan data' => 'Jika saya mengubah nama usaha, alamat usaha, atau dokumen setelah terverifikasi, akun saya dapat perlu diverifikasi ulang.',
+                        'Kewajiban transaksi' => 'Saya bersedia membayar pesanan sesuai ketentuan, menerima barang sesuai alamat yang saya berikan, dan berkomunikasi dengan sopan kepada petani.',
+                        'Pelanggaran' => 'Jika data terbukti palsu atau saya menyalahgunakan platform (penipuan, pesanan fiktif, dan sejenisnya), TaniLoka berhak menolak verifikasi, menangguhkan, atau menonaktifkan akun saya.',
+                        'Perubahan ketentuan' => 'TaniLoka dapat memperbarui ketentuan ini, dan pemberitahuannya akan disampaikan melalui platform.',
+                    ];
+                @endphp
+                <div x-show="bukaSk" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+                    <div class="w-full max-w-lg rounded-2xl bg-white p-5" @click.outside="bukaSk = false">
+                        <h2 class="mb-3 text-lg font-semibold">Syarat &amp; Ketentuan Verifikasi Akun Pengusaha</h2>
+                        <div class="h-72 space-y-3 overflow-y-auto pr-2 text-sm text-gray-700"
+                             @scroll="if ($el.scrollTop + $el.clientHeight >= $el.scrollHeight - 10) sudahBaca = true">
+                            @foreach ($syarat as $judulSyarat => $isi)
+                                <p><b>{{ $loop->iteration }}. {{ $judulSyarat }}.</b> {{ $isi }}</p>
+                            @endforeach
+                        </div>
+                        <button type="button" @click="bukaSk = false; setuju = true" :disabled="!sudahBaca"
+                                class="mt-4 w-full rounded-xl bg-green-700 py-2.5 font-medium text-white disabled:opacity-50">
+                            <span x-text="sudahBaca ? 'Saya Mengerti' : 'Gulir sampai bawah'"></span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        @elseif ($verifikasi?->status === 'menunggu')
+            <p class="text-center text-sm text-[#6B806B]">Pengajuanmu sedang ditinjau admin. Kami akan mengabari setelah selesai.</p>
+        @endif
+    </div>
 </div>
 @endsection

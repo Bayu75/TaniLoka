@@ -8,33 +8,7 @@
 <div class="min-h-screen bg-[#F8FAF5]">
 
 {{-- HEADER HALAMAN --}}
-<div class="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-[#D4E8D0] bg-white">
-
-    <div class="relative mx-auto max-w-2xl px-4 py-3">
-
-        {{-- TOMBOL KEMBALI --}}
-        <a href="{{ route('pengusaha.akun') }}"
-            class="mb-2 inline-flex items-center gap-1 text-sm font-extrabold text-[#087C3E] hover:text-green-800
-                   md:absolute md:right-full md:top-1/2 md:mb-0 md:mr-4 md:-translate-y-1/2 md:whitespace-nowrap">
-
-            <span class="text-2xl font-black leading-none">&lt;</span>
-            <span>Kembali</span>
-        </a>
-
-        {{-- JUDUL DAN DESKRIPSI --}}
-        <div>
-            <h1 class="text-xl font-extrabold text-[#1A2A1A]">
-                Bantuan & Informasi
-            </h1>
-
-            <p class="mt-1 text-sm text-[#6B806B]">
-                Temukan jawaban atas pertanyaan seputar penggunaan TaniLoka.
-            </p>
-        </div>
-
-    </div>
-
-</div>
+<x-page-header judul="Bantuan & Informasi" :kembali="route('pengusaha.akun')" lebar="max-w-2xl" />
 
 
    <div class="mx-auto max-w-2xl px-4 pt-2 pb-4">
