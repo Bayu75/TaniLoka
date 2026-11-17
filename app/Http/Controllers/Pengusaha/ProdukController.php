@@ -36,7 +36,7 @@ class ProdukController extends Controller
         ));
     }
 
-    
+
 public function katalog(Request $request)
 {
     $query = Produk::with([
@@ -58,8 +58,8 @@ public function katalog(Request $request)
                 ->orWhereHas('kategori', function ($kategori) use ($keyword) {
                     $kategori->where('nama', 'like', "%{$keyword}%");
                 })
-                ->orWhereHas('petani.profilPetani', function ($petani) use ($keyword) {
-                    $petani->where('kabupaten', 'like', "%{$keyword}%");
+                ->orWhereHas('petani.alamat', function ($alamat) use ($keyword) {
+                    $alamat->where('kabupaten', 'like', "%{$keyword}%");
                 });
         });
     }
@@ -73,8 +73,8 @@ public function katalog(Request $request)
 
     // Filter kabupaten
     if ($request->filled('district')) {
-        $query->whereHas('petani.profilPetani', function ($petani) use ($request) {
-            $petani->where('kabupaten', $request->district);
+        $query->whereHas('petani.alamat', function ($alamat) use ($request) {
+            $alamat->where('kabupaten', $request->district);
         });
     }
 
@@ -111,8 +111,11 @@ public function katalog(Request $request)
     // Kategori dari database
     $kategoriList = Kategori::orderBy('nama')->get();
 
-    // Kabupaten dari profil petani
-    $kabupatenList = ProfilPetani::whereNotNull('kabupaten')
+    // Kabupaten dari tabel alamat petani
+    $kabupatenList = \App\Models\Alamat::whereHas('user', function ($query) {
+            $query->where('peran', 'petani');
+        })
+        ->whereNotNull('kabupaten')
         ->where('kabupaten', '!=', '')
         ->distinct()
         ->orderBy('kabupaten')

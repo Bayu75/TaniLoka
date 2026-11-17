@@ -22,6 +22,7 @@ class Produk extends Model
     public function kategori() { return $this->belongsTo(Kategori::class); }
     public function foto() { return $this->hasMany(FotoProduk::class)->orderBy('urutan'); }
     public function fotoUtama() { return $this->hasOne(FotoProduk::class)->orderBy('urutan'); }
+    public function keranjangItems() { return $this->hasMany(KeranjangItem::class, 'produk_id'); }
 
     // Produk::aktif()->get() hanya menampilkan produk aktif yang masih ada stoknya
     public function scopeAktif($query)

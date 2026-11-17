@@ -79,7 +79,13 @@ Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengu
     Route::post('/konfirmasi', [PesananController::class, 'store'])->name('konfirmasi.store');
     Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan');
     Route::get('/pesanan/{id}', [PesananController::class, 'show'])->name('pesanan.detail');
+    Route::post('/pesanan/{id}/bukti-pembayaran', [PesananController::class, 'uploadBukti'])
+    ->name('pesanan.bukti.upload');
     Route::post('/pesanan/{id}/batalkan', [PesananController::class, 'cancel'])->name('pesanan.cancel');
+    Route::post('/pesanan/{id}/selesai', [PesananController::class, 'konfirmasiSelesai'])
+    ->name('pesanan.selesai');
+    Route::post('/pesanan/{id}/ulasan', [PesananController::class, 'simpanUlasan'])
+    ->name('pesanan.ulasan');
     Route::get('/verifikasi', [VerifikasiPengusahaController::class, 'index'])->name('verifikasi');
     Route::post('/verifikasi', [VerifikasiPengusahaController::class, 'ajukan'])->name('verifikasi.ajukan');
     Route::view('/akun', 'pengusaha.akun')->name('akun');
@@ -136,6 +142,11 @@ Route::get('/katalog', [PetaniKatalogController::class, 'index'])->name('katalog
     // Pesanan Masuk
     Route::get('/pesanan', [PetaniPesananController::class, 'index'])->name('pesanan');
     Route::get('/pesanan/{pesanan}', [PetaniPesananController::class, 'show'])->whereNumber('pesanan')->name('pesanan.show');
+    Route::post('/pesanan/{pesanan}/konfirmasi-pembayaran', [PetaniPesananController::class, 'konfirmasiPembayaran'])
+    ->whereNumber('pesanan')->name('pesanan.konfirmasi-pembayaran');
+
+    Route::post('/pesanan/{pesanan}/tolak-bukti', [PetaniPesananController::class, 'tolakBukti'])
+    ->whereNumber('pesanan')->name('pesanan.tolak-bukti');
     Route::post('/pesanan/{pesanan}/terima', [PetaniPesananController::class, 'terima'])->whereNumber('pesanan')->name('pesanan.terima');
     Route::post('/pesanan/{pesanan}/tolak', [PetaniPesananController::class, 'tolak'])->whereNumber('pesanan')->name('pesanan.tolak');
     Route::post('/pesanan/{pesanan}/kirim', [PetaniPesananController::class, 'kirim'])->whereNumber('pesanan')->name('pesanan.kirim');

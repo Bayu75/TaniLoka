@@ -276,8 +276,67 @@
                     <p class="mt-2 font-medium" x-text="detail.penerima + ' · ' + detail.telepon"></p>
                     <p class="mt-1 text-gray-500" x-text="detail.alamat"></p>
                     <p x-show="detail.catatan" class="mt-2 text-gray-500" x-text="'Catatan: ' + detail.catatan"></p>
+
                     <h3 class="mt-4 font-bold">Metode Pembayaran</h3>
                     <p class="mt-1 text-gray-500" x-text="detail.pembayaran || 'Belum tersedia'"></p>
+
+                    <div x-show="detail.bukti_path" class="mt-4 rounded-xl bg-green-50 p-3">
+                        <p class="font-bold text-green-800">Bukti Pembayaran</p>
+
+                        <a
+                            :href="'/storage/' + detail.bukti_path"
+                            target="_blank"
+                            rel="noopener"
+                            class="mt-2 inline-block font-semibold text-green-700 underline">
+                            Lihat Bukti Pembayaran
+                        </a>
+
+                        <p
+                            class="mt-2 text-orange-700"
+                            x-show="detail.status_pembayaran === 'menunggu_verifikasi'">
+                            Menunggu verifikasi pembayaran.
+                        </p>
+
+                        <p
+                            class="mt-2 text-green-700"
+                            x-show="detail.status_pembayaran === 'lunas'">
+                            Pembayaran sudah dikonfirmasi.
+                        </p>
+
+                        <div
+                            x-show="detail.status_pembayaran === 'menunggu_verifikasi'"
+                            class="mt-4 flex flex-wrap gap-2">
+
+                            <form
+                                :action="'/petani/pesanan/' + detail.id + '/konfirmasi-pembayaran'"
+                                method="POST"
+                                onsubmit="return confirm('Yakin ingin mengonfirmasi pembayaran ini?')">
+                                @csrf
+                                <button
+                                    type="submit"
+                                    class="rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700">
+                                    Konfirmasi Pembayaran
+                                </button>
+                            </form>
+
+                            <form
+                                :action="'/petani/pesanan/' + detail.id + '/tolak-bukti'"
+                                method="POST"
+                                onsubmit="return confirm('Yakin ingin menolak bukti pembayaran ini?')">
+                                @csrf
+                                <button
+                                    type="submit"
+                                    class="rounded-lg border border-red-300 bg-white px-4 py-2 font-semibold text-red-600 hover:bg-red-50">
+                                    Tolak Bukti
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <p x-show="!detail.bukti_path && detail.status === 'pembayaran'"
+                    class="mt-3 text-gray-500">
+                        Pembeli belum mengunggah bukti pembayaran.
+                    </p>
                 </section>
 
                 <section class="rounded-xl border border-green-200 bg-white p-4 text-xs">
