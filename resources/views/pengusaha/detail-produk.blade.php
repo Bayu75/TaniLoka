@@ -1,122 +1,16 @@
-
 @extends('layouts.pengusaha')
 
-@section('title', 'Detail Produk - TaniLoka')
+@section('title', $produk->nama . ' - TaniLoka')
 
 @section('content')
 
 @php
-    $produkList = [
-        'bayam-hijau-organik' => [
-            'nama' => 'Bayam Hijau Organik',
-            'gambar' => 'https://images.unsplash.com/photo-1768734837803-54eb8c83e080?w=800',
-            'kategori' => 'Sayuran',
-            'harga' => 8500,
-            'stok' => 120,
-            'minimal' => 5,
-            'petani' => 'Pak Made Sukartha',
-            'rating' => 4.8,
-            'kabupaten' => 'Tabanan',
-            'deskripsi' => 'Bayam hijau segar hasil pertanian lokal Bali, ditanam secara organik dan dipanen langsung dari kebun petani.',
-        ],
-
-        'cabai-rawit-merah' => [
-            'nama' => 'Cabai Rawit Merah',
-            'gambar' => 'https://images.unsplash.com/photo-1768734837679-9b3180433384?w=800',
-            'kategori' => 'Bumbu & Rempah',
-            'harga' => 45000,
-            'stok' => 85,
-            'minimal' => 2,
-            'petani' => 'Ibu Wayan Sari',
-            'rating' => 4.9,
-            'kabupaten' => 'Bangli',
-            'deskripsi' => 'Cabai rawit merah segar dengan warna cerah dan rasa pedas alami, cocok untuk kebutuhan dapur usaha kuliner.',
-        ],
-
-        'tomat-segar-grade-a' => [
-            'nama' => 'Tomat Segar Grade A',
-            'gambar' => 'https://images.unsplash.com/photo-1768734837464-c5045c6a98c4?w=800',
-            'kategori' => 'Sayuran',
-            'harga' => 12000,
-            'stok' => 300,
-            'minimal' => 10,
-            'petani' => 'Pak Ketut Wirasa',
-            'rating' => 4.7,
-            'kabupaten' => 'Tabanan',
-            'deskripsi' => 'Tomat segar Grade A dengan kualitas pilihan, cocok untuk kebutuhan usaha kuliner.',
-        ],
-
-    'kangkung-segar' => [
-            'nama' => 'Kangkung Segar',
-            'gambar' => 'https://images.unsplash.com/photo-1768734836079-040ec2543a65?w=800',
-            'kategori' => 'Sayuran',
-            'harga' => 5500,
-            'stok' => 200,
-            'minimal' => 10,
-            'petani' => 'Ibu Nyoman Dewi',
-            'rating' => 4.6,
-            'kabupaten' => 'Gianyar',
-            'deskripsi' => 'Kangkung segar hasil panen petani lokal, cocok untuk berbagai hidangan sayuran.',
-        ],
-
-    'bawang-putih-lokal' => [
-        'nama' => 'Bawang Putih Lokal',
-        'gambar' => 'https://images.unsplash.com/photo-1765862857099-cb03e1c3de07?w=800',
-        'kategori' => 'Bumbu & Rempah',
-        'harga' => 35000,
-        'stok' => 150,
-        'minimal' => 5,
-        'petani' => 'Pak Gede Setiawan',
-        'rating' => 4.5,
-        'kabupaten' => 'Karangasem',
-        'deskripsi' => 'Bawang putih lokal segar dari petani Karangasem, cocok untuk berbagai kebutuhan masakan.',
-        ],
-
-    'kembang-kol-putih' => [
-        'nama' => 'Kembang Kol Putih',
-        'gambar' => 'https://images.unsplash.com/photo-1770782912836-82b4d67444d5?w=800',
-        'kategori' => 'Sayuran',
-        'harga' => 15000,
-        'stok' => 60,
-        'minimal' => 5,
-        'petani' => 'Pak Ketut Wirasa',
-        'rating' => 4.7,
-        'kabupaten' => 'Tabanan',
-        'deskripsi' => 'Kembang kol putih segar dengan kualitas pilihan dari petani lokal.',
-        ],
-
-    'wortel-organik' => [
-        'nama' => 'Wortel Organik',
-        'gambar' => 'https://images.unsplash.com/photo-1768119901638-75c6edd64c0b?w=800',
-        'kategori' => 'Umbi-umbian',
-        'harga' => 14000,
-        'stok' => 90,
-        'minimal' => 5,
-        'petani' => 'Pak Made Sukartha',
-        'rating' => 4.8,
-        'kabupaten' => 'Tabanan',
-        'deskripsi' => 'Wortel organik segar dengan warna cerah dan kualitas pilihan.',
-         ],
-
-    'paprika-merah' => [
-        'nama' => 'Paprika Merah',
-        'gambar' => 'https://images.unsplash.com/photo-1777791374501-ff28ce93d2cb?w=800',
-        'kategori' => 'Sayuran',
-        'harga' => 55000,
-        'stok' => 0,
-        'minimal' => 3,
-        'petani' => 'Ibu Wayan Sari',
-        'rating' => 4.9,
-        'kabupaten' => 'Bangli',
-        'deskripsi' => 'Paprika merah segar dengan warna menarik, cocok untuk aneka hidangan.',
-        ],
-    ];
-
-    abort_unless(isset($produkList[$slug]), 404);
-
-    $produk = $produkList[$slug];
+    $petani = $produk->petani;
+    $kabupaten = $petani->profilPetani?->kabupaten;
+    $fotoUtama = $produk->foto->first()?->url ?? 'https://placehold.co/800x800?text=TaniLoka';
+    $minimal = (float) $produk->min_order_kg;
+    $stok = (float) $produk->stok_kg;
 @endphp
-
 
 {{-- KEMBALI KE KATALOG --}}
 <div class="mx-auto mb-5 max-w-4xl pt-5">
@@ -127,7 +21,21 @@
     </a>
 </div>
 
-<div class="mx-auto max-w-4xl">
+<div class="mx-auto max-w-4xl" x-data="{ fotoAktif: @js($fotoUtama) }">
+
+    {{-- PESAN SUKSES / ERROR --}}
+    @if (session('sukses'))
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#D4E8D0] bg-[#EAF5E8] px-4 py-3 text-sm text-[#087C3E]">
+            <span>{{ session('sukses') }}</span>
+            <a href="{{ route('pengusaha.keranjang') }}" class="font-bold hover:underline">Lihat Keranjang →</a>
+        </div>
+    @endif
+
+    @if ($errors->any())
+        <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            {{ $errors->first() }}
+        </div>
+    @endif
 
     {{-- INFORMASI UTAMA --}}
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -135,69 +43,57 @@
         {{-- FOTO PRODUK --}}
         <div>
             <div class="aspect-square overflow-hidden rounded-2xl bg-[#EBF5EB]">
-                <img
-                    src="{{ $produk['gambar'] }}"
-                    alt="{{ $produk['nama'] }}"
-                    class="h-full w-full object-cover"
-                >
+                <img :src="fotoAktif" src="{{ $fotoUtama }}" alt="{{ $produk->nama }}" class="h-full w-full object-cover">
             </div>
 
-            {{-- THUMBNAIL --}}
-            <div class="mt-3 flex gap-2">
-                @for ($i = 0; $i < 3; $i++)
-                    <div class="h-16 w-16 overflow-hidden rounded-xl border-2
-                        {{ $i === 0 ? 'border-[#2E7D32]' : 'border-[#D4E8D0]' }}">
-                        <img
-                            src="{{ $produk['gambar'] }}"
-                            alt="Foto {{ $produk['nama'] }}"
-                            class="h-full w-full object-cover"
-                        >
-                    </div>
-                @endfor
-            </div>
+            @if ($produk->foto->count() > 1)
+                <div class="mt-3 flex gap-2">
+                    @foreach ($produk->foto as $foto)
+                        <button type="button"
+                                @click="fotoAktif = @js($foto->url)"
+                                :class="fotoAktif === @js($foto->url) ? 'border-[#2E7D32]' : 'border-[#D4E8D0]'"
+                                class="h-16 w-16 overflow-hidden rounded-xl border-2">
+                            <img src="{{ $foto->url }}" alt="Foto {{ $produk->nama }}" class="h-full w-full object-cover">
+                        </button>
+                    @endforeach
+                </div>
+            @endif
         </div>
 
         {{-- INFORMASI PRODUK --}}
         <div class="flex flex-col gap-4">
 
-            {{-- KATEGORI DAN STOK --}}
+            {{-- KATEGORI, GRADE, DAN STOK --}}
             <div class="flex flex-wrap items-center gap-2">
                 <span class="rounded-full bg-[#EBF5EB] px-3 py-1 text-xs font-bold text-[#2E7D32]">
-                    {{ $produk['kategori'] }}
+                    {{ $produk->kategori?->nama }}
                 </span>
 
-                @if ($produk['stok'] > 0)
-                    <span class="rounded-full bg-[#DCFCE7] px-3 py-1 text-xs font-bold text-[#15803D]">
-                        ● Tersedia
+                @if ($produk->grade)
+                    <span class="rounded-full bg-[#FFF9E6] px-3 py-1 text-xs font-bold text-[#806000]">
+                        Grade {{ $produk->grade }}
                     </span>
+                @endif
+
+                @if ($stok > 0)
+                    <span class="rounded-full bg-[#DCFCE7] px-3 py-1 text-xs font-bold text-[#15803D]">● Tersedia</span>
                 @else
-                    <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-600">
-                        ● Stok Habis
-                    </span>
+                    <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-600">● Stok Habis</span>
                 @endif
             </div>
 
-            <h1 class="text-2xl font-extrabold text-[#1A2A1A]">
-                {{ $produk['nama'] }}
-            </h1>
+            <h1 class="text-2xl font-extrabold text-[#1A2A1A]">{{ $produk->nama }}</h1>
 
             {{-- HARGA --}}
             <div class="rounded-2xl bg-[#EBF5EB] p-4">
                 <div class="text-2xl font-extrabold text-[#2E7D32]">
-                    Rp{{ number_format($produk['harga'], 0, ',', '.') }}
+                    Rp{{ number_format($produk->harga_per_kg, 0, ',', '.') }}
                     <span class="text-sm font-normal text-[#5A7A5A]">/kg</span>
                 </div>
 
                 <p class="mt-1 text-sm text-[#5A7A5A]">
-                    Minimal pesan:
-                    <strong class="text-[#1A2A1A]">
-                        {{ $produk['minimal'] }} kg
-                    </strong>
-                    ·
-                    Stok:
-                    <strong class="text-[#1A2A1A]">
-                        {{ $produk['stok'] }} kg
-                    </strong>
+                    Minimal pesan: <strong class="text-[#1A2A1A]">{{ $minimal }} kg</strong>
+                    · Stok: <strong class="text-[#1A2A1A]">{{ $stok }} kg</strong>
                 </p>
 
                 <p class="mt-3 text-xs text-[#8A762B]">
@@ -208,251 +104,182 @@
             {{-- INFORMASI PETANI --}}
             <div class="rounded-2xl border border-[#D4E8D0] bg-white p-4">
                 <div class="flex items-center gap-3">
-
                     <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2E7D32] font-bold text-white">
-                        {{ strtoupper(substr($produk['petani'], 0, 1)) }}
+                        {{ strtoupper(substr($petani->name, 0, 1)) }}
                     </div>
 
                     <div class="min-w-0 flex-1">
-    <p class="font-bold text-[#1A2A1A]">
-        {{ $produk['petani'] }}
-    </p>
+                        <p class="font-bold text-[#1A2A1A]">{{ $petani->name }}</p>
+                        @if ($kabupaten)
+                            <p class="text-xs text-[#5A7A5A]">📍 {{ $kabupaten }}, Bali</p>
+                        @endif
+                        <p class="mt-1 text-xs text-[#5A7A5A]">Petani lokal</p>
+                    </div>
 
-    <p class="text-xs text-[#5A7A5A]">
-        📍 {{ $produk['kabupaten'] }}, Bali
-    </p>
-
-    <p class="mt-1 text-sm text-[#EAB308]">
-        ★★★★★
-        <span class="text-xs text-[#5A7A5A]">
-            {{ $produk['rating'] }} · Petani lokal
-        </span>
-    </p>
-</div>
-
-{{-- TOMBOL KUNJUNGI TOKO --}}
-<a href="{{ route('pengusaha.toko', [
-    'petani' => \Illuminate\Support\Str::slug($produk['petani'])
-]) }}"
-   class="shrink-0 text-xs font-bold text-[#2E7D32] hover:underline">
-    Kunjungi Toko →
-</a>
+                    <a href="{{ route('pengusaha.toko', $petani) }}"
+                       class="shrink-0 text-xs font-bold text-[#2E7D32] hover:underline">
+                        Kunjungi Toko →
+                    </a>
                 </div>
             </div>
 
-            {{-- INFORMASI PRODUK --}}
+            {{-- DESKRIPSI DAN DETAIL --}}
             <div>
                 <div class="border-b border-[#D4E8D0] pb-2">
-                    <span class="border-b-2 border-[#2E7D32] pb-2 text-sm font-bold text-[#2E7D32]">
-                        Informasi Produk
-                    </span>
-                    <span class="ml-5 text-sm font-semibold text-[#8A9A8A]">
-                        Pengiriman
-                    </span>
+                    <span class="border-b-2 border-[#2E7D32] pb-2 text-sm font-bold text-[#2E7D32]">Informasi Produk</span>
                 </div>
 
                 <p class="mt-3 text-sm leading-relaxed text-[#435343]">
-                    {{ $produk['deskripsi'] }}
+                    {{ $produk->deskripsi ?: 'Belum ada deskripsi dari petani.' }}
                 </p>
 
                 <div class="mt-3 rounded-xl bg-[#EEF5EE] p-3">
-                    <p class="text-xs font-bold text-[#789078]">
-                        Periode Panen
-                    </p>
+                    <p class="text-xs font-bold text-[#789078]">Tanggal Panen</p>
                     <p class="mt-1 text-sm text-[#435343]">
-                        Tersedia sesuai jadwal panen petani.
+                        {{ $produk->tanggal_panen?->translatedFormat('d F Y') ?? 'Tersedia sesuai jadwal panen petani.' }}
                     </p>
                 </div>
 
-                <div class="mt-2 rounded-xl bg-[#EEF5EE] p-3">
-                    <p class="text-xs font-bold text-[#789078]">
-                        Kabupaten
-                    </p>
-                    <p class="mt-1 text-sm text-[#435343]">
-                        {{ $produk['kabupaten'] }}, Bali
-                    </p>
-                </div>
+                @if ($kabupaten)
+                    <div class="mt-2 rounded-xl bg-[#EEF5EE] p-3">
+                        <p class="text-xs font-bold text-[#789078]">Kabupaten</p>
+                        <p class="mt-1 text-sm text-[#435343]">{{ $kabupaten }}, Bali</p>
+                    </div>
+                @endif
             </div>
-
         </div>
     </div>
 
     {{-- PILIHAN PEMBELIAN --}}
-    @if ($produk['stok'] > 0)
+    @if ($stok > 0)
 
-        <form action="{{ route('pengusaha.keranjang.tambah') }}"
-              method="POST"
-              class="mt-7 rounded-2xl border border-[#D4E8D0] bg-white p-4">
+        @if ($sudahDiKeranjang)
+            <p class="mt-7 rounded-xl bg-[#FFF9E6] px-4 py-3 text-sm text-[#806000]">
+                Produk ini sudah ada di keranjangmu ({{ (float) $sudahDiKeranjang->jumlah_kg }} kg). Jumlah yang kamu tambahkan akan dijumlahkan.
+            </p>
+        @endif
 
+        <form action="{{ route('pengusaha.keranjang.tambah', $produk) }}" method="POST"
+              class="mt-4 rounded-2xl border border-[#D4E8D0] bg-white p-4">
             @csrf
 
-            <input type="hidden" name="slug" value="{{ $slug }}">
-
-            {{-- JUMLAH DAN TOTAL --}}
             <div class="flex flex-wrap items-center justify-between gap-4">
-
                 <div>
-                    <label for="jumlah"
-                           class="mb-2 block text-sm font-bold text-[#1A2A1A]">
-                        Jumlah Pembelian
-                    </label>
+                    <label for="jumlah" class="mb-2 block text-sm font-bold text-[#1A2A1A]">Jumlah Pembelian</label>
 
                     <div class="flex items-center gap-2">
+                        <button type="button" onclick="ubahJumlah(-1)"
+                                class="h-10 w-10 rounded-xl bg-[#F1F5F1] font-bold text-[#2E7D32] hover:bg-[#DDEBDD]">−</button>
 
-                        <button type="button"
-                                onclick="ubahJumlah(-1)"
-                                class="h-10 w-10 rounded-xl bg-[#F1F5F1] font-bold text-[#2E7D32] hover:bg-[#DDEBDD]">
-                            −
-                        </button>
-
-                        <input
-                        type="number"
-                        id="jumlah"
-                        name="jumlah"
-                        min="{{ $produk['minimal'] }}"
-                        max="{{ $produk['stok'] }}"
-                        value="{{ $produk['minimal'] }}"
-                        required
-                        oninput="hitungTotal(); this.setCustomValidity('')"
-                        class="h-10 w-20 rounded-xl border border-[#D4E8D0] text-center font-bold text-[#1A2A1A]"
-                    >
+                        <input type="number" id="jumlah" name="jumlah_kg" step="0.01"
+                               min="{{ $minimal }}" max="{{ $stok }}"
+                               value="{{ old('jumlah_kg', $minimal) }}" required
+                               oninput="hitungTotal(); this.setCustomValidity('')"
+                               class="h-10 w-20 rounded-xl border border-[#D4E8D0] text-center font-bold text-[#1A2A1A]">
 
                         <span class="text-sm text-[#5A7A5A]">kg</span>
 
-                        <button type="button"
-                                onclick="ubahJumlah(1)"
-                                class="h-10 w-10 rounded-xl bg-[#F1F5F1] font-bold text-[#2E7D32] hover:bg-[#DDEBDD]">
-                            +
-                        </button>
-
+                        <button type="button" onclick="ubahJumlah(1)"
+                                class="h-10 w-10 rounded-xl bg-[#F1F5F1] font-bold text-[#2E7D32] hover:bg-[#DDEBDD]">+</button>
                     </div>
 
-                    <p class="mt-2 text-xs text-[#789078]">
-                        Minimal {{ $produk['minimal'] }} kg.
-                    </p>
+                    <p class="mt-2 text-xs text-[#789078]">Minimal {{ $minimal }} kg.</p>
                 </div>
 
                 <div class="text-sm font-semibold text-[#5A7A5A]">
                     Total
-                    <span id="totalHarga"
-                          class="ml-1 text-base font-extrabold text-[#2E7D32]">
-                        Rp{{ number_format($produk['harga'] * $produk['minimal'], 0, ',', '.') }}
+                    <span id="totalHarga" class="ml-1 text-base font-extrabold text-[#2E7D32]">
+                        Rp{{ number_format($produk->harga_per_kg * $minimal, 0, ',', '.') }}
                     </span>
                 </div>
-
             </div>
 
-            {{-- TOMBOL PEMBELIAN --}}
             <div class="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
-
-                <button type="submit"
-                        name="aksi"
-                        value="keranjang"
+                <button type="submit" name="aksi" value="keranjang"
                         class="min-h-12 rounded-xl border-2 border-[#2E7D32] bg-white px-4 font-bold text-[#2E7D32] transition hover:bg-[#EBF5EB]">
                     🛒 Tambah ke Keranjang
                 </button>
 
-                <button type="submit"
-                        name="aksi"
-                        value="beli"
+                <button type="submit" name="aksi" value="beli"
                         class="min-h-12 rounded-xl bg-[#F4B400] px-4 font-bold text-[#1A2A00] transition hover:bg-[#E6A800]">
                     Beli Sekarang
                 </button>
 
-                <a href="{{ route('pengusaha.pesan', ['produk' => $slug]) }}"
+                <a href="{{ route('pengusaha.pesan', ['produk' => $produk->id]) }}"
                    class="flex min-h-12 items-center justify-center rounded-xl border-2 border-[#F4D36B] bg-[#FFF9E6] px-4 font-bold text-[#806000] transition hover:bg-[#FFF1C2] md:col-span-2">
                     Tawar Harga
                 </a>
-
             </div>
-
         </form>
 
     @else
 
         <div class="mt-7 rounded-2xl border border-red-200 bg-red-50 p-5">
-            <p class="font-bold text-red-600">
-                Stok Habis
-            </p>
-            <p class="mt-1 text-sm text-red-500">
-                Maaf, produk ini sedang tidak tersedia.
-            </p>
+            <p class="font-bold text-red-600">Stok Habis</p>
+            <p class="mt-1 text-sm text-red-500">Maaf, produk ini sedang tidak tersedia.</p>
         </div>
 
     @endif
 
+    {{-- PRODUK LAIN DARI PETANI INI --}}
+    @if ($produkLain->isNotEmpty())
+        <div class="mt-10">
+            <h2 class="mb-4 text-lg font-bold text-[#1A2A1A]">Produk lain dari {{ $petani->name }}</h2>
+
+            <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+                @foreach ($produkLain as $lain)
+                    <a href="{{ route('pengusaha.produk.detail', $lain) }}"
+                       class="overflow-hidden rounded-2xl border border-[#D4E8D0] bg-white transition hover:shadow-md">
+                        <img src="{{ $lain->fotoUtama?->url ?? 'https://placehold.co/300x300?text=TaniLoka' }}"
+                             alt="{{ $lain->nama }}" class="aspect-square w-full object-cover">
+                        <div class="p-3">
+                            <p class="truncate text-sm font-bold text-[#1A2A1A]">{{ $lain->nama }}</p>
+                            <p class="mt-1 text-sm font-bold text-[#2E7D32]">
+                                Rp{{ number_format($lain->harga_per_kg, 0, ',', '.') }}/kg
+                            </p>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
 </div>
 
 {{-- SCRIPT JUMLAH DAN TOTAL HARGA --}}
-@if ($produk['stok'] > 0)
+@if ($stok > 0)
 <script>
-    const hargaProduk = {{ $produk['harga'] }};
-    const minimalProduk = {{ $produk['minimal'] }};
-    const stokProduk = {{ $produk['stok'] }};
-
+    const hargaProduk = {{ (float) $produk->harga_per_kg }};
+    const minimalProduk = {{ $minimal }};
+    const stokProduk = {{ $stok }};
     const inputJumlah = document.getElementById('jumlah');
 
     function ubahJumlah(perubahan) {
-        let jumlah = parseInt(inputJumlah.value) || minimalProduk;
-
-        jumlah += perubahan;
-
-        jumlah = Math.max(
-            minimalProduk,
-            Math.min(stokProduk, jumlah)
-        );
-
+        let jumlah = parseFloat(inputJumlah.value) || minimalProduk;
+        jumlah = Math.max(minimalProduk, Math.min(stokProduk, jumlah + perubahan));
         inputJumlah.value = jumlah;
-
         inputJumlah.setCustomValidity('');
-
         hitungTotal();
     }
 
     function hitungTotal() {
-        let jumlah = parseInt(inputJumlah.value) || 0;
-
+        let jumlah = parseFloat(inputJumlah.value) || 0;
         jumlah = Math.max(0, Math.min(stokProduk, jumlah));
-
         document.getElementById('totalHarga').textContent =
-            'Rp' + (hargaProduk * jumlah).toLocaleString('id-ID');
+            'Rp' + Math.round(hargaProduk * jumlah).toLocaleString('id-ID');
     }
 
-    // VALIDASI JUMLAH PEMBELIAN
     inputJumlah.addEventListener('invalid', function () {
-
         if (this.validity.valueMissing) {
-            this.setCustomValidity(
-                'Silakan masukkan jumlah pembelian.'
-            );
-
+            this.setCustomValidity('Silakan masukkan jumlah pembelian.');
         } else if (this.validity.rangeUnderflow) {
-            this.setCustomValidity(
-                'Jumlah minimal pembelian adalah ' +
-                minimalProduk + ' kg.'
-            );
-
+            this.setCustomValidity('Jumlah minimal pembelian adalah ' + minimalProduk + ' kg.');
         } else if (this.validity.rangeOverflow) {
-            this.setCustomValidity(
-                'Jumlah pembelian melebihi stok yang tersedia. ' +
-                'Maksimal pembelian adalah ' + stokProduk + ' kg.'
-            );
-
-        } else if (this.validity.badInput) {
-            this.setCustomValidity(
-                'Silakan masukkan jumlah pembelian yang valid.'
-            );
+            this.setCustomValidity('Jumlah pembelian melebihi stok. Maksimal ' + stokProduk + ' kg.');
+        } else if (this.validity.badInput || this.validity.stepMismatch) {
+            this.setCustomValidity('Silakan masukkan jumlah pembelian yang valid.');
         }
-
     });
-
-    // HAPUS PESAN ERROR KETIKA INPUT DIPERBAIKI
-    inputJumlah.addEventListener('input', function () {
-        this.setCustomValidity('');
-    });
-
 </script>
 @endif
 
 @endsection
-
