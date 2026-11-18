@@ -184,10 +184,9 @@
                     </span>
                 </div>
 
-                <div class="mt-6">
+                                <div class="mt-6">
                     @if ($bisaCheckout)
-                        {{-- Ganti href="#" jadi route('pengusaha.checkout') setelah branch Ayudia di-merge --}}
-                        <a href="#"
+                        <a href="{{ route('pengusaha.checkout') }}"
                            class="block w-full rounded-xl bg-primary px-5 py-3 text-center text-sm font-semibold text-white hover:bg-primary-dark">
                             Lanjutkan Pesanan
                         </a>
@@ -198,9 +197,18 @@
                         </button>
 
                         @unless (auth()->user()->terverifikasi())
-                            <p class="mt-2 text-center text-xs text-[#8A9A8A]">
-                                Akunmu belum terverifikasi, jadi belum bisa checkout.
-                            </p>
+                            @php $statusVerif = auth()->user()->status_verifikasi; @endphp
+                            <div class="mt-3 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-center text-xs text-yellow-800">
+                                @if ($statusVerif === 'menunggu')
+                                    Pengajuan verifikasimu sedang ditinjau admin. Kamu bisa checkout setelah disetujui.
+                                @elseif ($statusVerif === 'perlu_perbaikan')
+                                    Pengajuan verifikasimu perlu diperbaiki sebelum bisa checkout.
+                                    <a href="{{ route('pengusaha.verifikasi') }}" class="mt-1 block font-semibold text-primary hover:underline">Perbaiki Verifikasi →</a>
+                                @else
+                                    Akunmu belum terverifikasi, jadi belum bisa checkout.
+                                    <a href="{{ route('pengusaha.verifikasi') }}" class="mt-1 block font-semibold text-primary hover:underline">Verifikasi Sekarang →</a>
+                                @endif
+                            </div>
                         @endunless
                     @endif
                 </div>
