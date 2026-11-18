@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Petani;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class FlashSaleController extends PetaniController
@@ -29,6 +30,16 @@ class FlashSaleController extends PetaniController
     {
         $user = $this->petani($request);
         $produk = $user->produk()->findOrFail($produk);
+
+        // Hanya petani terverifikasi
+        abort_unless($user->terverifikasi(), 403, 'Akun belum terverifikasi.');
+
+        // Hanya produk yang masa tersedianya tinggal 0–2 hari
+        $sisaHari = $produk->tersedia_sampai
+            ? (int) now()->startOfDay()->diffInDays(Carbon::parse($produk->tersedia_sampai)->startOfDay(), false)
+            : null;
+
+        abort_if(is_null($sisaHari) || $sisaHari < 0 || $sisaHari > 2, 403, 'Produk ini belum masuk masa flash sale.');
 
         $data = $request->validate([
             'harga_flash_sale' => ['required', 'integer', 'min:1', 'lt:'.(int) $produk->harga_per_kg],
