@@ -63,6 +63,12 @@ class ProfilUsahaController extends Controller
             ]
         );
 
+               if ($request->input('dari') === 'verifikasi') {
+            return redirect()
+                ->route('pengusaha.verifikasi')
+                ->with('sukses', 'Profil usaha berhasil disimpan. Lanjutkan verifikasi akunmu.');
+        }
+
         return redirect()
             ->route('pengusaha.profil')
             ->with('sukses', 'Profil usaha berhasil diperbarui!');

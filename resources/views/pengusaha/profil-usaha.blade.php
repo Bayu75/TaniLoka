@@ -71,6 +71,9 @@
         {{-- FORM PROFIL --}}
         <form action="{{ route('pengusaha.profil.simpan') }}" method="POST" class="mt-6 space-y-5">
             @csrf
+                    @if (request('dari') === 'verifikasi')
+                <input type="hidden" name="dari" value="verifikasi">
+            @endif
 
             <h3 class="mb-4 font-bold text-gray-900">Informasi Usaha</h3>
 

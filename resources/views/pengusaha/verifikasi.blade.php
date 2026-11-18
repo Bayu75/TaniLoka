@@ -42,7 +42,7 @@
                     'ok'    => $cek['profil'],
                     'sudah' => 'Profil usaha sudah lengkap',
                     'belum' => 'Profil usaha belum lengkap',
-                    'link'  => route('pengusaha.profil'),
+                    'link'  => route('pengusaha.profil', ['dari' => 'verifikasi']),
                     'aksi'  => 'Lengkapi',
                 ],
                 [
