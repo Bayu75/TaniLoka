@@ -40,8 +40,8 @@
 
                     <a href="{{ route('pengusaha.pesanan') }}"
                        class="flex min-h-12 items-center gap-2 rounded-xl bg-white/15 px-3 font-semibold text-white hover:bg-white/25">
-                        <span>🔔</span>
-                        Pemberitahuan
+                        <span>📋</span>
+                        Pesanan
                     </a>
                 </div>
             </div>
