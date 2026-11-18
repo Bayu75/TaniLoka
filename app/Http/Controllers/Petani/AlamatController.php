@@ -35,13 +35,21 @@ class AlamatController extends Controller
             $data
         );
 
-        return redirect()->route('petani.alamat')->with('sukses', 'Alamat kebun berhasil disimpan.');
+        if ($request->input('dari') === 'verifikasi') {
+            return redirect()->route('petani.verifikasi')
+                ->with('sukses', 'Alamat berhasil disimpan. Lanjutkan pengajuan verifikasi.');
+        }
+
+        return redirect()
+            ->route('petani.alamat')
+            ->with('sukses', 'Alamat berhasil disimpan.');
     }
 
-    public function hapus()
+    public function hapus(Request $request)
     {
         Alamat::where('user_id', auth()->id())->where('utama', true)->delete();
 
-        return redirect()->route('petani.alamat')->with('sukses', 'Alamat kebun dihapus.');
+        return redirect()->route('petani.alamat', $request->input('dari') === 'verifikasi' ? ['dari' => 'verifikasi'] : [])
+            ->with('sukses', 'Alamat kebun dihapus.');
     }
 }

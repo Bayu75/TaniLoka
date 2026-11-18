@@ -82,6 +82,8 @@ class VerifikasiController extends Controller
                     'path'          => $request->file($jenis)->store("verifikasi/{$user->id}", 'public'),
                 ]);
             }
+            
+            $user->update(['status_verifikasi' => 'menunggu']);
         });
 
         return redirect()->route('petani.verifikasi')
