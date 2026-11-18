@@ -35,10 +35,11 @@ class ProdukController extends Controller
             ->orderBy('flash_sale_sampai')
             ->get();
 
-        return view('pengusaha.beranda', compact(
+            return view('pengusaha.beranda', compact(
             'kategoriList',
             'produkUnggulan',
-            'produkNego'
+            'produkNego',
+            'produkFlashSale'
         ));
     }
 
