@@ -18,7 +18,8 @@
         </div>
     </div>
 
-    <div class="max-w-4xl mx-auto px-4 -mt-14 space-y-6">
+        <div class="max-w-4xl mx-auto px-4 -mt-14 space-y-6">
+        @include('petani.partials.banner-flash-sale')
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <a href="{{ url('/petani/produk') }}" class="bg-white border border-gray-200 rounded-2xl p-3 shadow-sm hover:border-green-600">
                 <div class="text-lg">📦</div>

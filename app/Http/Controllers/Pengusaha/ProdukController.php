@@ -28,11 +28,18 @@ class ProdukController extends Controller
         ->get();
 
         $produkNego = collect();
+            $produkFlashSale = Produk::with(['petani', 'petani.profilPetani', 'kategori', 'fotoUtama'])
+            ->aktif()
+            ->whereNotNull('harga_flash_sale')
+            ->whereDate('flash_sale_sampai', '>=', now()->startOfDay())
+            ->orderBy('flash_sale_sampai')
+            ->get();
 
-        return view('pengusaha.beranda', compact(
+            return view('pengusaha.beranda', compact(
             'kategoriList',
             'produkUnggulan',
-            'produkNego'
+            'produkNego',
+            'produkFlashSale'
         ));
     }
 

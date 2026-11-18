@@ -78,7 +78,13 @@
                                         {{ $produk->nama }}
                                     </a>
                                     <p class="mt-1 text-sm text-text-muted">
-                                        Rp{{ number_format($produk->harga_per_kg, 0, ',', '.') }} / kg
+                                                                               @if ($produk->sedangFlashSale())
+                                            <span class="mr-1 text-gray-400 line-through">Rp{{ number_format($produk->harga_per_kg, 0, ',', '.') }}</span>
+                                            <span class="font-semibold text-red-600">Rp{{ number_format($produk->harga_flash_sale, 0, ',', '.') }} / kg</span>
+                                            <span class="ml-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600">⚡ FLASH SALE</span>
+                                        @else
+                                            Rp{{ number_format($produk->harga_per_kg, 0, ',', '.') }} / kg
+                                        @endif
                                     </p>
                                     <p class="mt-1 text-xs text-text-muted">
                                         Min. {{ (float) $produk->min_order_kg }} kg · Stok {{ (float) $produk->stok_kg }} kg

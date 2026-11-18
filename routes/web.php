@@ -7,6 +7,7 @@ use App\Http\Controllers\Petani\AkunController as PetaniAkunController;
 use App\Http\Controllers\Petani\AlamatController as AlamatPetaniController;
 use App\Http\Controllers\Petani\DashboardController as PetaniDashboardController;
 use App\Http\Controllers\Petani\PesananController as PetaniPesananController;
+use App\Http\Controllers\Petani\FlashSaleController as PetaniFlashSaleController;
 use App\Http\Controllers\Petani\ProdukController as PetaniProdukController;
 
 use App\Http\Controllers\Petani\KatalogController as PetaniKatalogController;
@@ -89,6 +90,11 @@ Route::middleware(['auth', 'peran:petani'])->prefix('petani')->name('petani.')->
     Route::put('/produk/{produk}', [PetaniProdukController::class, 'update'])->whereNumber('produk')->name('produk.update');
     Route::patch('/produk/{produk}/tersedia', [PetaniProdukController::class, 'tersedia'])->whereNumber('produk')->name('produk.tersedia');
     Route::delete('/produk/{produk}', [PetaniProdukController::class, 'destroy'])->whereNumber('produk')->name('produk.destroy');
+    
+    // Flash Sale
+    Route::get('/flash-sale', [PetaniFlashSaleController::class, 'index'])->name('flash-sale');
+    Route::post('/produk/{produk}/flash-sale', [PetaniFlashSaleController::class, 'store'])->whereNumber('produk')->name('flash-sale.store');
+    Route::delete('/produk/{produk}/flash-sale', [PetaniFlashSaleController::class, 'destroy'])->whereNumber('produk')->name('flash-sale.destroy');
 
     // Halaman yang belum disambungkan ke database
     Route::get('/katalog', [PetaniKatalogController::class, 'index'])->name('katalog');
