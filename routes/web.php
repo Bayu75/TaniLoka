@@ -96,6 +96,8 @@ Route::middleware(['auth', 'peran:petani'])->prefix('petani')->name('petani.')->
     Route::get('/pesan', [PetaniPesanController::class, 'index'])->name('pesan');
     Route::get('/pesan/{percakapan}', [PetaniPesanController::class, 'show'])->whereNumber('percakapan')->name('pesan.show');
     Route::post('/pesan/{percakapan}/kirim', [PetaniPesanController::class, 'kirim'])->whereNumber('percakapan')->name('pesan.kirim');
+    Route::post('/pesanan/{pesanan}/terkirim', [PetaniPesananController::class, 'terkirim'])->whereNumber('pesanan')->name('pesanan.terkirim');
+Route::post('/pesanan/{pesanan}/hubungi', [PetaniPesananController::class, 'hubungi'])->whereNumber('pesanan')->name('pesanan.hubungi');
 
     Route::view('/bantuan', 'petani.bantuan')->name('bantuan');
 

@@ -85,21 +85,22 @@ class DatabaseSeeder extends Seeder
             ->mapWithKeys(fn ($nama) => [$nama => Kategori::create(['nama' => $nama, 'slug' => Str::slug($nama)])]);
 
         // ===== PRODUK =====
+            // [petani, kategori, nama, harga, stok, min order, grade, tersedia sampai (hari dari sekarang)]
         $daftarProduk = [
-            [$made,  'Sayuran', 'Kol Bedugul',        8000,  200, 5,  'A'],
-            [$made,  'Sayuran', 'Wortel Bedugul',     12000, 150, 5,  'A'],
-            [$made,  'Sayuran', 'Selada Keriting',    18000, 60,  2,  'A'],
-            [$made,  'Buah',    'Stroberi Bedugul',   45000, 40,  1,  'A'],
-            [$made,  'Umbi',    'Kentang Granola',    14000, 300, 10, 'B'],
-            [$ketut, 'Bumbu',   'Cabai Rawit Merah',  55000, 80,  2,  'A'],
-            [$ketut, 'Bumbu',   'Bawang Merah',       38000, 120, 5,  'A'],
-            [$ketut, 'Bumbu',   'Bawang Putih',       32000, 100, 5,  'B'],
-            [$ketut, 'Buah',    'Jeruk Kintamani',    15000, 250, 10, 'A'],
-            [$ketut, 'Sayuran', 'Tomat',              10000, 180, 5,  'B'],
+            [$made,  'Sayuran', 'Kol Bedugul',        8000,  200, 5,  'A', 7],
+            [$made,  'Sayuran', 'Wortel Bedugul',     12000, 150, 5,  'A', 14],
+            [$made,  'Sayuran', 'Selada Keriting',    18000, 60,  2,  'A', 2],   // peringatan "mendekati kedaluwarsa"
+            [$made,  'Buah',    'Stroberi Bedugul',   45000, 40,  1,  'A', 3],   // peringatan "mendekati kedaluwarsa"
+            [$made,  'Umbi',    'Kentang Granola',    14000, 300, 10, 'B', 30],
+            [$ketut, 'Bumbu',   'Cabai Rawit Merah',  55000, 80,  2,  'A', 5],
+            [$ketut, 'Bumbu',   'Bawang Merah',       38000, 120, 5,  'A', 21],
+            [$ketut, 'Bumbu',   'Bawang Putih',       32000, 100, 5,  'B', 30],
+            [$ketut, 'Buah',    'Jeruk Kintamani',    15000, 250, 10, 'A', 10],
+            [$ketut, 'Sayuran', 'Tomat',              10000, 180, 5,  'B', -1],  // sudah kedaluwarsa
         ];
 
-        $produk = [];
-        foreach ($daftarProduk as [$petani, $kat, $nama, $harga, $stok, $min, $grade]) {
+               $produk = [];
+        foreach ($daftarProduk as [$petani, $kat, $nama, $harga, $stok, $min, $grade, $hariTersedia]) {
             $p = Produk::create([
                 'petani_id' => $petani->id,
                 'kategori_id' => $kategori[$kat]->id,
@@ -111,7 +112,9 @@ class DatabaseSeeder extends Seeder
                 'min_order_kg' => $min,
                 'grade' => $grade,
                 'tanggal_panen' => now()->subDays(rand(1, 5)),
+                'tersedia_sampai' => now()->addDays($hariTersedia)->toDateString(),
             ]);
+            
             FotoProduk::create([
                 'produk_id' => $p->id,
                 'path' => 'https://placehold.co/600x400?text=' . urlencode($nama),
