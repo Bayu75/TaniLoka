@@ -8,12 +8,15 @@
 
 @php
     $edit = request()->query('edit') == '1';
+    $dariVerifikasi = request('dari') === 'verifikasi';
 @endphp
 
 <div class="min-h-screen bg-[#F8FAF5]">
 
 {{-- HEADER HALAMAN --}}
-<x-page-header judul="Alamat Saya" :kembali="route('petani.akun')" lebar="max-w-3xl"/>
+<x-page-header judul="Alamat Saya"
+    :kembali="$dariVerifikasi ? route('petani.verifikasi') : route('petani.akun')"
+    lebar="max-w-3xl"/>
 
 {{-- KONTEN HALAMAN ALAMAT --}}
 <div class="mx-auto max-w-3xl px-4 py-5 md:py-6 space-y-4">
@@ -69,14 +72,16 @@
             </div>
 
             <div class="mt-6 flex flex-wrap gap-3 border-t border-gray-100 pt-5">
-                <a href="{{ route('petani.alamat', ['edit' => 1]) }}"
+                <a href="{{ route('petani.alamat', $dariVerifikasi ? ['edit' => 1, 'dari' => 'verifikasi'] : ['edit' => 1]) }}"
                    class="rounded-xl border-2 border-green-700 px-6 py-2.5 text-sm font-semibold text-green-700 hover:bg-green-50">
                     Ubah
                 </a>
 
-                <form action="{{ route('petani.alamat.hapus') }}" method="POST"
-                      onsubmit="return confirm('Yakin ingin menghapus alamat ini?')">
+                <form action="{{ route('petani.alamat.hapus') }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus alamat ini?')">
                     @csrf
+                    @if ($dariVerifikasi)
+                        <input type="hidden" name="dari" value="verifikasi">
+                    @endif
                     <button type="submit"
                             class="rounded-xl border-2 border-red-200 px-6 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50">
                         Hapus
@@ -136,6 +141,10 @@
 
             <form id="form-alamat" action="{{ route('petani.alamat.simpan') }}" method="POST" class="space-y-5">
                 @csrf
+
+                @if (request('dari') === 'verifikasi')
+                    <input type="hidden" name="dari" value="verifikasi">
+                @endif
 
                 <div>
                     <label class="mb-2 block text-sm font-semibold text-gray-700">Label Alamat *</label>
@@ -201,7 +210,7 @@
                 </div>
 
                 <div class="flex flex-col-reverse justify-end gap-3 border-t border-gray-100 pt-5 sm:flex-row">
-                    <a href="{{ $alamat ? route('petani.alamat') : route('petani.dashboard') }}"
+                    <a href="{{ $dariVerifikasi ? route('petani.verifikasi') : ($alamat ? route('petani.alamat') : route('petani.akun')) }}"
                        class="rounded-xl border border-gray-200 px-6 py-3 text-center text-sm font-semibold text-gray-600 hover:bg-gray-50">
                         Batal
                     </a>
@@ -262,8 +271,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 const d = data.address || {};
 
                 alamatInput.value = data.display_name;
-                kabupatenInput.value = d.city || d.town || d.municipality || d.county || '';
-                kecamatanInput.value = d.city_district || d.suburb || d.village || '';
+                kabupatenInput.value = d.county || d.state_district || d.city || d.regency || d.town || '';
+                kecamatanInput.value = d.municipality || d.city_district || d.suburb || d.town || d.village || '';
                 if (d.postcode) kodePosInput.value = d.postcode;
 
                 status.textContent = 'Lokasi berhasil dipilih! Periksa kembali isian di bawah.';

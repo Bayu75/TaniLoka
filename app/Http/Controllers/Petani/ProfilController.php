@@ -54,8 +54,14 @@ class ProfilController extends Controller
             ])->all()
         );
 
+        if ($request->input('dari') === 'verifikasi') {
+            return redirect()
+                ->route('petani.verifikasi')
+                ->with('sukses', 'Profil berhasil disimpan. Lanjutkan pengajuan verifikasi.');
+        }
+
         return redirect()
             ->route('petani.profil')
             ->with('sukses', 'Profil petani berhasil diperbarui!');
-    }
+    }    
 }

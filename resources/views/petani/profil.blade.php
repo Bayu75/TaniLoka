@@ -6,9 +6,12 @@
 @php
     $namaUsaha = $profil?->nama_usaha_tani ?: $user->name;
     $input = 'w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100';
+    $dariVerifikasi = request('dari') === 'verifikasi';
 @endphp
 
-<x-page-header judul="Profil Petani" :kembali="route('petani.akun')" lebar="max-w-5xl"/>
+<x-page-header judul="Alamat Saya"
+    :kembali="$dariVerifikasi ? route('petani.verifikasi') : route('petani.akun')"
+    lebar="max-w-5xl"/>
 
 <div class="mx-auto max-w-5xl space-y-6 px-4 py-6">
 
@@ -48,6 +51,10 @@
 
         <form action="{{ route('petani.profil.simpan') }}" method="POST" class="mt-6 space-y-8">
             @csrf
+
+            @if (request('dari') === 'verifikasi')
+                <input type="hidden" name="dari" value="verifikasi">
+            @endif
 
             {{-- INFORMASI USAHA TANI --}}
             <div>
@@ -100,8 +107,8 @@
 
             {{-- TOMBOL --}}
             <div class="flex flex-col-reverse justify-end gap-3 border-t border-gray-100 pt-5 sm:flex-row">
-                <a href="{{ route('petani.dashboard') }}"
-                   class="rounded-xl border border-gray-200 px-6 py-3 text-center text-sm font-semibold text-gray-600 transition hover:bg-gray-50">
+                <a href="{{ request('dari') === 'verifikasi' ? route('petani.verifikasi') : route('petani.akun') }}"
+                class="rounded-xl border border-gray-200 px-6 py-3 text-center text-sm font-semibold text-gray-600 transition hover:bg-gray-50">
                     Batal
                 </a>
                 <button type="submit"

@@ -27,6 +27,24 @@
         ['url' => route('petani.bantuan'), 'ikon' => '❓', 'judul' => 'Bantuan & Informasi', 'ket' => 'WhatsApp, pertanyaan umum, kontak'],
     ];
     $grup = ['Akun Saya' => $menuAkun, 'Aktivitas' => $menuAktivitas, 'Bantuan & Lainnya' => $menuBantuan];
+
+    $badgeVerifikasi = [
+        'terverifikasi'   => ['Terverifikasi',   'bg-green-50 text-[#2E7D32]'],
+        'menunggu'        => ['Menunggu',        'bg-gray-100 text-gray-600'],
+        'perlu_perbaikan' => ['Perlu Perbaikan', 'bg-orange-50 text-orange-700'],
+        'ditolak'         => ['Ditolak',         'bg-red-50 text-red-600'],
+        'belum_diajukan'  => ['Ajukan',          'bg-[#F5C400]/20 text-yellow-700'],
+    ];
+    
+    [$teksBadge, $warnaBadge] = $badgeVerifikasi[$user->status_verifikasi] ?? $badgeVerifikasi['belum_diajukan'];
+    
+    $keteranganVerifikasi = match ($user->status_verifikasi) {
+        'terverifikasi'   => 'Akun kamu sudah terverifikasi dan bisa menjual produk',
+        'menunggu'        => 'Dokumen sedang ditinjau admin',
+        'perlu_perbaikan' => 'Ada data yang perlu diperbaiki, cek catatan admin',
+        'ditolak'         => 'Pengajuan ditolak, silakan ajukan ulang',
+        default           => 'Lengkapi data dan dokumen agar bisa menjual produk',
+    };
 @endphp
 
 {{-- HEADER HALAMAN AKUN --}}
@@ -52,19 +70,15 @@
     </div>
 
     {{-- VERIFIKASI AKUN --}}
-    <a href="{{ route('petani.verifikasi') }}" {{-- TODO: route('petani.verifikasi') --}}
-       class="mb-5 flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+    <a href="{{ route('petani.verifikasi') }}"
+    class="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
         <div>
             <p class="font-semibold text-gray-800">Verifikasi Akun</p>
-            <p class="text-xs text-gray-500">Lengkapi data dan dokumen agar bisa menjual produk</p>
+            <p class="text-xs text-gray-500">{{ $keteranganVerifikasi }}</p>
         </div>
-        @if ($user->terverifikasi())
-            <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-[#2E7D32]">Terverifikasi</span>
-        @elseif ($user->status_verifikasi === 'menunggu')
-            <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">Menunggu</span>
-        @else
-            <span class="rounded-full bg-[#F5C400]/20 px-3 py-1 text-xs font-semibold text-yellow-700">Ajukan</span>
-        @endif
+        <span class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold {{ $warnaBadge }}">
+            {{ $teksBadge }}
+        </span>
     </a>
 
     {{-- STATISTIK --}}

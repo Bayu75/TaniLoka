@@ -42,14 +42,14 @@
                     'ok'    => $cek['profil'],
                     'sudah' => 'Profil usaha tani sudah lengkap',
                     'belum' => 'Profil usaha tani belum lengkap',
-                    'link'  => route('petani.profil'),
+                    'link'  => route('petani.profil', ['dari' => 'verifikasi']),
                     'aksi'  => 'Lengkapi',
                 ],
                 [
                     'ok'    => $cek['alamat'],
                     'sudah' => 'Alamat kebun sudah diisi',
                     'belum' => 'Alamat kebun belum diisi',
-                    'link'  => route('petani.alamat'),
+                    'link'  => route('petani.alamat', $cek['alamat'] ? ['edit' => 1, 'dari' => 'verifikasi'] : ['dari' => 'verifikasi']),
                     'aksi'  => 'Isi alamat',
                 ],
             ];
@@ -58,24 +58,25 @@
         <div class="mb-5 space-y-3">
             @foreach ($daftarCek as $item)
                 <div class="flex items-center justify-between rounded-xl border px-4 py-3
-            {{ $item['ok'] ? 'border-green-400 bg-green-50' : 'border-orange-300 bg-orange-50' }}">
+                    {{ $item['ok'] ? 'border-green-400 bg-green-50' : 'border-orange-300 bg-orange-50' }}">
                     <span class="flex items-center gap-2 text-sm {{ $item['ok'] ? 'text-green-800' : 'text-orange-800' }}">
                         @if ($item['ok'])
-                            {{-- Lingkaran hijau dengan centang --}}
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-green-600" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20m-1.2 14.2l-4-4l1.4-1.4l2.6 2.6l5.6-5.6l1.4 1.4z" />
                             </svg>
                         @else
-                            {{-- Lingkaran kosong --}}
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-orange-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="9" />
                             </svg>
                         @endif
                         {{ $item['ok'] ? $item['sudah'] : $item['belum'] }}
                     </span>
-                    @unless ($item['ok'])
+
+                    @if (! $item['ok'])
                         <a href="{{ $item['link'] }}" class="text-sm font-medium text-green-700 hover:underline">{{ $item['aksi'] }}</a>
-                    @endunless
+                    @elseif ($bisaAjukan)
+                        <a href="{{ $item['link'] }}" class="text-sm font-medium text-green-700 hover:underline">Ubah</a>
+                    @endif
                 </div>
             @endforeach
         </div>

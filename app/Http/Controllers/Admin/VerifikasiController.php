@@ -14,7 +14,7 @@ class VerifikasiController extends Controller
     {
         $status = $request->query('status', 'menunggu');
 
-        $daftar = VerifikasiAkun::with('user.profilPengusaha')
+        $daftar = VerifikasiAkun::with(['user.profilPengusaha', 'user.profilPetani'])
             ->when($status !== 'semua', fn ($q) => $q->where('status', $status))
             ->latest()
             ->paginate(10)
