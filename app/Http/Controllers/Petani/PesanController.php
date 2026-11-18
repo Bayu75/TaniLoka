@@ -190,6 +190,8 @@ class PesanController extends PetaniController
             'menunggu_konfirmasi' => 'Menunggu konfirmasi',
             'diproses' => 'Diproses',
             'dikirim' => 'Dikirim',
+            'siap_diambil' => 'Siap diambil',
+            'terkirim' => 'Terkirim',
             'selesai' => 'Selesai',
             'dibatalkan' => 'Dibatalkan',
             'ditolak' => 'Ditolak',
