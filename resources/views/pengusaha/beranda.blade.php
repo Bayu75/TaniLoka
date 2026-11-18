@@ -4,15 +4,13 @@
 @section('title', 'Beranda - TaniLoka')
 
 @section('content')
-
 @php
     $ikonKategori = [
-        'Sayuran' => '🥬',
-        'Bumbu & Rempah' => '🌶️',
-        'Umbi-umbian' => '🥕',
-        'Buah-buahan' => '🍅',
-        'Serealia' => '🌾',
-        'Jamur' => '🍄',
+        'sayuran' => '🥬',
+        'buah' => '🍅',
+        'bumbu' => '🌶️',
+        'umbi' => '🥕',
+        'beras-biji' => '🌾',
     ];
 @endphp
 
@@ -115,7 +113,7 @@
                 @foreach ($kategoriList as $item)
                 <a href="{{ route('pengusaha.katalog', ['cat' => $item->slug]) }}"
                 class="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border border-[#D4E8D0] bg-white p-3 transition hover:border-[#66BB6A] hover:bg-[#EBF5EB]">
-                    <span class="text-2xl">{{ $ikonKategori[$item->nama] ?? '🌱' }}</span>
+                   <span class="text-2xl">{{ $ikonKategori[$item->slug] ?? '🌱' }}</span>
                     <span class="text-center text-sm font-semibold text-[#1A2A1A]">{{ $item->nama }}</span>
                 </a>
                  @endforeach

@@ -23,24 +23,10 @@
 
 
 {{-- HEADER HALAMAN AKUN --}}
-<div class="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-[#D4E8D0] bg-white">
-
-    <div class="mx-auto max-w-3xl px-4 py-3">
-
-        <h1 class="text-xl font-extrabold text-[#1A2A1A]">
-            Akun
-        </h1>
-
-        <p class="mt-1 text-sm text-[#6B806B]">
-            Kelola informasi dan aktivitas akun usaha Anda.
-        </p>
-
-    </div>
-
-</div>
+<x-page-header judul="Akun" :kembali="false" lebar="max-w-3xl" />
 
 {{-- KONTEN HALAMAN AKUN --}}
-<div class="mx-auto max-w-3xl py-5 md:py-6">
+<div class="mx-auto max-w-3xl px-4 py-5 md:py-6">
 
 
     {{-- PROFIL PENGUSAHA --}}

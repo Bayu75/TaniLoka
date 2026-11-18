@@ -8,30 +8,14 @@
 
 @php
     $edit = request()->query('edit') == '1';
+    $dariVerifikasi = request('dari') === 'verifikasi';
+    $urlKembali = $dariVerifikasi ? route('pengusaha.verifikasi') : route('pengusaha.akun');
 @endphp
 
 <div class="min-h-screen bg-[#F8FAF5]">
 
 {{-- HEADER HALAMAN --}}
-<div class="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-[#D4E8D0] bg-white">
-    <div class="relative mx-auto max-w-3xl px-4 py-3">
-
-        {{-- TOMBOL KEMBALI --}}
-        <a href="{{ route('pengusaha.akun') }}"
-            class="mb-2 inline-flex items-center gap-1 text-sm font-extrabold text-[#087C3E] hover:text-green-800
-                   md:absolute md:right-full md:top-1/2 md:mb-0 md:mr-4 md:-translate-y-1/2 md:whitespace-nowrap">
-            <span class="text-2xl font-black leading-none">&lt;</span>
-            <span>Kembali</span>
-        </a>
-
-        {{-- JUDUL DAN DESKRIPSI --}}
-        <div>
-            <h1 class="text-xl font-extrabold text-[#1A2A1A]">Alamat Saya</h1>
-            <p class="mt-1 text-sm text-[#6B806B]">Kelola alamat pengiriman usaha kuliner Anda</p>
-        </div>
-
-    </div>
-</div>
+<x-page-header judul="Alamat Saya" :kembali="$urlKembali" lebar="max-w-3xl" />
 
 {{-- KONTEN HALAMAN ALAMAT --}}
 <div class="mx-auto max-w-3xl px-4 py-5 md:py-6 space-y-4">
@@ -87,7 +71,7 @@
             </div>
 
             <div class="mt-6 flex flex-wrap gap-3 border-t border-gray-100 pt-5">
-                <a href="{{ route('pengusaha.alamat', ['edit' => 1]) }}"
+                <a href="{{ route('pengusaha.alamat', array_filter(['edit' => 1, 'dari' => $dariVerifikasi ? 'verifikasi' : null])) }}"
                    class="rounded-xl border-2 border-green-700 px-6 py-2.5 text-sm font-semibold text-green-700 hover:bg-green-50">
                     Ubah
                 </a>
@@ -95,6 +79,7 @@
                 <form action="{{ route('pengusaha.alamat.hapus') }}" method="POST"
                       onsubmit="return confirm('Yakin ingin menghapus alamat ini?')">
                     @csrf
+
                     <button type="submit"
                             class="rounded-xl border-2 border-red-200 px-6 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50">
                         Hapus
@@ -152,8 +137,11 @@
                        value="{{ old('longitude', $alamat->longitude ?? '115.2166670') }}">
             </div>
 
-            <form id="form-alamat" action="{{ route('pengusaha.alamat.simpan') }}" method="POST" class="space-y-5">
+                       <form id="form-alamat" action="{{ route('pengusaha.alamat.simpan') }}" method="POST" class="space-y-5">
                 @csrf
+                @if ($dariVerifikasi)
+                    <input type="hidden" name="dari" value="verifikasi">
+                @endif
 
                 <div>
                     <label class="mb-2 block text-sm font-semibold text-gray-700">Label Alamat *</label>
@@ -219,7 +207,7 @@
                 </div>
 
                 <div class="flex flex-col-reverse justify-end gap-3 border-t border-gray-100 pt-5 sm:flex-row">
-                    <a href="{{ $alamat ? route('pengusaha.alamat') : route('pengusaha.beranda') }}"
+                                        <a href="{{ $alamat ? route('pengusaha.alamat', array_filter(['dari' => $dariVerifikasi ? 'verifikasi' : null])) : $urlKembali }}"
                        class="rounded-xl border border-gray-200 px-6 py-3 text-center text-sm font-semibold text-gray-600 hover:bg-gray-50">
                         Batal
                     </a>

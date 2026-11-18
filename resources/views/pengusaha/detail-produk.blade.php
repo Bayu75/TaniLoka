@@ -12,16 +12,10 @@
     $stok = (float) $produk->stok_kg;
 @endphp
 
-{{-- KEMBALI KE KATALOG --}}
-<div class="mx-auto mb-5 max-w-4xl pt-5">
-    <a href="{{ route('pengusaha.katalog') }}"
-       class="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 transition hover:text-green-700">
-        <span class="text-xl leading-none">‹</span>
-        <span>Kembali ke Katalog</span>
-    </a>
-</div>
+{{-- HEADER HALAMAN --}}
+<x-page-header judul="Detail Produk" :kembali="route('pengusaha.katalog')" lebar="max-w-4xl" />
 
-<div class="mx-auto max-w-4xl" x-data="{ fotoAktif: @js($fotoUtama) }">
+<div class="mx-auto max-w-4xl px-4 py-6" x-data="{ fotoAktif: @js($fotoUtama) }">
 
     {{-- PESAN SUKSES / ERROR --}}
     @if (session('sukses'))
