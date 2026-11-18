@@ -49,7 +49,7 @@
                     'ok'    => $cek['alamat'],
                     'sudah' => 'Alamat usaha sudah diisi',
                     'belum' => 'Alamat usaha belum diisi',
-                    'link'  => route('pengusaha.alamat'),
+                    'link'  => route('pengusaha.alamat', $cek['alamat'] ? ['edit' => 1, 'dari' => 'verifikasi'] : ['dari' => 'verifikasi']),
                     'aksi'  => 'Isi alamat',
                 ],
             ];
@@ -71,9 +71,11 @@
                         @endif
                         {{ $item['ok'] ? $item['sudah'] : $item['belum'] }}
                     </span>
-                    @unless ($item['ok'])
+                                        @if (! $item['ok'])
                         <a href="{{ $item['link'] }}" class="text-sm font-medium text-green-700 hover:underline">{{ $item['aksi'] }}</a>
-                    @endunless
+                    @elseif ($bisaAjukan)
+                        <a href="{{ $item['link'] }}" class="text-sm font-medium text-green-700 hover:underline">Ubah</a>
+                    @endif
                 </div>
             @endforeach
         </div>

@@ -76,8 +76,14 @@
             <p class="font-semibold text-gray-800">Verifikasi Akun</p>
             <p class="text-xs text-gray-500">Lengkapi data dan dokumen agar bisa checkout</p>
         </div>
-        @if (auth()->user()->terverifikasi())
+                @if ($user->terverifikasi())
             <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-[#2E7D32]">Terverifikasi</span>
+        @elseif ($user->status_verifikasi === 'menunggu')
+            <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Sedang Ditinjau</span>
+        @elseif ($user->status_verifikasi === 'perlu_perbaikan')
+            <span class="rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">Perlu Perbaikan</span>
+        @elseif ($user->status_verifikasi === 'ditolak')
+            <span class="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">Ditolak</span>
         @else
             <span class="rounded-full bg-[#F5C400]/20 px-3 py-1 text-xs font-semibold text-yellow-700">Ajukan</span>
         @endif
