@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -47,8 +48,7 @@ class ProdukController extends PetaniController
                 'kabupaten' => $kabupaten,
                 'tersedia' => $p->aktif,
                 'gambar' => $p->fotoUtama?->url,
-                // TODO(tersedia_sampai): tabel produk belum punya kolom tersedia_sampai. Tunggu keputusan Bayu.
-                'tersediaSampai' => '',
+                'tersediaSampai' => $this->tanggalYmd($p->tersedia_sampai),
             ])
             ->values();
 
@@ -87,6 +87,7 @@ class ProdukController extends PetaniController
                     'min_order_kg' => $data['min'],
                     'grade' => $data['grade'] ?? null,
                     'tanggal_panen' => $data['tanggal_panen'] ?? null,
+                    'tersedia_sampai' => $data['tersedia_sampai'] ?? null,
                     'aktif' => true,
                 ]);
 
@@ -130,6 +131,7 @@ class ProdukController extends PetaniController
                     'min_order_kg' => $data['min'],
                     'grade' => $data['grade'] ?? null,
                     'tanggal_panen' => $data['tanggal_panen'] ?? null,
+                    'tersedia_sampai' => $data['tersedia_sampai'] ?? null,
                     'aktif' => array_key_exists('tersedia', $data) ? (bool) $data['tersedia'] : $produk->aktif,
                 ]);
 
@@ -215,10 +217,16 @@ class ProdukController extends PetaniController
             'periode' => [$baru ? 'required' : 'nullable', 'string', 'max:1000'],
             'grade' => ['nullable', 'in:A,B,C'],
             'tanggal_panen' => ['nullable', 'date'],
+            'tersedia_sampai' => array_values(array_filter([
+                'nullable',
+                'date',
+                $request->filled('tanggal_panen') ? 'after_or_equal:tanggal_panen' : null,
+            ])),
             'tersedia' => ['sometimes', 'boolean'],
             'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
-            // TODO(tersedia_sampai): input "tersedia_sampai" dari form diabaikan sampai kolomnya ada.
-        ], $this->pesanValidasi(), [
+        ], $this->pesanValidasi() + [
+            'tersedia_sampai.after_or_equal' => 'Tersedia sampai harus pada atau setelah tanggal panen.',
+        ], [
             'nama' => 'nama produk',
             'kategori_id' => 'kategori',
             'harga' => 'harga per kg',
@@ -227,9 +235,21 @@ class ProdukController extends PetaniController
             'periode' => 'periode panen',
             'grade' => 'grade',
             'tanggal_panen' => 'tanggal panen',
+            'tersedia_sampai' => 'tersedia sampai',
             'tersedia' => 'status ketersediaan',
             'foto' => 'foto produk',
         ]);
+    }
+
+
+    /** Format tanggal Y-m-d tanpa mengandalkan cast di model Produk. */
+    private function tanggalYmd(mixed $nilai): string
+    {
+        if (! $nilai) {
+            return '';
+        }
+
+        return Carbon::parse($nilai)->format('Y-m-d');
     }
 
     /** Slug unik, termasuk terhadap produk yang sudah di-soft delete (index unique berlaku untuk semua baris). */

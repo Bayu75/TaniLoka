@@ -1,224 +1,356 @@
 @extends('layouts.petani')
 
+@section('title', 'Alamat Saya - TaniLoka')
+
 @section('content')
-{{-- Data dari Petani\AlamatController (tabel alamat). Form dikirim ke server; Alpine hanya untuk buka/tutup form. --}}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
 @php
-    $formLama = old('_form');
-    $nilaiLama = [
-        'label' => old('label', ''),
-        'nama_penerima' => old('nama_penerima', ''),
-        'no_hp' => old('no_hp', ''),
-        'alamat_lengkap' => old('alamat_lengkap', ''),
-        'kabupaten' => old('kabupaten', ''),
-        'kecamatan' => old('kecamatan', ''),
-        'kode_pos' => old('kode_pos', ''),
-    ];
+    $edit = request()->query('edit') == '1';
+    $dariVerifikasi = request('dari') === 'verifikasi';
 @endphp
-<div class="max-w-3xl mx-auto px-4 py-6 space-y-4 pb-24" x-data="{
-    daftar: @js($daftarAlamat),
-    bawaan: @js($bawaan),
-    formTambah: {{ $formLama === 'tambah' ? 'true' : 'false' }},
-    formUbah: {{ str_starts_with((string) $formLama, 'ubah:') ? 'true' : 'false' }},
-    editId: {{ str_starts_with((string) $formLama, 'ubah:') ? (int) substr($formLama, 5) : 'null' }},
-    pesan: @js(session('sukses') ?? session('gagal') ?? ($errors->any() ? 'Periksa kembali isian alamat.' : '')),
-    urlUbah: @js(route('petani.alamat.update', ['alamat' => '__ID__'])),
-    urlHapus: @js(route('petani.alamat.destroy', ['alamat' => '__ID__'])),
-    urlUtama: @js(route('petani.alamat.utama', ['alamat' => '__ID__'])),
-    baru: {{ $formLama === 'tambah' ? Js::from($nilaiLama) : 'null' }},
-    edit: {{ str_starts_with((string) $formLama, 'ubah:') ? Js::from($nilaiLama) : 'null' }},
-    init() {
-        if (!this.baru) this.baru = this.kosong();
-        if (!this.edit) this.edit = this.kosong();
-        if (this.pesan) setTimeout(() => this.pesan = '', 3000);
-    },
-    url(pola, id) {
-        return pola.replace('__ID__', id);
-    },
-    kosong() {
-        return { label: '', nama_penerima: this.bawaan.penerima, no_hp: this.bawaan.telepon, alamat_lengkap: '', kabupaten: this.bawaan.kabupaten, kecamatan: '', kode_pos: '' };
-    },
-    bukaTambah() {
-        this.baru = this.kosong();
-        this.formTambah = true;
-        this.formUbah = false;
-    },
-    bukaUbah(a) {
-        this.editId = a.id;
-        this.edit = {
-            label: a.label,
-            nama_penerima: a.penerima,
-            no_hp: a.telepon,
-            alamat_lengkap: a.jalan,
-            kabupaten: a.kabupaten,
-            kecamatan: a.kecamatan,
-            kode_pos: a.kode_pos
-        };
-        this.formUbah = true;
-        this.formTambah = false;
-    },
-    kirim(aksi, id, tanya) {
-        if (tanya && !window.confirm(tanya)) return;
-        const f = this.$refs.formAksi;
-        f.action = this.url(aksi === 'hapus' ? this.urlHapus : this.urlUtama, id);
-        this.$refs.metodeAksi.value = aksi === 'hapus' ? 'DELETE' : 'PATCH';
-        f.submit();
-    }
-}">
 
-    <header class="mb-4 grid grid-cols-[5rem_minmax(0,1fr)_5rem] items-center gap-2">
-        <a href="{{ url('/petani/akun') }}" class="inline-flex items-center gap-1 py-2 text-sm font-semibold text-green-700 hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 justify-self-start">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="shrink-0">
-                    <path d="m15 18-6-6 6-6" />
-                </svg>
-                <span>Kembali</span>
-            </a>
-        <h1 class="min-w-0 break-words text-center text-lg font-bold">Alamat Saya</h1>
-        <span aria-hidden="true"></span>
-    </header>
+<div class="min-h-screen bg-[#F8FAF5]">
 
-    <div class="space-y-3">
-        <template x-for="a in daftar" :key="a.id">
-            <div class="bg-white border rounded-2xl p-4 space-y-3" :class="a.utama ? 'border-primary' : 'border-border'">
-                <div class="flex items-center gap-2">
-                    <p class="font-semibold text-gray-900" x-text="a.label"></p>
-                    <span x-show="a.utama" class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">Alamat Utama</span>
-                </div>
-                <p class="text-sm text-gray-900">
-                    <span x-text="a.penerima"></span> · <span x-text="a.telepon"></span>
-                </p>
-                <p class="text-sm text-text-muted" x-text="a.jalan"></p>
-                <p class="text-sm text-text-muted" x-text="'Kec. ' + a.kecamatan + ', ' + a.kabupaten + (a.kode_pos ? ' ' + a.kode_pos : '')"></p>
-                <div class="flex gap-2 pt-1">
-                    <button type="button" @click="bukaUbah(a)" class="flex-1 border border-primary text-primary rounded-xl py-2 text-sm font-medium">Ubah</button>
-                    <button type="button" @click="kirim('hapus', a.id, 'Hapus alamat ' + a.label + '?')" class="flex-1 border border-red-300 text-red-600 rounded-xl py-2 text-sm font-medium">Hapus</button>
-                </div>
-                <button type="button" x-show="!a.utama" @click="kirim('utama', a.id)" class="text-sm text-primary font-medium">Jadikan utama</button>
-            </div>
-        </template>
-    </div>
+{{-- HEADER HALAMAN --}}
+<x-page-header judul="Alamat Saya"
+    :kembali="$dariVerifikasi ? route('petani.verifikasi') : route('petani.akun')"
+    lebar="max-w-3xl"/>
 
-    <p x-show="daftar.length === 0" class="rounded-2xl border border-border bg-white p-6 text-center text-sm text-text-muted">Belum ada alamat tersimpan.</p>
+{{-- KONTEN HALAMAN ALAMAT --}}
+<div class="mx-auto max-w-3xl px-4 py-5 md:py-6 space-y-4">
 
-    @if ($errors->any())
-        <div class="rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">
-            <ul class="list-disc pl-5 space-y-1">
-                @foreach ($errors->all() as $e)
-                    <li>{{ $e }}</li>
-                @endforeach
-            </ul>
+    {{-- NOTIFIKASI --}}
+    @if(session('sukses'))
+        <div class="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
+            {{ session('sukses') }}
         </div>
     @endif
 
-    <form x-ref="formAksi" method="POST" class="hidden">
-        @csrf
-        <input type="hidden" name="_method" x-ref="metodeAksi" value="PATCH">
-    </form>
+    @if($errors->any())
+        <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+            @foreach($errors->all() as $error)
+                <p>{{ $error }}</p>
+            @endforeach
+        </div>
+    @endif
 
-    <button type="button" @click="bukaTambah()" class="w-full bg-yellow-400 text-gray-900 font-semibold rounded-xl py-3">
-        + Tambah Alamat Baru
-    </button>
+    {{-- ALAMAT SUDAH ADA --}}
+    @if($alamat && !$edit)
 
-    {{-- Form tambah: hanya muncul setelah tombol diklik --}}
-    <form method="POST" action="{{ route('petani.alamat.store') }}" x-show="formTambah" x-cloak class="bg-white border border-border rounded-2xl p-4 space-y-3">
-        @csrf
-        <input type="hidden" name="_form" value="tambah">
-        <div class="grid grid-cols-[5rem_minmax(0,1fr)_5rem] items-center gap-2">
-            <button type="button" @click="formTambah = false" class="inline-flex items-center gap-1 py-2 text-sm font-semibold text-green-700 hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 justify-self-start">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="shrink-0">
-                    <path d="m15 18-6-6 6-6" />
-                </svg>
-                <span>Kembali</span>
-            </button>
-            <h2 class="text-center font-semibold text-gray-900">Tambah Alamat Baru</h2>
-            <span aria-hidden="true"></span>
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1" for="tambah-label">Label *</label>
-            <input id="tambah-label" type="text" name="label" x-model="baru.label" class="w-full border border-border rounded-xl px-4 py-2" placeholder="Rumah" required maxlength="50">
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1" for="tambah-nama_penerima">Nama Penerima *</label>
-            <input id="tambah-nama_penerima" type="text" name="nama_penerima" x-model="baru.nama_penerima" class="w-full border border-border rounded-xl px-4 py-2" required>
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1" for="tambah-no_hp">Nomor HP *</label>
-            <input id="tambah-no_hp" type="text" name="no_hp" x-model="baru.no_hp" class="w-full border border-border rounded-xl px-4 py-2" required inputmode="tel">
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1" for="tambah-alamat_lengkap">Alamat Lengkap *</label>
-            <input id="tambah-alamat_lengkap" type="text" name="alamat_lengkap" x-model="baru.alamat_lengkap" class="w-full border border-border rounded-xl px-4 py-2" placeholder="Banjar Dinas Batan, Desa Tunjuk" required>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-        <div>
-            <label class="block text-sm font-medium mb-1" for="tambah-kabupaten">Kabupaten/Kota *</label>
-            <input id="tambah-kabupaten" type="text" name="kabupaten" x-model="baru.kabupaten" class="w-full border border-border rounded-xl px-4 py-2" placeholder="Tabanan" required>
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1" for="tambah-kecamatan">Kecamatan *</label>
-            <input id="tambah-kecamatan" type="text" name="kecamatan" x-model="baru.kecamatan" class="w-full border border-border rounded-xl px-4 py-2" placeholder="Tabanan" required>
-        </div>
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1" for="tambah-kode_pos">Kode Pos</label>
-            <input id="tambah-kode_pos" type="text" name="kode_pos" x-model="baru.kode_pos" class="w-full border border-border rounded-xl px-4 py-2" inputmode="numeric" maxlength="5">
-        </div>
-        <div class="flex gap-2 pt-1">
-            <button type="button" @click="formTambah = false" class="flex-1 border border-border rounded-xl py-2 text-sm">Batal</button>
-            <button type="submit" class="flex-1 bg-primary text-white rounded-xl py-2 text-sm font-medium">Simpan</button>
-        </div>
-    </form>
+        <div class="rounded-2xl border-2 border-green-700 bg-white p-5 shadow-sm md:p-7">
 
-    {{-- Form ubah --}}
-    <form method="POST" :action="url(urlUbah, editId)" x-show="formUbah" x-cloak class="bg-white border border-border rounded-2xl p-4 space-y-3">
-        @csrf
-        @method('PUT')
-        <input type="hidden" name="_form" :value="'ubah:' + editId">
-        <div class="grid grid-cols-[5rem_minmax(0,1fr)_5rem] items-center gap-2">
-            <button type="button" @click="formUbah = false" class="inline-flex items-center gap-1 py-2 text-sm font-semibold text-green-700 hover:text-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 justify-self-start">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="shrink-0">
-                    <path d="m15 18-6-6 6-6" />
-                </svg>
-                <span>Kembali</span>
-            </button>
-            <h2 class="text-center font-semibold text-gray-900">Ubah Alamat</h2>
-            <span aria-hidden="true"></span>
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1" for="ubah-label">Label *</label>
-            <input id="ubah-label" type="text" name="label" x-model="edit.label" class="w-full border border-border rounded-xl px-4 py-2" placeholder="Rumah" required maxlength="50">
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1" for="ubah-nama_penerima">Nama Penerima *</label>
-            <input id="ubah-nama_penerima" type="text" name="nama_penerima" x-model="edit.nama_penerima" class="w-full border border-border rounded-xl px-4 py-2" required>
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1" for="ubah-no_hp">Nomor HP *</label>
-            <input id="ubah-no_hp" type="text" name="no_hp" x-model="edit.no_hp" class="w-full border border-border rounded-xl px-4 py-2" required inputmode="tel">
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1" for="ubah-alamat_lengkap">Alamat Lengkap *</label>
-            <input id="ubah-alamat_lengkap" type="text" name="alamat_lengkap" x-model="edit.alamat_lengkap" class="w-full border border-border rounded-xl px-4 py-2" placeholder="Banjar Dinas Batan, Desa Tunjuk" required>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-        <div>
-            <label class="block text-sm font-medium mb-1" for="ubah-kabupaten">Kabupaten/Kota *</label>
-            <input id="ubah-kabupaten" type="text" name="kabupaten" x-model="edit.kabupaten" class="w-full border border-border rounded-xl px-4 py-2" placeholder="Tabanan" required>
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1" for="ubah-kecamatan">Kecamatan *</label>
-            <input id="ubah-kecamatan" type="text" name="kecamatan" x-model="edit.kecamatan" class="w-full border border-border rounded-xl px-4 py-2" placeholder="Tabanan" required>
-        </div>
-        </div>
-        <div>
-            <label class="block text-sm font-medium mb-1" for="ubah-kode_pos">Kode Pos</label>
-            <input id="ubah-kode_pos" type="text" name="kode_pos" x-model="edit.kode_pos" class="w-full border border-border rounded-xl px-4 py-2" inputmode="numeric" maxlength="5">
-        </div>
-        <div class="flex gap-2 pt-1">
-            <button type="button" @click="formUbah = false" class="flex-1 border border-border rounded-xl py-2 text-sm">Batal</button>
-            <button type="submit" class="flex-1 bg-primary text-white rounded-xl py-2 text-sm font-medium">Simpan</button>
-        </div>
-    </form>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="text-lg font-bold text-gray-900">{{ $alamat->label }}</h2>
+                <span class="rounded-full bg-green-100 px-4 py-1.5 text-xs font-bold text-green-700">
+                    Alamat Utama
+                </span>
+            </div>
 
-    <div x-show="pesan" x-cloak x-transition class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-4 py-2 rounded-xl z-50" x-text="pesan"></div>
+            <div class="mt-4 space-y-2">
+                <p class="font-semibold text-gray-900">
+                    {{ $alamat->nama_penerima }} · {{ $alamat->no_hp }}
+                </p>
+                <p class="text-sm leading-relaxed text-gray-600">{{ $alamat->alamat_lengkap }}</p>
+                <p class="text-sm text-gray-600">
+                    Kec. {{ $alamat->kecamatan }}, {{ $alamat->kabupaten }}
+                    @if($alamat->kode_pos) · {{ $alamat->kode_pos }} @endif
+                </p>
+
+                @if($alamat->catatan)
+                    <p class="mt-3 text-sm text-gray-500">Catatan: {{ $alamat->catatan }}</p>
+                @endif
+
+                @if($alamat->latitude && $alamat->longitude)
+                    <a href="https://www.google.com/maps?q={{ $alamat->latitude }},{{ $alamat->longitude }}"
+                       target="_blank"
+                       class="inline-block text-sm font-semibold text-green-700 hover:underline">
+                        📍 Lihat di peta
+                    </a>
+                @endif
+            </div>
+
+            <div class="mt-6 flex flex-wrap gap-3 border-t border-gray-100 pt-5">
+                <a href="{{ route('petani.alamat', $dariVerifikasi ? ['edit' => 1, 'dari' => 'verifikasi'] : ['edit' => 1]) }}"
+                   class="rounded-xl border-2 border-green-700 px-6 py-2.5 text-sm font-semibold text-green-700 hover:bg-green-50">
+                    Ubah
+                </a>
+
+                <form action="{{ route('petani.alamat.hapus') }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus alamat ini?')">
+                    @csrf
+                    @if ($dariVerifikasi)
+                        <input type="hidden" name="dari" value="verifikasi">
+                    @endif
+                    <button type="submit"
+                            class="rounded-xl border-2 border-red-200 px-6 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50">
+                        Hapus
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    {{-- FORM TAMBAH ATAU EDIT --}}
+    @else
+
+        <div class="rounded-2xl border border-green-100 bg-white p-5 shadow-sm md:p-7">
+
+            <div class="mb-6">
+                <h2 class="text-lg font-bold text-gray-900">
+                    {{ $alamat ? 'Ubah Alamat' : 'Tambah Alamat Baru' }}
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    Masukkan alamat lengkap kebun atau lokasi pengambilan produk.
+                </p>
+            </div>
+
+            {{-- PILIH LOKASI DI PETA --}}
+            <div class="mb-6">
+                <label class="mb-2 block text-sm font-semibold text-gray-700">Pilih Lokasi Kebun *</label>
+                <p class="mb-3 text-xs text-gray-500">
+                    Cari alamat atau geser pin pada peta untuk menentukan lokasi kebun.
+                </p>
+
+                <div class="mb-3 flex flex-col gap-2 sm:flex-row">
+                    <input type="text" id="cari-lokasi"
+                           placeholder="Cari nama jalan, tempat, atau kota..."
+                           class="min-w-0 flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-600">
+                    <button type="button" id="tombol-cari"
+                            class="rounded-xl bg-green-700 px-5 py-3 text-sm font-semibold text-white hover:bg-green-800">
+                        Cari Lokasi
+                    </button>
+                </div>
+
+                <div id="peta-alamat" class="z-0 h-[350px] w-full rounded-xl border border-gray-200 sm:h-[420px]"></div>
+
+                <button type="button" id="tombol-gps"
+                        class="mt-3 rounded-xl border border-green-700 px-4 py-2.5 text-sm font-semibold text-green-700 hover:bg-green-50">
+                    📍 Gunakan Lokasi Saya
+                </button>
+
+                <p id="status-peta" class="mt-2 text-xs text-gray-500">
+                    Klik peta atau geser pin untuk memilih lokasi.
+                </p>
+
+                {{-- KOORDINAT (ikut terkirim lewat form="form-alamat") --}}
+                <input type="hidden" name="latitude" id="latitude" form="form-alamat"
+                       value="{{ old('latitude', $alamat->latitude ?? '-8.6500000') }}">
+                <input type="hidden" name="longitude" id="longitude" form="form-alamat"
+                       value="{{ old('longitude', $alamat->longitude ?? '115.2166670') }}">
+            </div>
+
+            <form id="form-alamat" action="{{ route('petani.alamat.simpan') }}" method="POST" class="space-y-5">
+                @csrf
+
+                @if (request('dari') === 'verifikasi')
+                    <input type="hidden" name="dari" value="verifikasi">
+                @endif
+
+                <div>
+                    <label class="mb-2 block text-sm font-semibold text-gray-700">Label Alamat *</label>
+                    <input type="text" name="label"
+                           value="{{ old('label', $alamat->label ?? 'Kebun') }}"
+                           placeholder="Contoh: Kebun, Gudang Panen" required
+                           class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100">
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-semibold text-gray-700">Nama Penerima *</label>
+                    <input type="text" name="nama_penerima"
+                           value="{{ old('nama_penerima', $alamat->nama_penerima ?? auth()->user()->name) }}" required
+                           class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100">
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-semibold text-gray-700">Nomor WhatsApp *</label>
+                    <input type="tel" name="no_hp"
+                           value="{{ old('no_hp', $alamat->no_hp ?? auth()->user()->no_wa) }}"
+                           placeholder="081234567890" required
+                           class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100">
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-semibold text-gray-700">Alamat Lengkap *</label>
+                    <textarea name="alamat_lengkap" rows="3" required
+                              placeholder="Nama jalan, nomor bangunan, kelurahan..."
+                              class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100">{{ old('alamat_lengkap', $alamat->alamat_lengkap ?? '') }}</textarea>
+                </div>
+
+                <div class="grid gap-5 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-gray-700">Kecamatan *</label>
+                        <input type="text" name="kecamatan"
+                               value="{{ old('kecamatan', $alamat->kecamatan ?? '') }}"
+                               placeholder="Contoh: Denpasar Selatan" required
+                               class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100">
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-gray-700">Kota / Kabupaten *</label>
+                        <input type="text" name="kabupaten"
+                               value="{{ old('kabupaten', $alamat->kabupaten ?? '') }}"
+                               placeholder="Contoh: Denpasar" required
+                               class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-semibold text-gray-700">Kode Pos</label>
+                    <input type="text" name="kode_pos"
+                           value="{{ old('kode_pos', $alamat->kode_pos ?? '') }}"
+                           placeholder="80222"
+                           class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100">
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-semibold text-gray-700">Catatan Tambahan</label>
+                    <textarea name="catatan" rows="2"
+                              placeholder="Contoh: Masuk gang sebelah pura, kebun di ujung jalan."
+                              class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100">{{ old('catatan', $alamat->catatan ?? '') }}</textarea>
+                </div>
+
+                <div class="flex flex-col-reverse justify-end gap-3 border-t border-gray-100 pt-5 sm:flex-row">
+                    <a href="{{ $dariVerifikasi ? route('petani.verifikasi') : ($alamat ? route('petani.alamat') : route('petani.akun')) }}"
+                       class="rounded-xl border border-gray-200 px-6 py-3 text-center text-sm font-semibold text-gray-600 hover:bg-gray-50">
+                        Batal
+                    </a>
+                    <button type="submit"
+                            class="rounded-xl bg-green-700 px-6 py-3 text-sm font-semibold text-white hover:bg-green-800">
+                        Simpan Alamat
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    @endif
+
 </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (!document.getElementById('peta-alamat')) return;
+
+    const latitude  = document.getElementById('latitude');
+    const longitude = document.getElementById('longitude');
+    const status    = document.getElementById('status-peta');
+    const alamatInput    = document.querySelector('[name="alamat_lengkap"]');
+    const kabupatenInput = document.querySelector('[name="kabupaten"]');
+    const kecamatanInput = document.querySelector('[name="kecamatan"]');
+    const kodePosInput   = document.querySelector('[name="kode_pos"]');
+
+    const awalLat = Number(latitude.value);
+    const awalLng = Number(longitude.value);
+
+    const map = L.map('peta-alamat').setView([awalLat, awalLng], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
+
+    const marker = L.marker([awalLat, awalLng], { draggable: true }).addTo(map);
+
+    async function pilihLokasi(lat, lng) {
+        latitude.value  = lat.toFixed(7);
+        longitude.value = lng.toFixed(7);
+        marker.setLatLng([lat, lng]);
+        status.textContent = 'Mengambil informasi alamat...';
+
+        try {
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=id`
+            );
+            if (!response.ok) throw new Error('Gagal mengambil alamat');
+
+            const data = await response.json();
+
+            if (data.display_name) {
+                const d = data.address || {};
+
+                alamatInput.value = data.display_name;
+                kabupatenInput.value = d.county || d.state_district || d.city || d.regency || d.town || '';
+                kecamatanInput.value = d.municipality || d.city_district || d.suburb || d.town || d.village || '';
+                if (d.postcode) kodePosInput.value = d.postcode;
+
+                status.textContent = 'Lokasi berhasil dipilih! Periksa kembali isian di bawah.';
+            } else {
+                status.textContent = 'Koordinat tersimpan, tetapi alamat tidak ditemukan.';
+            }
+        } catch (error) {
+            status.textContent = 'Koordinat tersimpan. Silakan isi alamat secara manual.';
+        }
+    }
+
+    map.on('click', e => pilihLokasi(e.latlng.lat, e.latlng.lng));
+
+    marker.on('dragend', function () {
+        const p = marker.getLatLng();
+        pilihLokasi(p.lat, p.lng);
+    });
+
+    document.getElementById('tombol-cari').addEventListener('click', async function () {
+        const kataKunci = document.getElementById('cari-lokasi').value;
+
+        if (!kataKunci.trim()) {
+            status.textContent = 'Masukkan alamat yang ingin dicari.';
+            return;
+        }
+
+        status.textContent = 'Sedang mencari lokasi...';
+
+        try {
+            const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=id&q='
+                + encodeURIComponent(kataKunci);
+            const hasil = await (await fetch(url)).json();
+
+            if (!hasil.length) {
+                status.textContent = 'Lokasi tidak ditemukan.';
+                return;
+            }
+
+            const lat = Number(hasil[0].lat);
+            const lng = Number(hasil[0].lon);
+            map.setView([lat, lng], 17);
+            await pilihLokasi(lat, lng);
+        } catch (error) {
+            status.textContent = 'Pencarian gagal. Silakan coba lagi.';
+        }
+    });
+
+    document.getElementById('cari-lokasi').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('tombol-cari').click();
+        }
+    });
+
+    document.getElementById('tombol-gps').addEventListener('click', function () {
+        if (!navigator.geolocation) {
+            status.textContent = 'Perangkat tidak mendukung fitur lokasi.';
+            return;
+        }
+
+        status.textContent = 'Mengambil lokasi perangkat...';
+
+        navigator.geolocation.getCurrentPosition(
+            function (pos) {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                map.setView([lat, lng], 17);
+                pilihLokasi(lat, lng);
+            },
+            function () {
+                status.textContent = 'Lokasi tidak dapat diakses. Periksa izin GPS browser.';
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    });
+
+    setTimeout(() => map.invalidateSize(), 300);
+});
+</script>
+
 @endsection

@@ -31,7 +31,13 @@ class AlamatController extends Controller
             'latitude.required' => 'Pilih lokasi usaha di peta terlebih dahulu.',
         ]);
 
-        $request->user()->alamat()->updateOrCreate(['utama' => true], $data);
+               $request->user()->alamat()->updateOrCreate(['utama' => true], $data);
+
+        if ($request->input('dari') === 'verifikasi') {
+            return redirect()
+                ->route('pengusaha.verifikasi')
+                ->with('sukses', 'Alamat usaha berhasil disimpan. Lanjutkan verifikasi akunmu.');
+        }
 
         return redirect()->route('pengusaha.alamat')->with('sukses', 'Alamat berhasil disimpan.');
     }

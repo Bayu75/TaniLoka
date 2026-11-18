@@ -15,8 +15,6 @@ class KeranjangItem extends Model
 
     public function getSubtotalAttribute(): int
     {
-        $harga = $this->harga_per_kg ?? $this->produk->harga_per_kg;
-
-        return (int) round($harga * $this->jumlah_kg);
+        return (int) round($this->produk->hargaAktif() * $this->jumlah_kg);
     }
 }

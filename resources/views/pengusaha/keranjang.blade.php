@@ -5,15 +5,9 @@
 @section('content')
 
 {{-- HEADER KERANJANG --}}
-<div class="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-[#D4E8D0] bg-white">
-    <div class="mx-auto max-w-5xl px-4 py-3">
-        <p class="text-sm font-semibold text-[#087C3E]">Belanja</p>
-        <h1 class="mt-1 text-2xl font-extrabold text-[#1A2A1A]">Keranjang Saya</h1>
-        <p class="mt-1 text-sm text-[#6B806B]">Periksa produk dan jumlahnya sebelum melanjutkan pesanan.</p>
-    </div>
-</div>
-
-<div class="mx-auto max-w-5xl space-y-6 px-4">
+<x-page-header judul="Keranjang Saya" :kembali="false" lebar="max-w-5xl" />
+<div class="mx-auto max-w-5xl px-4">
+    <p class="pt-6 text-sm text-[#6B806B]">Periksa produk dan jumlahnya sebelum melanjutkan pesanan.</p>
 
     {{-- PESAN SUKSES / ERROR --}}
     @if (session('sukses'))
@@ -84,7 +78,13 @@
                                         {{ $produk->nama }}
                                     </a>
                                     <p class="mt-1 text-sm text-text-muted">
-                                        Rp{{ number_format($produk->harga_per_kg, 0, ',', '.') }} / kg
+                                                                               @if ($produk->sedangFlashSale())
+                                            <span class="mr-1 text-gray-400 line-through">Rp{{ number_format($produk->harga_per_kg, 0, ',', '.') }}</span>
+                                            <span class="font-semibold text-red-600">Rp{{ number_format($produk->harga_flash_sale, 0, ',', '.') }} / kg</span>
+                                            <span class="ml-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600">⚡ FLASH SALE</span>
+                                        @else
+                                            Rp{{ number_format($produk->harga_per_kg, 0, ',', '.') }} / kg
+                                        @endif
                                     </p>
                                     <p class="mt-1 text-xs text-text-muted">
                                         Min. {{ (float) $produk->min_order_kg }} kg · Stok {{ (float) $produk->stok_kg }} kg
@@ -184,10 +184,10 @@
                     </span>
                 </div>
 
-                <div class="mt-6">
+                                <div class="mt-6">
                     @if ($bisaCheckout)
                         <a href="{{ route('pengusaha.checkout') }}"
-                        class="block w-full rounded-xl bg-primary px-5 py-3 text-center text-sm font-semibold text-white hover:bg-primary-dark">
+                           class="block w-full rounded-xl bg-primary px-5 py-3 text-center text-sm font-semibold text-white hover:bg-primary-dark">
                             Lanjutkan Pesanan
                         </a>
                     @else
@@ -197,9 +197,18 @@
                         </button>
 
                         @unless (auth()->user()->terverifikasi())
-                            <p class="mt-2 text-center text-xs text-[#8A9A8A]">
-                                Akunmu belum terverifikasi, jadi belum bisa checkout.
-                            </p>
+                            @php $statusVerif = auth()->user()->status_verifikasi; @endphp
+                            <div class="mt-3 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-center text-xs text-yellow-800">
+                                @if ($statusVerif === 'menunggu')
+                                    Pengajuan verifikasimu sedang ditinjau admin. Kamu bisa checkout setelah disetujui.
+                                @elseif ($statusVerif === 'perlu_perbaikan')
+                                    Pengajuan verifikasimu perlu diperbaiki sebelum bisa checkout.
+                                    <a href="{{ route('pengusaha.verifikasi') }}" class="mt-1 block font-semibold text-primary hover:underline">Perbaiki Verifikasi →</a>
+                                @else
+                                    Akunmu belum terverifikasi, jadi belum bisa checkout.
+                                    <a href="{{ route('pengusaha.verifikasi') }}" class="mt-1 block font-semibold text-primary hover:underline">Verifikasi Sekarang →</a>
+                                @endif
+                            </div>
                         @endunless
                     @endif
                 </div>
@@ -211,6 +220,7 @@
             </div>
         </div>
 
+          </div>
+        </div>
     </div>
-</div>
 @endsection

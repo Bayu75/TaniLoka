@@ -6,27 +6,10 @@
 @php
     $nama = $user->name;
     $namaUsaha = $profil?->nama_usaha ?: $user->name;
+    $urlKembali = request('dari') === 'verifikasi' ? route('pengusaha.verifikasi') : route('pengusaha.akun');
 @endphp
-
 {{-- HEADER HALAMAN PROFIL USAHA --}}
-<div class="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-[#D4E8D0] bg-white">
-    <div class="relative mx-auto max-w-5xl px-4 py-3">
-
-        <a href="{{ route('pengusaha.akun') }}"
-           class="mb-2 inline-flex items-center gap-1 text-sm font-extrabold text-[#087C3E] hover:text-green-800
-                  md:absolute md:right-full md:top-1/2 md:mb-0 md:mr-4 md:-translate-y-1/2 md:whitespace-nowrap">
-            <span class="text-2xl font-black leading-none">&lt;</span>
-            <span>Kembali</span>
-        </a>
-
-        <div>
-            <p class="text-sm font-semibold text-[#087C3E]">Akun Saya</p>
-            <h1 class="mt-1 text-2xl font-extrabold text-[#1A2A1A]">Profil Usaha</h1>
-            <p class="mt-1 text-sm text-[#6B806B]">Kelola informasi dan identitas usaha kuliner Anda.</p>
-        </div>
-
-    </div>
-</div>
+<x-page-header judul="Profil Usaha" :kembali="$urlKembali" lebar="max-w-5xl" />
 
 {{-- KONTEN HALAMAN --}}
 <div class="mx-auto max-w-5xl space-y-6 px-4 py-6">
@@ -71,6 +54,9 @@
         {{-- FORM PROFIL --}}
         <form action="{{ route('pengusaha.profil.simpan') }}" method="POST" class="mt-6 space-y-5">
             @csrf
+                    @if (request('dari') === 'verifikasi')
+                <input type="hidden" name="dari" value="verifikasi">
+            @endif
 
             <h3 class="mb-4 font-bold text-gray-900">Informasi Usaha</h3>
 
@@ -133,7 +119,7 @@
 
             {{-- TOMBOL --}}
             <div class="flex flex-col-reverse justify-end gap-3 border-t border-gray-100 pt-5 sm:flex-row">
-                <a href="{{ route('pengusaha.beranda') }}"
+                   <a href="{{ $urlKembali }}"
                    class="rounded-xl border border-gray-200 px-6 py-3 text-center text-sm font-semibold text-gray-600 transition hover:bg-gray-50">
                     Batal
                 </a>

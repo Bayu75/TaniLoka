@@ -238,10 +238,8 @@
         hapus: @js(route('petani.produk.destroy', ['produk' => '__ID__'])),
       },
       csrf: @js(csrf_token()),
-      // TODO(tersedia_sampai): tabel produk belum punya kolom tersedia_sampai.
-      // Langkah "Tersedia sampai" dan label kedaluwarsa disembunyikan selama nilai ini false.
-      // Kalau Bayu menambah kolom date nullable `tersedia_sampai`, ubah ke true lalu simpan nilainya di ProdukController.
-      fiturTersediaSampai: false,
+      // Kolom produk.tersedia_sampai sudah ada. Langkah wizard, label kartu, dan peringatan <=3 hari aktif.
+      fiturTersediaSampai: true,
       menyimpan: false,
       formTambah: false,
       formUbah: false,
@@ -520,6 +518,7 @@
         fd.append("periode", (d.periode || "").trim());
         fd.append("grade", d.grade || "");
         fd.append("tanggal_panen", d.tanggalPanen || "");
+        fd.append("tersedia_sampai", d.tersediaSampai || "");
         if (d.file) fd.append("foto", d.file);
         return fd;
       },
@@ -611,7 +610,6 @@
       },
       async simpanUbah() {
         if (this.editFotoLoading || this.menyimpan) return;
-        // TODO(tersedia_sampai): validasi tanggal kedaluwarsa hanya berlaku kalau fiturnya aktif.
         if (
           this.fiturTersediaSampai &&
           (this.editDateBadInput ||
@@ -771,7 +769,6 @@
               <span class="text-text-muted">Grade</span>
               <span class="font-medium text-gray-900 text-right max-w-[60%]" x-text="p.grade"></span>
             </div>
-            {{-- TODO(tersedia_sampai): tampil lagi kalau kolom tersedia_sampai sudah ada --}}
             <div x-show="fiturTersediaSampai" class="flex justify-between gap-2">
               <span class="text-text-muted">Kedaluwarsa</span>
               <span
@@ -1018,7 +1015,6 @@
               x-model="baru.tanggalPanen"
             />
           </div>
-          {{-- TODO(tersedia_sampai): langkah ini disembunyikan sampai kolom tersedia_sampai ada di tabel produk. --}}
           <div x-show="fiturTersediaSampai && step===4">
             <p class="tl-field" id="tl-date-heading">
               Produk tersedia sampai kapan? *
@@ -1261,7 +1257,6 @@
               class="w-full border border-border rounded-xl px-4 py-2"
             />
           </div>
-          {{-- TODO(tersedia_sampai): field ini disembunyikan sampai kolom tersedia_sampai ada. --}}
           <div x-show="fiturTersediaSampai">
             <label
               class="block text-sm font-medium mb-1"

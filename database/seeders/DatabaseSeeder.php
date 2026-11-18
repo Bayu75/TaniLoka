@@ -23,10 +23,14 @@ class DatabaseSeeder extends Seeder
             'status_verifikasi' => 'terverifikasi', 'terverifikasi_pada' => now(),
         ]);
         $made->profilPetani()->create([
-            'nama_usaha_tani' => 'Kebun Sutama', 'kabupaten' => 'Tabanan',
-            'kecamatan' => 'Baturiti', 'desa' => 'Bedugul',
+            'nama_usaha_tani' => 'Kebun Sutama',
             'deskripsi' => 'Sayur dataran tinggi segar dari Bedugul.',
             'nama_bank' => 'BRI', 'no_rekening' => '1234567890', 'atas_nama_rekening' => 'Made Sutama',
+        ]);
+        Alamat::create([
+            'user_id' => $made->id, 'label' => 'Kebun', 'nama_penerima' => 'Made Sutama',
+            'no_hp' => '081200000001', 'alamat_lengkap' => 'Desa Bedugul, Baturiti',
+            'kabupaten' => 'Tabanan', 'kecamatan' => 'Baturiti', 'kode_pos' => '82191', 'utama' => true,
         ]);
 
         $ketut = User::create([
@@ -35,26 +39,33 @@ class DatabaseSeeder extends Seeder
             'status_verifikasi' => 'terverifikasi', 'terverifikasi_pada' => now(),
         ]);
         $ketut->profilPetani()->create([
-            'nama_usaha_tani' => 'Tani Arsana', 'kabupaten' => 'Bangli',
-            'kecamatan' => 'Kintamani', 'desa' => 'Songan',
+            'nama_usaha_tani' => 'Tani Arsana',
             'deskripsi' => 'Cabai, bawang, dan jeruk Kintamani.',
             'nama_bank' => 'BPD Bali', 'no_rekening' => '0987654321', 'atas_nama_rekening' => 'Ketut Arsana',
         ]);
+        Alamat::create([
+            'user_id' => $ketut->id, 'label' => 'Kebun', 'nama_penerima' => 'Ketut Arsana',
+            'no_hp' => '081200000002', 'alamat_lengkap' => 'Desa Songan, Kintamani',
+            'kabupaten' => 'Bangli', 'kecamatan' => 'Kintamani', 'kode_pos' => '80652', 'utama' => true,
+        ]);
 
-        // Petani belum terverifikasi, untuk menguji pembatasan
+        // Petani belum terverifikasi, untuk menguji pembatasan & checklist verifikasi
         $wayan = User::create([
             'name' => 'Wayan Baru', 'email' => 'wayan@taniloka.test', 'no_wa' => '081200000003',
             'peran' => 'petani', 'password' => 'password',
             'status_verifikasi' => 'belum_diajukan',
         ]);
-        $wayan->profilPetani()->create(['kabupaten' => 'Gianyar']);
+        $wayan->profilPetani()->create([]); // profil & alamat sengaja kosong
 
         $resto = User::create([
             'name' => 'Putu Restu', 'email' => 'resto@taniloka.test', 'no_wa' => '081300000001',
             'peran' => 'pengusaha', 'password' => 'password',
             'status_verifikasi' => 'terverifikasi', 'terverifikasi_pada' => now(),
         ]);
-        $resto->profilPengusaha()->create(['nama_usaha' => 'Warung Restu', 'jenis_usaha' => 'restoran']);
+        $resto->profilPengusaha()->create([
+            'nama_usaha' => 'Warung Restu', 'jenis_usaha' => 'restoran',
+            'deskripsi' => 'Warung makan khas Bali di Ubud.',
+        ]);
         $alamatResto = Alamat::create([
             'user_id' => $resto->id, 'label' => 'Warung', 'nama_penerima' => 'Putu Restu',
             'no_hp' => '081300000001', 'alamat_lengkap' => 'Jl. Raya Ubud No. 10',
@@ -74,21 +85,22 @@ class DatabaseSeeder extends Seeder
             ->mapWithKeys(fn ($nama) => [$nama => Kategori::create(['nama' => $nama, 'slug' => Str::slug($nama)])]);
 
         // ===== PRODUK =====
+            // [petani, kategori, nama, harga, stok, min order, grade, tersedia sampai (hari dari sekarang)]
         $daftarProduk = [
-            [$made,  'Sayuran', 'Kol Bedugul',        8000,  200, 5,  'A'],
-            [$made,  'Sayuran', 'Wortel Bedugul',     12000, 150, 5,  'A'],
-            [$made,  'Sayuran', 'Selada Keriting',    18000, 60,  2,  'A'],
-            [$made,  'Buah',    'Stroberi Bedugul',   45000, 40,  1,  'A'],
-            [$made,  'Umbi',    'Kentang Granola',    14000, 300, 10, 'B'],
-            [$ketut, 'Bumbu',   'Cabai Rawit Merah',  55000, 80,  2,  'A'],
-            [$ketut, 'Bumbu',   'Bawang Merah',       38000, 120, 5,  'A'],
-            [$ketut, 'Bumbu',   'Bawang Putih',       32000, 100, 5,  'B'],
-            [$ketut, 'Buah',    'Jeruk Kintamani',    15000, 250, 10, 'A'],
-            [$ketut, 'Sayuran', 'Tomat',              10000, 180, 5,  'B'],
+            [$made,  'Sayuran', 'Kol Bedugul',        8000,  200, 5,  'A', 7],
+            [$made,  'Sayuran', 'Wortel Bedugul',     12000, 150, 5,  'A', 14],
+            [$made,  'Sayuran', 'Selada Keriting',    18000, 60,  2,  'A', 2],   // peringatan "mendekati kedaluwarsa"
+            [$made,  'Buah',    'Stroberi Bedugul',   45000, 40,  1,  'A', 3],   // peringatan "mendekati kedaluwarsa"
+            [$made,  'Umbi',    'Kentang Granola',    14000, 300, 10, 'B', 30],
+            [$ketut, 'Bumbu',   'Cabai Rawit Merah',  55000, 80,  2,  'A', 5],
+            [$ketut, 'Bumbu',   'Bawang Merah',       38000, 120, 5,  'A', 21],
+            [$ketut, 'Bumbu',   'Bawang Putih',       32000, 100, 5,  'B', 30],
+            [$ketut, 'Buah',    'Jeruk Kintamani',    15000, 250, 10, 'A', 10],
+            [$ketut, 'Sayuran', 'Tomat',              10000, 180, 5,  'B', -1],  // sudah kedaluwarsa
         ];
 
-        $produk = [];
-        foreach ($daftarProduk as [$petani, $kat, $nama, $harga, $stok, $min, $grade]) {
+               $produk = [];
+        foreach ($daftarProduk as [$petani, $kat, $nama, $harga, $stok, $min, $grade, $hariTersedia]) {
             $p = Produk::create([
                 'petani_id' => $petani->id,
                 'kategori_id' => $kategori[$kat]->id,
@@ -100,7 +112,9 @@ class DatabaseSeeder extends Seeder
                 'min_order_kg' => $min,
                 'grade' => $grade,
                 'tanggal_panen' => now()->subDays(rand(1, 5)),
+                'tersedia_sampai' => now()->addDays($hariTersedia)->toDateString(),
             ]);
+            
             FotoProduk::create([
                 'produk_id' => $p->id,
                 'path' => 'https://placehold.co/600x400?text=' . urlencode($nama),

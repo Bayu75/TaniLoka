@@ -6,79 +6,62 @@
 @section('content')
 
 
+<x-page-header judul="Katalog Produk" :kembali="false" lebar="max-w-6xl" />
+
 <div class="pb-10" x-data="{ filterOpen: false }">
 {{-- HEADER PUTIH KATALOG --}}
 <div class="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-[#D4E8D0] bg-white">
     <div class="mx-auto max-w-6xl px-4 py-5 md:py-6">
 
-    {{-- HEADER KATALOG --}}
+    {{-- PENCARIAN --}}
     <section class="mb-5">
-        <div class="mb-4">
-            <h1 class="text-2xl font-extrabold text-[#1A2A1A]">
-                Katalog Produk
-            </h1>
-            <p class="mt-1 text-sm text-[#5A7A5A]">
-                Temukan hasil pertanian segar langsung dari petani Bali.
-            </p>
-        </div>
+        <p class="mb-3 text-sm text-[#5A7A5A]">Temukan hasil pertanian segar langsung dari petani Bali.</p>
 
-        {{-- SEARCH BAR --}}
-<form action="{{ route('pengusaha.katalog') }}" method="GET">
+        <form action="{{ route('pengusaha.katalog') }}" method="GET">
+            <div class="flex flex-col gap-2 sm:flex-row">
 
-    <div class="flex gap-2">
+                {{-- INPUT PENCARIAN (penuh di HP) --}}
+                <div class="relative w-full min-w-0 sm:flex-1">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#5A7A5A]">🔍</span>
+                    <input
+                        type="text"
+                        name="q"
+                        value="{{ $q }}"
+                        placeholder="Cari produk, petani, lokasi..."
+                        class="min-h-12 w-full rounded-xl border-2 border-[#D4E8D0] bg-white pl-11 pr-4 outline-none focus:border-[#2E7D32]"
+                    >
+                </div>
 
-        {{-- INPUT PENCARIAN --}}
-        <div class="relative min-w-0 flex-1">
+                {{-- TOMBOL CARI & SARING (di bawah input saat HP) --}}
+                <div class="grid grid-cols-2 gap-2 sm:flex">
+                    <button
+                        type="submit"
+                        class="flex min-h-12 items-center justify-center rounded-xl bg-[#F4B400] px-5 font-bold text-[#1A2A00] transition hover:bg-[#E6A800]"
+                    >
+                        🔍 Cari
+                    </button>
 
-            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#5A7A5A]">
-                🔍
-            </span>
+                    <button
+                        type="button"
+                        @click="filterOpen = true"
+                        class="flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-[#D4E8D0] bg-white px-4 font-bold text-[#1A2A1A] hover:bg-[#EBF5EB]"
+                    >
+                        <span>☷</span>
+                        Saring
+                        @if ($activeCount > 0)
+                            <span class="rounded-full bg-[#F4B400] px-2 py-0.5 text-xs">{{ $activeCount }}</span>
+                        @endif
+                    </button>
+                </div>
+            </div>
 
-            <input
-                type="text"
-                name="q"
-                value="{{ $q }}"
-                placeholder="Cari produk, petani, lokasi..."
-                class="min-h-12 w-full rounded-xl border-2 border-[#D4E8D0] bg-white pl-11 pr-4 outline-none focus:border-[#2E7D32]"
-            >
-
-        </div>
-
-        {{-- TOMBOL CARI --}}
-        <button
-            type="submit"
-            class="min-h-12 rounded-xl bg-[#F4B400] px-5 font-bold text-[#1A2A00] transition hover:bg-[#E6A800]"
-        >
-            🔍 Cari
-        </button>
-
-        {{-- TOMBOL SARING --}}
-        <button
-            type="button"
-            @click="filterOpen = true"
-            class="flex min-h-12 items-center gap-2 rounded-xl border-2 border-[#D4E8D0] bg-white px-4 font-bold text-[#1A2A1A] hover:bg-[#EBF5EB]"
-        >
-            <span>☷</span>
-            Saring
-
-            @if ($activeCount > 0)
-                <span class="rounded-full bg-[#F4B400] px-2 py-0.5 text-xs">
-                    {{ $activeCount }}
-                </span>
-            @endif
-
-        </button>
-
-    </div>
-
-    {{-- MEMPERTAHANKAN FILTER SAAT SEARCH --}}
-    <input type="hidden" name="cat" value="{{ $cat }}">
-    <input type="hidden" name="district" value="{{ $district }}">
-    <input type="hidden" name="min_price" value="{{ $minPrice }}">
-    <input type="hidden" name="max_price" value="{{ $maxPrice }}">
-    <input type="hidden" name="sort" value="{{ $sort }}">
-
-</form>
+            {{-- MEMPERTAHANKAN FILTER SAAT SEARCH --}}
+            <input type="hidden" name="cat" value="{{ $cat }}">
+            <input type="hidden" name="district" value="{{ $district }}">
+            <input type="hidden" name="min_price" value="{{ $minPrice }}">
+            <input type="hidden" name="max_price" value="{{ $maxPrice }}">
+            <input type="hidden" name="sort" value="{{ $sort }}">
+        </form>
     </section>
 
   
@@ -93,12 +76,22 @@
             Semua
         </a>
 
+        @php
+            $ikonKategori = [
+                'sayuran' => '🥬',
+                'buah' => '🍅',
+                'bumbu' => '🌶️',
+                'umbi' => '🥕',
+                'beras-biji' => '🌾',
+            ];
+        @endphp
+
         @foreach ($kategoriList as $item)
             <a
                 href="{{ route('pengusaha.katalog', array_merge(request()->query(), ['cat' => $item->slug])) }}"
                 class="flex min-h-11 shrink-0 items-center gap-2 rounded-full border-2 px-4 font-semibold {{ $cat === $item->slug ? 'border-[#2E7D32] bg-[#2E7D32] text-white' : 'border-[#D4E8D0] bg-white text-[#1A2A1A]' }}"
             >
-                {{ $item->ikon ?? '📦' }}
+                {{ $ikonKategori[$item->slug] ?? '🌱' }}
                 {{ $item->nama }}
             </a>
         @endforeach

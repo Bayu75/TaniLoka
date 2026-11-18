@@ -6,17 +6,13 @@
 
 @php
     $profil = $petani->profilPetani;
-    $kabupaten = $profil?->kabupaten;
+    $kabupaten = $petani->alamatUtama?->kabupaten;
     $inisial = strtoupper(mb_substr($petani->name, 0, 1));
 @endphp
 
-<div class="mx-auto max-w-6xl">
+<x-page-header judul="Toko Petani" :kembali="route('pengusaha.katalog')" lebar="max-w-6xl" />
 
-    {{-- KEMBALI --}}
-    <a href="{{ route('pengusaha.katalog') }}"
-       class="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-[#2E7D32] hover:underline">
-        ← Kembali ke Katalog
-    </a>
+<div class="mx-auto max-w-6xl px-4 py-6">
 
     {{-- PROFIL TOKO --}}
     <div class="overflow-hidden rounded-2xl border border-[#D4E8D0] bg-white">

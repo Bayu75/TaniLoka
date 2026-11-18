@@ -1,193 +1,132 @@
 @extends('layouts.petani')
 
+@section('title', 'Akun - TaniLoka')
+
 @section('content')
-{{-- Data dari Petani\AkunController (tabel users + profil_petani). --}}
-<div class="max-w-3xl mx-auto px-4 py-6 space-y-5 pb-24"
-    x-data="{ formProfil: {{ $errors->any() ? 'true' : 'false' }}, pratinjau: null, pesan: @js(session('sukses') ?? session('gagal') ?? '') }"
-    x-init="if (pesan) setTimeout(() => pesan = '', 3000)">
-    <header class="mb-4">
-        <h1 class="text-2xl font-extrabold">Akun</h1>
-    </header>
 
-    <div class="bg-primary text-white rounded-2xl p-4 flex items-center gap-4">
-        @if ($akun['foto'])
-            <img src="{{ $akun['foto'] }}" alt="Foto profil" class="w-14 h-14 rounded-xl object-cover bg-yellow-400">
-        @else
-            <div class="w-14 h-14 rounded-xl bg-yellow-400 text-primary flex items-center justify-center text-2xl font-bold">
-                {{ mb_strtoupper(mb_substr($akun['nama'] ?: 'P', 0, 1)) }}
-            </div>
-        @endif
-        <div class="flex-1">
-            <p class="font-semibold text-lg">{{ $akun['nama'] }}</p>
-            <p class="text-sm text-white/90">Petani{{ $profil['kabupaten'] ? ' · ' . $profil['kabupaten'] . ', Bali' : '' }}</p>
-        </div>
-        <span class="text-xs bg-white/20 px-2.5 py-1 rounded-full flex items-center gap-1">{{ $akun['status_verifikasi'] === 'terverifikasi' ? '✓ ' : '' }}{{ $akun['label_verifikasi'] }}</span>
-    </div>
+@php
+    $user    = auth()->user();
+    $profil  = $user->profilPetani;
+    $nama    = $profil?->nama_usaha_tani ?: $user->name;
+    $inisial = strtoupper(mb_substr($nama, 0, 1));
+    $kota = $user->alamatUtama?->kabupaten ?? 'Bali';
 
-    @if ($akun['status_verifikasi'] !== 'terverifikasi')
-        <div class="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="status">
-            Akun belum terverifikasi. Anda belum bisa menambah atau mengubah produk sampai admin menyetujui verifikasi.
-        </div>
+    $jumlahProduk  = $user->produk()->count();
+    $jumlahPesanan = $user->pesananMasuk()->count();
+
+    $menuAkun = [
+        ['url' => route('petani.profil'), 'ikon' => '👤', 'judul' => 'Profil Petani', 'ket' => 'Informasi usaha tani dan rekening'],
+        ['url' => route('petani.alamat'), 'ikon' => '📍', 'judul' => 'Alamat Kebun', 'ket' => 'Lokasi kebun dan pengambilan barang'],
+    ];
+    $menuAktivitas = [
+        ['url' => route('petani.produk'),  'ikon' => '🌱', 'judul' => 'Kelola Produk', 'ket' => 'Tambah dan ubah produk jualan'],
+        ['url' => route('petani.pesanan'), 'ikon' => '📦', 'judul' => 'Pesanan Masuk', 'ket' => 'Pesanan dari pengusaha kuliner'],
+        ['url' => route('petani.pesan'),   'ikon' => '💬', 'judul' => 'Pesan', 'ket' => 'Negosiasi harga dan percakapan'],
+    ];
+    $menuBantuan = [
+        ['url' => route('petani.bantuan'), 'ikon' => '❓', 'judul' => 'Bantuan & Informasi', 'ket' => 'WhatsApp, pertanyaan umum, kontak'],
+    ];
+    $grup = ['Akun Saya' => $menuAkun, 'Aktivitas' => $menuAktivitas, 'Bantuan & Lainnya' => $menuBantuan];
+
+    $badgeVerifikasi = [
+        'terverifikasi'   => ['Terverifikasi',   'bg-green-50 text-[#2E7D32]'],
+        'menunggu'        => ['Menunggu',        'bg-gray-100 text-gray-600'],
+        'perlu_perbaikan' => ['Perlu Perbaikan', 'bg-orange-50 text-orange-700'],
+        'ditolak'         => ['Ditolak',         'bg-red-50 text-red-600'],
+        'belum_diajukan'  => ['Ajukan',          'bg-[#F5C400]/20 text-yellow-700'],
+    ];
+    
+    [$teksBadge, $warnaBadge] = $badgeVerifikasi[$user->status_verifikasi] ?? $badgeVerifikasi['belum_diajukan'];
+    
+    $keteranganVerifikasi = match ($user->status_verifikasi) {
+        'terverifikasi'   => 'Akun kamu sudah terverifikasi dan bisa menjual produk',
+        'menunggu'        => 'Dokumen sedang ditinjau admin',
+        'perlu_perbaikan' => 'Ada data yang perlu diperbaiki, cek catatan admin',
+        'ditolak'         => 'Pengajuan ditolak, silakan ajukan ulang',
+        default           => 'Lengkapi data dan dokumen agar bisa menjual produk',
+    };
+@endphp
+
+{{-- HEADER HALAMAN AKUN --}}
+<x-page-header judul="Akun" :kembali="false" lebar="max-w-3xl"/>
+
+<div class="mx-auto max-w-3xl py-5 md:py-6">
+
+    @if (session('pesan_akun'))
+        <div class="mb-5 rounded-xl bg-green-50 px-4 py-3 text-sm text-[#2E7D32]">{{ session('pesan_akun') }}</div>
     @endif
 
-    <div>
-        <button type="button" @click="formProfil = !formProfil" :aria-expanded="formProfil"
-            class="w-full bg-white border border-border rounded-2xl p-4 flex items-center gap-3 text-left">
-            <span class="text-xl">👤</span>
-            <div class="flex-1">
-                <p class="font-semibold text-gray-900">Ubah Profil &amp; Usaha Tani</p>
-                <p class="text-sm text-text-muted">Nama, WhatsApp, foto, lokasi kebun, dan rekening</p>
-            </div>
-            <span class="text-text-muted" x-text="formProfil ? '˄' : '›'"></span>
-        </button>
-
-        <form x-show="formProfil" x-cloak method="POST" action="{{ route('petani.akun.simpan') }}" enctype="multipart/form-data"
-            class="mt-3 bg-white border border-border rounded-2xl p-4 space-y-3">
-            @csrf
-            <input type="hidden" name="aksi" value="profil">
-
-            @if ($errors->any())
-                <div class="rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">
-                    <ul class="list-disc pl-5 space-y-1">
-                        @foreach ($errors->all() as $e)
-                            <li>{{ $e }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-
-            <div>
-                <label class="block text-sm font-medium mb-1" for="akun-foto">Foto Profil</label>
-                <input id="akun-foto" type="file" name="foto" accept="image/jpeg,image/png,image/webp" class="w-full text-sm"
-                    @change="const f = $event.target.files[0]; pratinjau = f ? URL.createObjectURL(f) : null">
-                <img x-show="pratinjau" :src="pratinjau" alt="Pratinjau foto profil" class="mt-2 h-20 w-20 rounded-xl object-cover">
-                <p class="text-xs text-text-muted mt-1">JPG, PNG, atau WebP. Maksimal 2 MB.</p>
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1" for="akun-nama">Nama *</label>
-                <input id="akun-nama" type="text" name="name" value="{{ old('name', $akun['nama']) }}" required class="w-full border border-border rounded-xl px-4 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1" for="akun-wa">Nomor WhatsApp</label>
-                <input id="akun-wa" type="tel" name="no_wa" value="{{ old('no_wa', $akun['no_wa']) }}" placeholder="081234567890" class="w-full border border-border rounded-xl px-4 py-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1" for="akun-usaha">Nama Usaha Tani</label>
-                <input id="akun-usaha" type="text" name="nama_usaha_tani" value="{{ old('nama_usaha_tani', $profil['nama_usaha_tani']) }}" class="w-full border border-border rounded-xl px-4 py-2">
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                    <label class="block text-sm font-medium mb-1" for="akun-kab">Kabupaten</label>
-                    <input id="akun-kab" type="text" name="kabupaten" value="{{ old('kabupaten', $profil['kabupaten']) }}" placeholder="Tabanan" class="w-full border border-border rounded-xl px-4 py-2">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1" for="akun-kec">Kecamatan</label>
-                    <input id="akun-kec" type="text" name="kecamatan" value="{{ old('kecamatan', $profil['kecamatan']) }}" class="w-full border border-border rounded-xl px-4 py-2">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1" for="akun-desa">Desa</label>
-                    <input id="akun-desa" type="text" name="desa" value="{{ old('desa', $profil['desa']) }}" class="w-full border border-border rounded-xl px-4 py-2">
-                </div>
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1" for="akun-deskripsi">Deskripsi Usaha</label>
-                <textarea id="akun-deskripsi" name="deskripsi" rows="3" class="w-full border border-border rounded-xl px-4 py-2">{{ old('deskripsi', $profil['deskripsi']) }}</textarea>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                    <label class="block text-sm font-medium mb-1" for="akun-bank">Nama Bank</label>
-                    <input id="akun-bank" type="text" name="nama_bank" value="{{ old('nama_bank', $profil['nama_bank']) }}" placeholder="BPD Bali" class="w-full border border-border rounded-xl px-4 py-2">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1" for="akun-rek">No. Rekening</label>
-                    <input id="akun-rek" type="text" name="no_rekening" inputmode="numeric" value="{{ old('no_rekening', $profil['no_rekening']) }}" class="w-full border border-border rounded-xl px-4 py-2">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1" for="akun-an">Atas Nama</label>
-                    <input id="akun-an" type="text" name="atas_nama_rekening" value="{{ old('atas_nama_rekening', $profil['atas_nama_rekening']) }}" class="w-full border border-border rounded-xl px-4 py-2">
-                </div>
-            </div>
-            <div class="flex gap-2 pt-1">
-                <button type="button" @click="formProfil = false" class="flex-1 border border-border rounded-xl py-2 text-sm">Batal</button>
-                <button type="submit" class="flex-1 bg-primary text-white rounded-xl py-2 text-sm font-medium">Simpan</button>
-            </div>
-        </form>
-    </div>
-
-    <div class="grid grid-cols-2 gap-3">
-        <a href="{{ url('/petani/pesanan') }}" class="bg-white border border-border rounded-2xl p-4 text-center">
-            <p class="text-2xl">📋</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ $jumlah['pesanan'] }}</p>
-            <p class="text-sm text-text-muted">Pesanan Masuk</p>
-        </a>
-        <a href="{{ url('/petani/pesanan') }}#selesai" class="bg-white border border-border rounded-2xl p-4 text-center">
-            <p class="text-2xl">☑️</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ $jumlah['selesai'] }}</p>
-            <p class="text-sm text-text-muted">Selesai</p>
-        </a>
-    </div>
-
-    <div>
-        <p class="text-xs font-semibold text-text-muted tracking-wide mb-2">AKUN SAYA</p>
-        <a href="{{ url('/petani/alamat') }}" class="bg-white border border-border rounded-2xl p-4 flex items-center gap-3">
-            <span class="text-xl">📍</span>
-            <div class="flex-1">
-                <p class="font-semibold text-gray-900">Alamat Saya</p>
-                <p class="text-sm text-text-muted">{{ $jumlah['alamat'] ? $jumlah['alamat'] . ' alamat tersimpan' : 'Belum ada alamat' }}</p>
-            </div>
-            <span class="text-text-muted">›</span>
-        </a>
-    </div>
-
-    <div>
-        <p class="text-xs font-semibold text-text-muted tracking-wide mb-2">AKTIVITAS</p>
-        <div class="bg-white border border-border rounded-2xl divide-y divide-border overflow-hidden">
-            <a href="{{ url('/petani/pesanan') }}" class="flex items-center gap-3 p-4">
-                <span class="text-xl">📋</span>
-                <div class="flex-1">
-                    <p class="font-semibold text-gray-900">Pesanan</p>
-                    <p class="text-sm text-text-muted">{{ $jumlah['pesanan'] }} pesanan</p>
-                </div>
-                <span class="text-text-muted">›</span>
-            </a>
-            <a href="{{ url('/petani/pesan') }}" class="flex items-center gap-3 p-4">
-                <span class="text-xl">💬</span>
-                <div class="flex-1">
-                    <p class="font-semibold text-gray-900">Pesan</p>
-                    <p class="text-sm text-text-muted">Negosiasi harga & percakapan</p>
-                </div>
-                <span class="text-text-muted">›</span>
-            </a>
-            <a href="{{ url('/petani/produk') }}" class="flex items-center gap-3 p-4">
-                <span class="text-xl">🛒</span>
-                <div class="flex-1">
-                    <p class="font-semibold text-gray-900">Kelola Produk</p>
-                    <p class="text-sm text-text-muted">Produk, stok, dan harga</p>
-                </div>
-                <span class="text-text-muted">›</span>
-            </a>
+    {{-- PROFIL PETANI --}}
+    <div class="mb-5 flex items-center gap-4 rounded-2xl bg-[#2E7D32] p-4 text-white shadow-sm">
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#F5C400] text-2xl font-extrabold text-[#2E7D32]">
+            {{ $inisial }}
         </div>
+        <div class="min-w-0 flex-1">
+            <h2 class="truncate text-lg font-bold">{{ $nama }}</h2>
+            <p class="text-sm text-green-100">Petani</p>
+            <p class="mt-1 text-xs text-green-100">{{ $user->name }} · {{ $kota }}</p>
+        </div>
+        <span class="shrink-0 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Akun Petani</span>
     </div>
 
-    <div>
-        <p class="text-xs font-semibold text-text-muted tracking-wide mb-2">BANTUAN & LAINNYA</p>
-        <a href="{{ url('/petani/bantuan') }}" class="bg-white border border-border rounded-2xl p-4 flex items-center gap-3">
-            <span class="text-xl text-red-500">❓</span>
-            <div class="flex-1">
-                <p class="font-semibold text-gray-900">Bantuan & Informasi</p>
-                <p class="text-sm text-text-muted">WhatsApp, pertanyaan umum, kontak</p>
-            </div>
-            <span class="text-text-muted">›</span>
+    {{-- VERIFIKASI AKUN --}}
+    <a href="{{ route('petani.verifikasi') }}"
+    class="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+        <div>
+            <p class="font-semibold text-gray-800">Verifikasi Akun</p>
+            <p class="text-xs text-gray-500">{{ $keteranganVerifikasi }}</p>
+        </div>
+        <span class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold {{ $warnaBadge }}">
+            {{ $teksBadge }}
+        </span>
+    </a>
+
+    {{-- STATISTIK --}}
+    <div class="mb-6 grid grid-cols-2 gap-3">
+        <a href="{{ route('petani.produk') }}"
+           class="rounded-2xl border border-[#DCE8D8] bg-white p-5 text-center transition hover:border-[#2E7D32]">
+            <div class="mb-2 text-2xl">🌱</div>
+            <h3 class="text-2xl font-extrabold text-[#1A2A1A]">{{ $jumlahProduk }}</h3>
+            <p class="mt-1 text-sm text-[#6B806B]">Produk</p>
+        </a>
+        <a href="{{ route('petani.pesanan') }}"
+           class="rounded-2xl border border-[#DCE8D8] bg-white p-5 text-center transition hover:border-[#2E7D32]">
+            <div class="mb-2 text-2xl">📦</div>
+            <h3 class="text-2xl font-extrabold text-[#1A2A1A]">{{ $jumlahPesanan }}</h3>
+            <p class="mt-1 text-sm text-[#6B806B]">Pesanan Masuk</p>
         </a>
     </div>
 
-    {{-- Keluar lewat route POST "keluar" milik AuthController (GET /masuk hanya untuk tamu, jadi link lama tidak mengeluarkan akun). --}}
-    <form method="POST" action="{{ route('keluar') }}">
-        @csrf
-        <button type="submit" class="block w-full text-center border border-red-300 text-red-600 rounded-xl py-3 font-medium">Keluar</button>
-    </form>
-    <p class="text-center text-xs text-text-muted">TaniLoka v1.0.0 MVP · Dibuat di Bali</p>
+    {{-- GRUP MENU --}}
+    @foreach ($grup as $judulGrup => $items)
+        <section class="mb-6">
+            <h3 class="mb-3 text-xs font-bold uppercase tracking-wide text-[#6B806B]">{{ $judulGrup }}</h3>
+            <div class="overflow-hidden rounded-2xl border border-[#DCE8D8] bg-white">
+                @foreach ($items as $m)
+                    <a href="{{ $m['url'] }}"
+                       class="flex items-center gap-4 p-4 transition hover:bg-[#F5F9F2] {{ $loop->last ? '' : 'border-b border-[#E5EEE2]' }}">
+                        <span class="text-2xl">{{ $m['ikon'] }}</span>
+                        <div class="min-w-0 flex-1">
+                            <h4 class="font-bold text-[#1A2A1A]">{{ $m['judul'] }}</h4>
+                            <p class="text-sm text-[#829182]">{{ $m['ket'] }}</p>
+                        </div>
+                        <span class="text-lg text-[#829182]">›</span>
+                    </a>
+                @endforeach
+            </div>
+        </section>
+    @endforeach
 
-    <div x-show="pesan" x-cloak x-transition role="status" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-4 py-2 rounded-xl z-50" x-text="pesan"></div>
+    {{-- KELUAR --}}
+    <form action="{{ route('keluar') }}" method="POST">
+        @csrf
+        <button type="submit"
+                class="w-full rounded-xl border border-red-300 bg-transparent px-5 py-3 font-semibold text-red-600 transition hover:bg-red-50">
+            Keluar
+        </button>
+    </form>
+
+    <p class="mt-5 text-center text-xs text-[#829182]">TaniLoka v1.0.0 MVP · Dibuat di Bali</p>
 </div>
+
 @endsection

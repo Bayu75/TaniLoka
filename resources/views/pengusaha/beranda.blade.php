@@ -4,15 +4,13 @@
 @section('title', 'Beranda - TaniLoka')
 
 @section('content')
-
 @php
     $ikonKategori = [
-        'Sayuran' => '🥬',
-        'Bumbu & Rempah' => '🌶️',
-        'Umbi-umbian' => '🥕',
-        'Buah-buahan' => '🍅',
-        'Serealia' => '🌾',
-        'Jamur' => '🍄',
+        'sayuran' => '🥬',
+        'buah' => '🍅',
+        'bumbu' => '🌶️',
+        'umbi' => '🥕',
+        'beras-biji' => '🌾',
     ];
 @endphp
 
@@ -42,8 +40,8 @@
 
                     <a href="{{ route('pengusaha.pesanan') }}"
                        class="flex min-h-12 items-center gap-2 rounded-xl bg-white/15 px-3 font-semibold text-white hover:bg-white/25">
-                        <span>🔔</span>
-                        Pemberitahuan
+                        <span>📋</span>
+                        Pesanan
                     </a>
                 </div>
             </div>
@@ -68,7 +66,33 @@
     </section>
 
 
-    <div class="mx-auto -mt-8 max-w-6xl">
+        <div class="relative z-10 mx-auto -mt-8 max-w-6xl">
+
+            {{-- FLASH SALE --}}
+        @if ($produkFlashSale->isNotEmpty())
+            <section class="mb-6 overflow-hidden rounded-2xl border border-red-100 bg-white shadow-lg">
+                <div class="flex items-center justify-between gap-3 bg-gradient-to-r from-red-600 to-orange-500 px-4 py-3 sm:px-5">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20 text-xl">⚡</span>
+                        <div class="min-w-0">
+                            <h2 class="text-lg font-extrabold leading-tight text-white">Flash Sale</h2>
+                            <p class="truncate text-xs text-white/90 sm:text-sm">Harga spesial, stok segera habis masa tersedianya</p>
+                        </div>
+                    </div>
+                    <span class="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-bold text-red-600">
+                        {{ $produkFlashSale->count() }} produk
+                    </span>
+                </div>
+
+                <div class="-mx-0 flex snap-x gap-3 overflow-x-auto p-4 sm:p-5 md:grid md:grid-cols-4 md:overflow-visible">
+                    @foreach ($produkFlashSale as $produk)
+                        <div class="w-[48%] shrink-0 snap-start sm:w-56 md:w-auto">
+                            <x-pengusaha.product-card :produk="$produk" />
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
 
         {{-- BANNER PROMO --}}
         <section class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-r from-[#1E5F3E] to-[#2E7D32] p-5 shadow-lg">
@@ -115,7 +139,7 @@
                 @foreach ($kategoriList as $item)
                 <a href="{{ route('pengusaha.katalog', ['cat' => $item->slug]) }}"
                 class="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border border-[#D4E8D0] bg-white p-3 transition hover:border-[#66BB6A] hover:bg-[#EBF5EB]">
-                    <span class="text-2xl">{{ $ikonKategori[$item->nama] ?? '🌱' }}</span>
+                   <span class="text-2xl">{{ $ikonKategori[$item->slug] ?? '🌱' }}</span>
                     <span class="text-center text-sm font-semibold text-[#1A2A1A]">{{ $item->nama }}</span>
                 </a>
                  @endforeach

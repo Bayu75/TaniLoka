@@ -6,22 +6,22 @@
 
 @php
     $petani = $produk->petani;
-    $kabupaten = $petani->profilPetani?->kabupaten;
+    $kabupaten = $petani->alamatUtama?->kabupaten;
     $fotoUtama = $produk->foto->first()?->url ?? 'https://placehold.co/800x800?text=TaniLoka';
     $minimal = (float) $produk->min_order_kg;
     $stok = (float) $produk->stok_kg;
+    $tersediaSampai = $produk->tersedia_sampai ? \Illuminate\Support\Carbon::parse($produk->tersedia_sampai) : null;
+    $sisaHari = $tersediaSampai ? (int) now()->startOfDay()->diffInDays($tersediaSampai->copy()->startOfDay(), false) : null;
+    $kadaluarsa = $tersediaSampai && $sisaHari < 0;
+    $bisaDibeli = $stok > 0 && ! $kadaluarsa;
+    $flashSale = $produk->sedangFlashSale() && ! $kadaluarsa;
+    $redup = $bisaDibeli ? '' : 'grayscale opacity-60';
 @endphp
 
-{{-- KEMBALI KE KATALOG --}}
-<div class="mx-auto mb-5 max-w-4xl pt-5">
-    <a href="{{ route('pengusaha.katalog') }}"
-       class="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 transition hover:text-green-700">
-        <span class="text-xl leading-none">‹</span>
-        <span>Kembali ke Katalog</span>
-    </a>
-</div>
+{{-- HEADER HALAMAN --}}
+<x-page-header judul="Detail Produk" :kembali="route('pengusaha.katalog')" lebar="max-w-4xl" />
 
-<div class="mx-auto max-w-4xl" x-data="{ fotoAktif: @js($fotoUtama) }">
+<div class="mx-auto max-w-4xl px-4 py-6" x-data="{ fotoAktif: @js($fotoUtama) }">
 
     {{-- PESAN SUKSES / ERROR --}}
     @if (session('sukses'))
@@ -41,7 +41,7 @@
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 
         {{-- FOTO PRODUK --}}
-        <div>
+        <div class="{{ $redup }}">
             <div class="aspect-square overflow-hidden rounded-2xl bg-[#EBF5EB]">
                 <img :src="fotoAktif" src="{{ $fotoUtama }}" alt="{{ $produk->nama }}" class="h-full w-full object-cover">
             </div>
@@ -65,29 +65,55 @@
 
             {{-- KATEGORI, GRADE, DAN STOK --}}
             <div class="flex flex-wrap items-center gap-2">
-                <span class="rounded-full bg-[#EBF5EB] px-3 py-1 text-xs font-bold text-[#2E7D32]">
+                <span class="rounded-full bg-[#EBF5EB] px-3 py-1 text-xs font-bold text-[#2E7D32] {{ $redup }}">
                     {{ $produk->kategori?->nama }}
                 </span>
 
                 @if ($produk->grade)
-                    <span class="rounded-full bg-[#FFF9E6] px-3 py-1 text-xs font-bold text-[#806000]">
+                    <span class="rounded-full bg-[#FFF9E6] px-3 py-1 text-xs font-bold text-[#806000] {{ $redup }}">
                         Grade {{ $produk->grade }}
                     </span>
                 @endif
 
-                @if ($stok > 0)
+                @if ($bisaDibeli)
                     <span class="rounded-full bg-[#DCFCE7] px-3 py-1 text-xs font-bold text-[#15803D]">● Tersedia</span>
                 @else
-                    <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-600">● Stok Habis</span>
+                    <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-600">● {{ $kadaluarsa ? 'Tidak Tersedia' : 'Stok Habis' }}</span>
                 @endif
             </div>
 
-            <h1 class="text-2xl font-extrabold text-[#1A2A1A]">{{ $produk->nama }}</h1>
+            <h1 class="text-2xl font-extrabold {{ $bisaDibeli ? 'text-[#1A2A1A]' : 'text-gray-400' }}">{{ $produk->nama }}</h1>
+
+            {{-- STATUS TIDAK TERSEDIA --}}
+            @unless ($bisaDibeli)
+                <div class="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="9"/>
+                            <path d="M5.6 5.6l12.8 12.8"/>
+                        </svg>
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <p class="font-bold text-red-600">{{ $kadaluarsa ? 'Produk Tidak Tersedia' : 'Stok Habis' }}</p>
+                        <p class="mt-0.5 text-sm text-red-500">
+                            {{ $kadaluarsa
+                                ? 'Masa tersedia produk ini berakhir pada ' . $tersediaSampai->translatedFormat('d F Y') . '.'
+                                : 'Maaf, stok produk ini sedang habis.' }}
+                        </p>
+                    </div>
+                </div>
+            @endunless
 
             {{-- HARGA --}}
-            <div class="rounded-2xl bg-[#EBF5EB] p-4">
+            <div class="rounded-2xl bg-[#EBF5EB] p-4 {{ $redup }}">
                 <div class="text-2xl font-extrabold text-[#2E7D32]">
-                    Rp{{ number_format($produk->harga_per_kg, 0, ',', '.') }}
+                    @if ($flashSale)
+                        <span class="mb-1 block w-fit rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-bold text-white">⚡ FLASH SALE</span>
+                        <span class="mr-2 text-base font-normal text-gray-400 line-through">Rp{{ number_format($produk->harga_per_kg, 0, ',', '.') }}</span>
+                        <span class="text-red-600">Rp{{ number_format($produk->harga_flash_sale, 0, ',', '.') }}</span>
+                    @else
+                        <span class="{{ $bisaDibeli ? '' : 'line-through' }}">Rp{{ number_format($produk->harga_per_kg, 0, ',', '.') }}</span>
+                    @endif
                     <span class="text-sm font-normal text-[#5A7A5A]">/kg</span>
                 </div>
 
@@ -96,19 +122,48 @@
                     · Stok: <strong class="text-[#1A2A1A]">{{ $stok }} kg</strong>
                 </p>
 
-                <p class="mt-3 text-xs text-[#8A762B]">
-                    ★ Harga dapat dinegosiasikan untuk pembelian dalam jumlah besar.
-                </p>
+                @if ($tersediaSampai && ! $kadaluarsa)
+                    @php $mendesak = $sisaHari <= 2; @endphp
+                    <div class="mt-3 flex items-center gap-3 rounded-xl border px-4 py-3 {{ $mendesak ? 'border-red-200 bg-red-50' : 'border-[#D4E8D0] bg-[#F5FAF4]' }}">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {{ $mendesak ? 'bg-red-100 text-red-600' : 'bg-[#E8F5E9] text-[#2E7D32]' }}">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="9"/>
+                                <path d="M12 7v5l3 2"/>
+                            </svg>
+                        </span>
+
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-medium {{ $mendesak ? 'text-red-500' : 'text-[#5A7A5A]' }}">Tersedia sampai</p>
+                            <p class="font-bold {{ $mendesak ? 'text-red-600' : 'text-[#1A2A1A]' }}">
+                                {{ $tersediaSampai->translatedFormat('d F Y') }}
+                            </p>
+                        </div>
+
+                        @if ($sisaHari === 0)
+                            <span class="shrink-0 rounded-full bg-red-600 px-3 py-1 text-xs font-bold text-white">Hari ini</span>
+                        @elseif ($mendesak)
+                            <span class="shrink-0 rounded-full bg-red-600 px-3 py-1 text-xs font-bold text-white">{{ $sisaHari }} hari lagi</span>
+                        @else
+                            <span class="shrink-0 rounded-full bg-[#E8F5E9] px-3 py-1 text-xs font-bold text-[#2E7D32]">{{ $sisaHari }} hari lagi</span>
+                        @endif
+                    </div>
+                @endif
+
+                @if ($bisaDibeli)
+                    <p class="mt-3 text-xs text-[#8A762B]">
+                        ★ Harga dapat dinegosiasikan untuk pembelian dalam jumlah besar.
+                    </p>
+                @endif
             </div>
 
             {{-- INFORMASI PETANI --}}
             <div class="rounded-2xl border border-[#D4E8D0] bg-white p-4">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2E7D32] font-bold text-white">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2E7D32] font-bold text-white {{ $redup }}">
                         {{ strtoupper(substr($petani->name, 0, 1)) }}
                     </div>
 
-                    <div class="min-w-0 flex-1">
+                    <div class="min-w-0 flex-1 {{ $redup }}">
                         <p class="font-bold text-[#1A2A1A]">{{ $petani->name }}</p>
                         @if ($kabupaten)
                             <p class="text-xs text-[#5A7A5A]">📍 {{ $kabupaten }}, Bali</p>
@@ -124,7 +179,7 @@
             </div>
 
             {{-- DESKRIPSI DAN DETAIL --}}
-            <div>
+            <div class="{{ $redup }}">
                 <div class="border-b border-[#D4E8D0] pb-2">
                     <span class="border-b-2 border-[#2E7D32] pb-2 text-sm font-bold text-[#2E7D32]">Informasi Produk</span>
                 </div>
@@ -151,7 +206,7 @@
     </div>
 
     {{-- PILIHAN PEMBELIAN --}}
-    @if ($stok > 0)
+    @if ($bisaDibeli)
 
         @if ($sudahDiKeranjang)
             <p class="mt-7 rounded-xl bg-[#FFF9E6] px-4 py-3 text-sm text-[#806000]">
@@ -189,7 +244,7 @@
                 <div class="text-sm font-semibold text-[#5A7A5A]">
                     Total
                     <span id="totalHarga" class="ml-1 text-base font-extrabold text-[#2E7D32]">
-                        Rp{{ number_format($produk->harga_per_kg * $minimal, 0, ',', '.') }}
+                        Rp{{ number_format($produk->hargaAktif() * $minimal, 0, ',', '.') }}
                     </span>
                 </div>
             </div>
@@ -212,13 +267,6 @@
             </div>
         </form>
 
-    @else
-
-        <div class="mt-7 rounded-2xl border border-red-200 bg-red-50 p-5">
-            <p class="font-bold text-red-600">Stok Habis</p>
-            <p class="mt-1 text-sm text-red-500">Maaf, produk ini sedang tidak tersedia.</p>
-        </div>
-
     @endif
 
     {{-- PRODUK LAIN DARI PETANI INI --}}
@@ -235,7 +283,7 @@
                         <div class="p-3">
                             <p class="truncate text-sm font-bold text-[#1A2A1A]">{{ $lain->nama }}</p>
                             <p class="mt-1 text-sm font-bold text-[#2E7D32]">
-                                Rp{{ number_format($lain->harga_per_kg, 0, ',', '.') }}/kg
+                                Rp{{ number_format($lain->hargaAktif(), 0, ',', '.') }}/kg
                             </p>
                         </div>
                     </a>
@@ -246,9 +294,9 @@
 </div>
 
 {{-- SCRIPT JUMLAH DAN TOTAL HARGA --}}
-@if ($stok > 0)
+@if ($bisaDibeli)
 <script>
-    const hargaProduk = {{ (float) $produk->harga_per_kg }};
+    const hargaProduk = {{ (float) $produk->hargaAktif() }};
     const minimalProduk = {{ $minimal }};
     const stokProduk = {{ $stok }};
     const inputJumlah = document.getElementById('jumlah');

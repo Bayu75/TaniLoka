@@ -26,6 +26,9 @@ class KeranjangController extends Controller
     public function tambah(Request $request, Produk $produk)
     {
         abort_unless($produk->aktif, 404);
+                if ($produk->tersedia_sampai && \Illuminate\Support\Carbon::parse($produk->tersedia_sampai)->endOfDay()->isPast()) {
+            return back()->withErrors(['jumlah_kg' => 'Masa tersedia produk ini sudah berakhir.']);
+        }
 
         $data = $request->validate([
             'jumlah_kg' => ['required', 'numeric', 'min:' . $produk->min_order_kg, 'max:' . $produk->stok_kg],
