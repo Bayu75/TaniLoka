@@ -6,7 +6,7 @@
 
 @php
     $petani = $produk->petani;
-    $kabupaten = $petani->profilPetani?->kabupaten;
+    $kabupaten = $petani->alamatUtama?->kabupaten;
     $fotoUtama = $produk->foto->first()?->url ?? 'https://placehold.co/800x800?text=TaniLoka';
     $minimal = (float) $produk->min_order_kg;
     $stok = (float) $produk->stok_kg;
