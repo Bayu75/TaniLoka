@@ -6,10 +6,12 @@
 
 @php
     $petani = $produk->petani;
-    $kabupaten = $petani->profilPetani?->kabupaten;
+    $kabupaten = $petani->alamatUtama?->kabupaten;
     $fotoUtama = $produk->foto->first()?->url ?? 'https://placehold.co/800x800?text=TaniLoka';
     $minimal = (float) $produk->min_order_kg;
     $stok = (float) $produk->stok_kg;
+    $tersediaSampai = $produk->tersedia_sampai ? \Illuminate\Support\Carbon::parse($produk->tersedia_sampai) : null;
+    $sisaHari = $tersediaSampai ? (int) now()->startOfDay()->diffInDays($tersediaSampai->copy()->startOfDay(), false) : null;
 @endphp
 
 {{-- HEADER HALAMAN --}}
@@ -89,6 +91,36 @@
                     Minimal pesan: <strong class="text-[#1A2A1A]">{{ $minimal }} kg</strong>
                     · Stok: <strong class="text-[#1A2A1A]">{{ $stok }} kg</strong>
                 </p>
+                                    @if ($tersediaSampai)
+                    @php $mendesak = $sisaHari <= 2; @endphp
+                    <div class="mt-3 flex items-center gap-3 rounded-xl border px-4 py-3 {{ $mendesak ? 'border-red-200 bg-red-50' : 'border-[#D4E8D0] bg-[#F5FAF4]' }}">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {{ $mendesak ? 'bg-red-100 text-red-600' : 'bg-[#E8F5E9] text-[#2E7D32]' }}">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="9"/>
+                                <path d="M12 7v5l3 2"/>
+                            </svg>
+                        </span>
+
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-medium {{ $mendesak ? 'text-red-500' : 'text-[#5A7A5A]' }}">
+                                Tersedia sampai
+                            </p>
+                            <p class="font-bold {{ $mendesak ? 'text-red-600' : 'text-[#1A2A1A]' }}">
+                                {{ $tersediaSampai->translatedFormat('d F Y') }}
+                            </p>
+                        </div>
+
+                        @if ($sisaHari < 0)
+                            <span class="shrink-0 rounded-full bg-gray-200 px-3 py-1 text-xs font-bold text-gray-600">Sudah lewat</span>
+                        @elseif ($sisaHari === 0)
+                            <span class="shrink-0 rounded-full bg-red-600 px-3 py-1 text-xs font-bold text-white">Hari ini</span>
+                        @elseif ($mendesak)
+                            <span class="shrink-0 rounded-full bg-red-600 px-3 py-1 text-xs font-bold text-white">{{ $sisaHari }} hari lagi</span>
+                        @else
+                            <span class="shrink-0 rounded-full bg-[#E8F5E9] px-3 py-1 text-xs font-bold text-[#2E7D32]">{{ $sisaHari }} hari lagi</span>
+                        @endif
+                    </div>
+                @endif
 
                 <p class="mt-3 text-xs text-[#8A762B]">
                     ★ Harga dapat dinegosiasikan untuk pembelian dalam jumlah besar.

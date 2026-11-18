@@ -6,7 +6,7 @@
 
 @php
     $profil = $petani->profilPetani;
-    $kabupaten = $profil?->kabupaten;
+    $kabupaten = $petani->alamatUtama?->kabupaten;
     $inisial = strtoupper(mb_substr($petani->name, 0, 1));
 @endphp
 

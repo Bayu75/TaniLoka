@@ -8,7 +8,7 @@
     'minimalPesan' => 1,
     'petani',
     'rating' => 0,
-    'kabupaten',
+     kabupaten',
     'badge' => null,
     'bisaNego' => false,
     'tersedia' => true,
