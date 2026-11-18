@@ -82,8 +82,9 @@
 
         {{-- Form pengajuan --}}
         @if ($bisaAjukan)
-            <form method="POST" action="{{ route('pengusaha.verifikasi.ajukan') }}" enctype="multipart/form-data"
-                  x-data="{ bukaSk: false, sudahBaca: false, setuju: false }" class="space-y-4">
+                <form method="POST" action="{{ route('pengusaha.verifikasi.ajukan') }}" enctype="multipart/form-data"
+                  x-data="{ bukaSk: false, sudahBaca: false, setuju: false, mengirim: false }"
+                  @submit="mengirim = true" class="space-y-4">
                 @csrf
 
                 <x-upload-preview name="nib" label="Dokumen NIB"
@@ -105,10 +106,10 @@
                     @error('setuju_sk') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
-                <button type="submit"
-                        :disabled="!setuju || {{ $lengkap ? 'false' : 'true' }}"
+                               <button type="submit"
+                        :disabled="!setuju || mengirim || {{ $lengkap ? 'false' : 'true' }}"
                         class="w-full rounded-xl bg-green-700 py-3 font-medium text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50">
-                    Ajukan Verifikasi
+                    <span x-text="mengirim ? 'Mengirim...' : 'Ajukan Verifikasi'"></span>
                 </button>
 
                 {{-- Modal Syarat & Ketentuan --}}
