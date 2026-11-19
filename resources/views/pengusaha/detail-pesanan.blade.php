@@ -337,8 +337,11 @@
 
                     @php
                         // Menentukan tahapan yang sudah selesai dan sedang aktif
-                        $statusSelesai = $index < $posisiSekarang;
-                        $statusAktif = $index === $posisiSekarang;
+                        $statusSelesai = $index < $posisiSekarang
+                            || ($statusSekarang === 'selesai' && $index === $posisiSekarang);
+
+                        $statusAktif = $index === $posisiSekarang
+                            && $statusSekarang !== 'selesai';
 
                         // Mencari riwayat berdasarkan tahapan
                         $statusTahap = $tahap['status'];
@@ -427,7 +430,7 @@
 
                             @if (
                                 $statusAktif &&
-                                in_array($statusSekarang, ['dikirim', 'siap_diambil'])
+                                in_array($statusSekarang, ['dikirim', 'siap_diambil', 'terkirim'])
                             )
                                 <form
                                     action="{{ route('pengusaha.pesanan.selesai', $pesanan->id) }}"

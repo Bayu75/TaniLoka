@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\Pengusaha\PesananController;
 
 use App\Http\Controllers\Petani\AkunController as PetaniAkunController;
 use App\Http\Controllers\Petani\AlamatController as AlamatPetaniController;
@@ -23,6 +22,9 @@ use App\Http\Controllers\Pengusaha\AlamatController;
 use App\Http\Controllers\Pengusaha\ProdukController;
 use App\Http\Controllers\Pengusaha\ProfilUsahaController;
 use App\Http\Controllers\Pengusaha\KeranjangController;
+use App\Http\Controllers\Pengusaha\ChatController;
+use App\Http\Controllers\Pengusaha\CheckoutController;
+use App\Http\Controllers\Pengusaha\PesananController;
 
 Route::view('/', 'auth.landing')->name('landing');
 
@@ -56,15 +58,34 @@ Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengu
     Route::patch('/keranjang/item/{item}', [KeranjangController::class, 'ubah'])->name('keranjang.ubah');
     Route::delete('/keranjang/item/{item}', [KeranjangController::class, 'hapus'])->name('keranjang.hapus');
 
-    Route::view('/pesan', 'pengusaha.pesan')->name('pesan');
+    Route::get('/pesan', [ChatController::class, 'index'])->name('pesan');
+    Route::get('/pesan/{id}', [ChatController::class, 'show'])->name('pesan.detail');
+    Route::post('/pesan/{id}/kirim', [ChatController::class, 'kirim'])->name('pesan.kirim');
 
-    Route::view('/checkout', 'pengusaha.checkout')->name('checkout');
-    Route::view('/pembayaran', 'pengusaha.pembayaran')->name('pembayaran');
-    Route::view('/konfirmasi', 'pengusaha.konfirmasi')->name('konfirmasi');
+    // Negosiasi harga
+    Route::post('/pesan/{id}/penawaran', [ChatController::class, 'kirimPenawaran'])
+        ->name('pesan.penawaran');
+    Route::post('/pesan/{id}/penawaran/{pesan}/terima', [ChatController::class, 'terimaPenawaran'])
+        ->name('pesan.penawaran.terima');
+    Route::post('/pesan/{id}/penawaran/{pesan}/tolak', [ChatController::class, 'tolakPenawaran'])
+        ->name('pesan.penawaran.tolak');
+
+    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
+    Route::get('/pembayaran', [CheckoutController::class, 'pembayaran'])->name('pembayaran');
+
+    Route::get('/konfirmasi', [CheckoutController::class, 'konfirmasi'])->name('konfirmasi');
     Route::post('/konfirmasi', [PesananController::class, 'store'])->name('konfirmasi.store');
+
     Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan');
     Route::get('/pesanan/{id}', [PesananController::class, 'show'])->name('pesanan.detail');
     Route::post('/pesanan/{id}/batalkan', [PesananController::class, 'cancel'])->name('pesanan.cancel');
+    Route::post('/pesanan/{id}/bukti', [PesananController::class, 'uploadBukti'])
+    ->name('pesanan.bukti.upload');
+    Route::post('/pesanan/{id}/selesai', [PesananController::class, 'konfirmasiSelesai'])
+    ->name('pesanan.selesai');
+    Route::post('/pesanan/{id}/ulasan', [PesananController::class, 'simpanUlasan'])
+    ->name('pesanan.ulasan');
+
     Route::get('/verifikasi', [VerifikasiPengusahaController::class, 'index'])->name('verifikasi');
     Route::post('/verifikasi', [VerifikasiPengusahaController::class, 'ajukan'])->name('verifikasi.ajukan');
     Route::view('/akun', 'pengusaha.akun')->name('akun');
@@ -90,7 +111,7 @@ Route::middleware(['auth', 'peran:petani'])->prefix('petani')->name('petani.')->
     Route::put('/produk/{produk}', [PetaniProdukController::class, 'update'])->whereNumber('produk')->name('produk.update');
     Route::patch('/produk/{produk}/tersedia', [PetaniProdukController::class, 'tersedia'])->whereNumber('produk')->name('produk.tersedia');
     Route::delete('/produk/{produk}', [PetaniProdukController::class, 'destroy'])->whereNumber('produk')->name('produk.destroy');
-    
+
     // Flash Sale
     Route::get('/flash-sale', [PetaniFlashSaleController::class, 'index'])->name('flash-sale');
     Route::post('/produk/{produk}/flash-sale', [PetaniFlashSaleController::class, 'store'])->whereNumber('produk')->name('flash-sale.store');
@@ -102,8 +123,17 @@ Route::middleware(['auth', 'peran:petani'])->prefix('petani')->name('petani.')->
     Route::get('/pesan', [PetaniPesanController::class, 'index'])->name('pesan');
     Route::get('/pesan/{percakapan}', [PetaniPesanController::class, 'show'])->whereNumber('percakapan')->name('pesan.show');
     Route::post('/pesan/{percakapan}/kirim', [PetaniPesanController::class, 'kirim'])->whereNumber('percakapan')->name('pesan.kirim');
+    Route::post('/pesan/{percakapan}/penawaran', [PetaniPesanController::class, 'kirimPenawaran'])
+        ->whereNumber('percakapan')
+        ->name('pesan.penawaran');
+    Route::post('/pesan/{percakapan}/penawaran/{pesan}/terima', [PetaniPesanController::class, 'terimaPenawaran'])
+        ->whereNumber(['percakapan', 'pesan'])
+        ->name('pesan.penawaran.terima');
+    Route::post('/pesan/{percakapan}/penawaran/{pesan}/tolak', [PetaniPesanController::class, 'tolakPenawaran'])
+        ->whereNumber(['percakapan', 'pesan'])
+        ->name('pesan.penawaran.tolak');
     Route::post('/pesanan/{pesanan}/terkirim', [PetaniPesananController::class, 'terkirim'])->whereNumber('pesanan')->name('pesanan.terkirim');
-Route::post('/pesanan/{pesanan}/hubungi', [PetaniPesananController::class, 'hubungi'])->whereNumber('pesanan')->name('pesanan.hubungi');
+    Route::post('/pesanan/{pesanan}/hubungi', [PetaniPesananController::class, 'hubungi'])->whereNumber('pesanan')->name('pesanan.hubungi');
 
     Route::view('/bantuan', 'petani.bantuan')->name('bantuan');
 

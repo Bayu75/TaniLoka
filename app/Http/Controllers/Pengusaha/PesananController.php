@@ -272,6 +272,7 @@ class PesananController extends Controller
             );
     }
 
+    
     public function uploadBukti(Request $request, int $id)
     {
         $request->validate([
@@ -283,37 +284,61 @@ class PesananController extends Controller
             ],
         ]);
 
-        $pesanan = Pesanan::where('id', $id)
-            ->where('pengusaha_id', $request->user()->id)
-            ->firstOrFail();
+        $userId = $request->user()->id;
 
-        if ($pesanan->status !== 'menunggu_pembayaran') {
-            return back()->with('error', 'Pesanan tidak sedang menunggu pembayaran.');
-        }
+        DB::transaction(function () use ($request, $id, $userId) {
+            $pesanan = Pesanan::where('id', $id)
+                ->where('pengusaha_id', $userId)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $pembayaran = $pesanan->pembayaran;
+            if ($pesanan->status !== 'menunggu_pembayaran') {
+                throw ValidationException::withMessages([
+                    'bukti_pembayaran' => 'Pesanan tidak sedang menunggu pembayaran.',
+                ]);
+            }
 
-        if (!$pembayaran) {
-            return back()->with('error', 'Data pembayaran tidak ditemukan.');
-        }
+            $pembayaran = $pesanan->pembayaran;
 
-        $fileLama = $pembayaran->bukti_path;
+            if (!$pembayaran) {
+                throw ValidationException::withMessages([
+                    'bukti_pembayaran' => 'Data pembayaran tidak ditemukan.',
+                ]);
+            }
 
-        $path = $request->file('bukti_pembayaran')
-            ->store('bukti-pembayaran', 'public');
+            $fileLama = $pembayaran->bukti_path;
 
-        $pembayaran->update([
-            'bukti_path' => $path,
-            'status' => 'menunggu_verifikasi',
-            'dibayar_pada' => now(),
-        ]);
+            $path = $request->file('bukti_pembayaran')
+                ->store('bukti-pembayaran', 'public');
 
-        if ($fileLama) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($fileLama);
-        }
+            $pembayaran->update([
+                'bukti_path' => $path,
+                'status' => 'lunas',
+                'dibayar_pada' => now(),
+            ]);
 
-        return back()->with('success', 'Bukti pembayaran berhasil diunggah. Menunggu verifikasi petani.');
+            $pesanan->update([
+                'status' => 'diproses',
+            ]);
+
+            $pesanan->riwayat()->create([
+                'status' => 'diproses',
+                'keterangan' => 'Bukti pembayaran berhasil diunggah pembeli.',
+                'diubah_oleh' => $userId,
+            ]);
+
+            if ($fileLama) {
+                \Illuminate\Support\Facades\Storage::disk('public')
+                    ->delete($fileLama);
+            }
+        });
+
+        return back()->with(
+            'success',
+            'Bukti pembayaran berhasil diunggah. Pesanan sedang diproses.'
+        );
     }
+
 
     public function konfirmasiSelesai($id)
     {
@@ -325,7 +350,7 @@ class PesananController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if (!in_array($pesanan->status, ['dikirim', 'siap_diambil'])) {
+            if (!in_array($pesanan->status, ['dikirim', 'siap_diambil', 'terkirim'])) {
                 return false;
             }
 

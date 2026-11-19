@@ -22,15 +22,24 @@ class ChatController extends Controller
                 ->where('slug', $request->produk)
                 ->firstOrFail();
 
-            $percakapan = Percakapan::firstOrCreate(
-                [
+            $percakapan = Percakapan::where('pengusaha_id', Auth::id())
+                ->where('petani_id', $produk->petani_id)
+                ->orderBy('id')
+                ->first();
+
+            if (!$percakapan) {
+                $percakapan = Percakapan::create([
                     'pengusaha_id' => Auth::id(),
                     'petani_id' => $produk->petani_id,
-                ],
-                [
                     'pesan_terakhir_pada' => null,
-                ]
-            );
+                    'status' => 'terbuka',
+                ]);
+            }
+
+            // Buka kembali percakapan lama jika sebelumnya tertutup
+            $percakapan->update([
+                'status' => 'terbuka',
+            ]);
 
             return redirect()->route('pengusaha.pesan.detail', [
                 'id' => $percakapan->id,
@@ -210,15 +219,19 @@ class ChatController extends Controller
     {
         $petani = User::where('peran', 'petani')->findOrFail($petaniId);
 
-        $percakapan = Percakapan::firstOrCreate(
-            [
+        $percakapan = Percakapan::where('pengusaha_id', Auth::id())
+            ->where('petani_id', $petani->id)
+            ->orderBy('id', 'asc')
+            ->first();
+
+        if (!$percakapan) {
+            $percakapan = Percakapan::create([
                 'pengusaha_id' => Auth::id(),
                 'petani_id' => $petani->id,
-            ],
-            [
                 'pesan_terakhir_pada' => null,
-            ]
-        );
+                'status' => 'terbuka',
+            ]);
+        }
 
         return redirect()->route('pengusaha.pesan.detail', [
             'id' => $percakapan->id,
