@@ -106,11 +106,12 @@ Route::middleware(['auth', 'peran:petani'])->prefix('petani')->name('petani.')->
     Route::get('/', [PetaniDashboardController::class, 'index'])->name('dashboard');
 
     // Kelola Produk
-    Route::get('/produk', [PetaniProdukController::class, 'index'])->name('produk');
-    Route::post('/produk', [PetaniProdukController::class, 'store'])->name('produk.store');
-    Route::put('/produk/{produk}', [PetaniProdukController::class, 'update'])->whereNumber('produk')->name('produk.update');
-    Route::patch('/produk/{produk}/tersedia', [PetaniProdukController::class, 'tersedia'])->whereNumber('produk')->name('produk.tersedia');
-    Route::delete('/produk/{produk}', [PetaniProdukController::class, 'destroy'])->whereNumber('produk')->name('produk.destroy');
+    Route::patch('/produk/{produk}/tersedia', [PetaniProdukController::class, 'toggleTersedia'])
+        ->whereNumber('produk')
+        ->name('produk.tersedia');
+    Route::resource('produk', PetaniProdukController::class)
+        ->except('show')
+        ->whereNumber('produk');
 
     // Flash Sale
     Route::get('/flash-sale', [PetaniFlashSaleController::class, 'index'])->name('flash-sale');
@@ -132,7 +133,6 @@ Route::middleware(['auth', 'peran:petani'])->prefix('petani')->name('petani.')->
     Route::post('/pesan/{percakapan}/penawaran/{pesan}/tolak', [PetaniPesanController::class, 'tolakPenawaran'])
         ->whereNumber(['percakapan', 'pesan'])
         ->name('pesan.penawaran.tolak');
-    Route::post('/pesanan/{pesanan}/terkirim', [PetaniPesananController::class, 'terkirim'])->whereNumber('pesanan')->name('pesanan.terkirim');
     Route::post('/pesanan/{pesanan}/hubungi', [PetaniPesananController::class, 'hubungi'])->whereNumber('pesanan')->name('pesanan.hubungi');
 
     Route::view('/bantuan', 'petani.bantuan')->name('bantuan');

@@ -19,7 +19,7 @@
         ['url' => route('petani.alamat'), 'ikon' => '📍', 'judul' => 'Alamat Kebun', 'ket' => 'Lokasi kebun dan pengambilan barang'],
     ];
     $menuAktivitas = [
-        ['url' => route('petani.produk'),  'ikon' => '🌱', 'judul' => 'Kelola Produk', 'ket' => 'Tambah dan ubah produk jualan'],
+        ['url' => route('petani.produk.index'),  'ikon' => '🌱', 'judul' => 'Kelola Produk', 'ket' => 'Tambah dan ubah produk jualan'],
         ['url' => route('petani.pesanan'), 'ikon' => '📦', 'judul' => 'Pesanan Masuk', 'ket' => 'Pesanan dari pengusaha kuliner'],
         ['url' => route('petani.pesan'),   'ikon' => '💬', 'judul' => 'Pesan', 'ket' => 'Negosiasi harga dan percakapan'],
     ];
@@ -48,9 +48,9 @@
 @endphp
 
 {{-- HEADER HALAMAN AKUN --}}
-<x-page-header judul="Akun" :kembali="false" lebar="max-w-3xl"/>
+<x-page-header judul="Akun" :kembali="false" lebar="max-w-4xl"/>
 
-<div class="mx-auto max-w-3xl py-5 md:py-6">
+<div class="mx-auto max-w-4xl py-5 md:py-6">
 
     @if (session('pesan_akun'))
         <div class="mb-5 rounded-xl bg-green-50 px-4 py-3 text-sm text-[#2E7D32]">{{ session('pesan_akun') }}</div>
@@ -83,7 +83,7 @@
 
     {{-- STATISTIK --}}
     <div class="mb-6 grid grid-cols-2 gap-3">
-        <a href="{{ route('petani.produk') }}"
+        <a href="{{ route('petani.produk.index') }}"
            class="rounded-2xl border border-[#DCE8D8] bg-white p-5 text-center transition hover:border-[#2E7D32]">
             <div class="mb-2 text-2xl">🌱</div>
             <h3 class="text-2xl font-extrabold text-[#1A2A1A]">{{ $jumlahProduk }}</h3>

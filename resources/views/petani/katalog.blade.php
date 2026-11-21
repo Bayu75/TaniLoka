@@ -699,7 +699,7 @@
                         </div>
                     </div>
                     <div class="mt-4">
-                        <a x-show="toko === namaSaya" href="{{ url('/petani/produk') }}" class="inline-block bg-yellow-400 hover:bg-yellow-500 rounded-xl px-5 py-3 text-sm font-semibold">Kelola Produk</a>
+                        <a x-show="toko === namaSaya" href="{{ route('petani.produk.index') }}" class="inline-block bg-yellow-400 hover:bg-yellow-500 rounded-xl px-5 py-3 text-sm font-semibold">Kelola Produk</a>
                     </div>
                 </div>
             </div>

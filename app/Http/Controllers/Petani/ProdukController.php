@@ -2,279 +2,214 @@
 
 namespace App\Http\Controllers\Petani;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Petani\StoreProdukRequest;
+use App\Http\Requests\Petani\UpdateProdukRequest;
 use App\Models\Kategori;
 use App\Models\Produk;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
-use Throwable;
 
-/**
- * Kelola Produk petani: daftar, tambah (dengan foto), ubah, tersedia/tidak, hapus (soft delete).
- */
-class ProdukController extends PetaniController
+class ProdukController extends Controller
 {
-    private const FOLDER_FOTO = 'produk';
-
     public function index(Request $request): View
     {
-        $user = $this->petani($request);
-        $kabupaten = $user->profilPetani?->kabupaten ?? '';
+        $user = $request->user();
 
-        $produk = $user->produk()
-            ->with(['kategori', 'fotoUtama'])
+        $produk = Produk::with(['kategori', 'fotoUtama'])
+            ->where('petani_id', $user->id)
             ->latest()
-            ->latest('id')
-            ->get()
-            ->map(fn (Produk $p) => [
-                'id' => $p->id,
-                'nama' => $p->nama,
-                'slug' => $p->slug,
-                'kategori_id' => $p->kategori_id,
-                'kategori' => $p->kategori?->nama ?? '-',
-                'harga' => (int) $p->harga_per_kg,
-                'stok' => (float) $p->stok_kg,
-                'min' => (float) $p->min_order_kg,
-                'grade' => $p->grade ?? '',
-                'tanggalPanen' => $p->tanggal_panen?->format('Y-m-d') ?? '',
-                // "Periode Panen" di tampilan disimpan di kolom deskripsi (tabel produk tidak punya kolom periode).
-                'periode' => $p->deskripsi ?? '',
-                // Lokasi produk mengikuti lokasi kebun di profil_petani.
-                'kabupaten' => $kabupaten,
-                'tersedia' => $p->aktif,
-                'gambar' => $p->fotoUtama?->url,
-                'tersediaSampai' => $this->tanggalYmd($p->tersedia_sampai),
-            ])
-            ->values();
+            ->get();
 
-        $kategori = Kategori::orderBy('nama')->get(['id', 'nama'])
-            ->map(fn (Kategori $k) => ['id' => $k->id, 'nama' => $k->nama])
-            ->values();
-
-        return view('petani.produk', [
+        return view('petani.produk.index', [
             'produk' => $produk,
-            'kategori' => $kategori,
-            'kabupatenPetani' => $kabupaten,
-            'terverifikasi' => $user->terverifikasi(),
-            'statusVerifikasi' => $user->status_verifikasi ?? 'belum_diajukan',
+            'stat' => [
+                'jumlah' => $produk->count(),
+                'aktif'  => $produk->filter(fn ($p) => $p->aktif && $p->stok_kg > 0)->count(),
+                'habis'  => $produk->filter(fn ($p) => ! $p->aktif || $p->stok_kg <= 0)->count(),
+            ],
+            'kabupatenPetani'  => $this->kabupaten($request),
+            'terverifikasi'    => $this->terverifikasi($request),
+            'statusVerifikasi' => $user->status_verifikasi,
         ]);
     }
 
-    public function store(Request $request): JsonResponse|RedirectResponse
+    public function create(Request $request): View|RedirectResponse
     {
-        $user = $this->petani($request);
-        if (! $user->terverifikasi()) {
-            return $this->tolakBelumTerverifikasi($request);
+        if (! $this->terverifikasi($request)) {
+            return $this->tolakBelumVerifikasi();
         }
 
-        $data = $this->validasi($request, baru: true);
-        $pathFoto = $request->hasFile('foto') ? $request->file('foto')->store(self::FOLDER_FOTO, 'public') : null;
+        return view('petani.produk.create', $this->dataForm($request, new Produk(['aktif' => true])));
+    }
 
-        try {
-            $produk = DB::transaction(function () use ($user, $data, $pathFoto) {
-                $produk = $user->produk()->create([
-                    'kategori_id' => $data['kategori_id'],
-                    'nama' => $data['nama'],
-                    'slug' => $this->slugUnik($data['nama']),
-                    'deskripsi' => $data['periode'] ?? null,
-                    'harga_per_kg' => $data['harga'],
-                    'stok_kg' => $data['stok'],
-                    'min_order_kg' => $data['min'],
-                    'grade' => $data['grade'] ?? null,
-                    'tanggal_panen' => $data['tanggal_panen'] ?? null,
-                    'tersedia_sampai' => $data['tersedia_sampai'] ?? null,
-                    'aktif' => true,
-                ]);
+    public function store(StoreProdukRequest $request): RedirectResponse
+    {
+        if (! $this->terverifikasi($request)) {
+            return $this->tolakBelumVerifikasi();
+        }
 
-                if ($pathFoto) {
-                    $produk->foto()->create(['path' => $pathFoto, 'urutan' => 0]);
-                }
+        DB::transaction(function () use ($request) {
+            $produk = Produk::create($this->kolom($request->validated()) + [
+                'petani_id' => $request->user()->id,
+                'slug'      => $this->buatSlug($request->input('nama')),
+                'aktif'     => true,
+            ]);
 
-                return $produk;
-            });
-        } catch (Throwable $e) {
-            if ($pathFoto) {
-                Storage::disk('public')->delete($pathFoto);
+            if ($request->hasFile('foto')) {
+                $this->simpanFoto($produk, $request->file('foto'));
             }
-            throw $e;
-        }
-
-        return $this->berhasil($request, 'Produk berhasil ditambahkan.', ['id' => $produk->id], 201);
-    }
-
-    public function update(Request $request, int $produk): JsonResponse|RedirectResponse
-    {
-        $user = $this->petani($request);
-        $produk = $this->produkMilik($produk, $request);
-        if (! $user->terverifikasi()) {
-            return $this->tolakBelumTerverifikasi($request);
-        }
-
-        $data = $this->validasi($request, baru: false);
-        $pathBaru = $request->hasFile('foto') ? $request->file('foto')->store(self::FOLDER_FOTO, 'public') : null;
-        $pathLama = [];
-
-        try {
-            DB::transaction(function () use ($produk, $data, $pathBaru, &$pathLama) {
-                $produk->update([
-                    'kategori_id' => $data['kategori_id'],
-                    'nama' => $data['nama'],
-                    // Slug sengaja tidak diubah supaya link produk yang sudah dibagikan tetap jalan.
-                    'deskripsi' => $data['periode'] ?? null,
-                    'harga_per_kg' => $data['harga'],
-                    'stok_kg' => $data['stok'],
-                    'min_order_kg' => $data['min'],
-                    'grade' => $data['grade'] ?? null,
-                    'tanggal_panen' => $data['tanggal_panen'] ?? null,
-                    'tersedia_sampai' => $data['tersedia_sampai'] ?? null,
-                    'aktif' => array_key_exists('tersedia', $data) ? (bool) $data['tersedia'] : $produk->aktif,
-                ]);
-
-                if ($pathBaru) {
-                    // Satu foto utama per produk: foto lama diganti.
-                    $pathLama = $produk->foto()->pluck('path')->all();
-                    $produk->foto()->delete();
-                    $produk->foto()->create(['path' => $pathBaru, 'urutan' => 0]);
-                }
-            });
-        } catch (Throwable $e) {
-            if ($pathBaru) {
-                Storage::disk('public')->delete($pathBaru);
-            }
-            throw $e;
-        }
-
-        // File lama baru dihapus setelah database berhasil diperbarui.
-        $lokal = array_values(array_filter($pathLama, fn ($p) => $this->pathLokal($p)));
-        if ($lokal) {
-            Storage::disk('public')->delete($lokal);
-        }
-
-        return $this->berhasil($request, 'Produk berhasil diperbarui.', ['id' => $produk->id]);
-    }
-
-    /** Tombol Tersedia / Tidak tersedia di kartu produk (kolom aktif). */
-    public function tersedia(Request $request, int $produk): JsonResponse|RedirectResponse
-    {
-        $user = $this->petani($request);
-        $produk = $this->produkMilik($produk, $request);
-        if (! $user->terverifikasi()) {
-            return $this->tolakBelumTerverifikasi($request);
-        }
-
-        $data = $request->validate(
-            ['aktif' => ['required', 'boolean']],
-            $this->pesanValidasi(),
-            ['aktif' => 'status ketersediaan'],
-        );
-
-        $produk->update(['aktif' => (bool) $data['aktif']]);
-
-        $pesan = $produk->aktif ? 'Produk ditandai tersedia.' : 'Produk ditandai tidak tersedia.';
-
-        // Tidak di-flash: halaman tidak dimuat ulang setelah toggle.
-        return $this->berhasil($request, $pesan, ['aktif' => $produk->aktif], 200, flash: false);
-    }
-
-    /** Hapus produk (soft delete). Foto tetap disimpan karena riwayat pesanan masih bisa merujuk produk ini. */
-    public function destroy(Request $request, int $produk): JsonResponse|RedirectResponse
-    {
-        $this->petani($request);
-        $produk = $this->produkMilik($produk, $request);
-
-        DB::transaction(function () use ($produk) {
-            $produk->update(['aktif' => false]);
-            $produk->delete();
         });
 
-        return $this->berhasil($request, 'Produk dihapus.', ['id' => $produk->id]);
+        return redirect()->route('petani.produk.index')
+            ->with('sukses', 'Produk berhasil ditambahkan.');
     }
 
-    /** Produk yang belum dihapus: 404 kalau tidak ada, 403 kalau milik petani lain. */
-    private function produkMilik(int $id, Request $request): Produk
+    public function edit(Request $request, Produk $produk): View|RedirectResponse
     {
-        return $this->pastikanMilik(Produk::find($id), $request->user());
-    }
+        $this->pastikanMilik($request, $produk);
 
-    private function validasi(Request $request, bool $baru): array
-    {
-        $stokPositif = is_numeric($request->input('stok')) && (float) $request->input('stok') > 0;
-
-        return $request->validate([
-            'nama' => ['required', 'string', 'max:255'],
-            'kategori_id' => ['required', 'integer', 'exists:kategori,id'],
-            'harga' => ['required', 'integer', 'min:1', 'max:100000000'],
-            'stok' => $baru
-                ? ['required', 'numeric', 'gt:0', 'max:99999999']
-                : ['required', 'numeric', 'min:0', 'max:99999999'],
-            // Minimal pesan tidak boleh melebihi stok, kecuali stok sedang 0 (produk habis tetap bisa diubah).
-            'min' => array_merge(['required', 'numeric', 'gt:0', 'max:999999'], $stokPositif ? ['lte:stok'] : []),
-            'periode' => [$baru ? 'required' : 'nullable', 'string', 'max:1000'],
-            'grade' => ['nullable', 'in:A,B,C'],
-            'tanggal_panen' => ['nullable', 'date'],
-            'tersedia_sampai' => array_values(array_filter([
-                'nullable',
-                'date',
-                $request->filled('tanggal_panen') ? 'after_or_equal:tanggal_panen' : null,
-            ])),
-            'tersedia' => ['sometimes', 'boolean'],
-            'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
-        ], $this->pesanValidasi() + [
-            'tersedia_sampai.after_or_equal' => 'Tersedia sampai harus pada atau setelah tanggal panen.',
-        ], [
-            'nama' => 'nama produk',
-            'kategori_id' => 'kategori',
-            'harga' => 'harga per kg',
-            'stok' => 'stok (kg)',
-            'min' => 'minimal pesan (kg)',
-            'periode' => 'periode panen',
-            'grade' => 'grade',
-            'tanggal_panen' => 'tanggal panen',
-            'tersedia_sampai' => 'tersedia sampai',
-            'tersedia' => 'status ketersediaan',
-            'foto' => 'foto produk',
-        ]);
-    }
-
-
-    /** Format tanggal Y-m-d tanpa mengandalkan cast di model Produk. */
-    private function tanggalYmd(mixed $nilai): string
-    {
-        if (! $nilai) {
-            return '';
+        if (! $this->terverifikasi($request)) {
+            return $this->tolakBelumVerifikasi();
         }
 
-        return Carbon::parse($nilai)->format('Y-m-d');
+        $produk->load('fotoUtama');
+
+        return view('petani.produk.edit', $this->dataForm($request, $produk));
     }
 
-    /** Slug unik, termasuk terhadap produk yang sudah di-soft delete (index unique berlaku untuk semua baris). */
-    private function slugUnik(string $nama): string
+    public function update(UpdateProdukRequest $request, Produk $produk): RedirectResponse
     {
-        $dasar = Str::limit(Str::slug($nama) ?: 'produk', 200, '');
-        $slug = $dasar;
-        $i = 2;
-        while (Produk::withTrashed()->where('slug', $slug)->exists()) {
-            $slug = $dasar.'-'.$i++;
+        $this->pastikanMilik($request, $produk);
+
+        if (! $this->terverifikasi($request)) {
+            return $this->tolakBelumVerifikasi();
         }
+
+        DB::transaction(function () use ($request, $produk) {
+            $data = $this->kolom($request->validated());
+            $data['aktif'] = $request->boolean('aktif');
+
+            if ($produk->nama !== $data['nama']) {
+                $data['slug'] = $this->buatSlug($data['nama']);
+            }
+
+            $produk->update($data);
+
+            if ($request->hasFile('foto')) {
+                $this->hapusFoto($produk);
+                $this->simpanFoto($produk, $request->file('foto'));
+            }
+        });
+
+        return redirect()->route('petani.produk.index')
+            ->with('sukses', 'Produk berhasil diperbarui.');
+    }
+
+    public function toggleTersedia(Request $request, Produk $produk): RedirectResponse
+    {
+        $this->pastikanMilik($request, $produk);
+
+        if (! $this->terverifikasi($request)) {
+            return $this->tolakBelumVerifikasi();
+        }
+
+        $request->validate(['aktif' => ['required', 'boolean']]);
+        $produk->update(['aktif' => $request->boolean('aktif')]);
+
+        return back()->with('sukses', $produk->aktif
+            ? 'Produk ditampilkan di katalog.'
+            : 'Produk disembunyikan dari katalog.');
+    }
+
+    public function destroy(Request $request, Produk $produk): RedirectResponse
+    {
+        $this->pastikanMilik($request, $produk);
+
+        // Pakai soft delete: foto tidak dihapus, supaya riwayat pesanan tetap aman.
+        $produk->delete();
+
+        return redirect()->route('petani.produk.index')
+            ->with('sukses', 'Produk dihapus.');
+    }
+
+    /* ---------- fungsi bantu ---------- */
+
+    // Data dari formulir yang disimpan ke tabel produk.
+    private function kolom(array $v): array
+    {
+        return [
+            'nama'            => trim($v['nama']),
+            'kategori_id'     => $v['kategori_id'],
+            'grade'           => $v['grade'] ?? null,
+            'harga_per_kg'    => $v['harga_per_kg'],
+            'stok_kg'         => $v['stok_kg'],
+            'min_order_kg'    => $v['min_order_kg'],
+            'deskripsi'       => isset($v['deskripsi']) ? trim($v['deskripsi']) : null,
+            'tanggal_panen'   => $v['tanggal_panen'] ?? null,
+            'tersedia_sampai' => $v['tersedia_sampai'] ?? null,
+        ];
+    }
+
+    // Contoh hasil: "tomat-cherry-segar-x7k2qa"
+    private function buatSlug(string $nama): string
+    {
+        do {
+            $slug = Str::slug($nama) . '-' . Str::lower(Str::random(6));
+        } while (Produk::withTrashed()->where('slug', $slug)->exists());
 
         return $slug;
     }
 
-    private function berhasil(Request $request, string $pesan, array $data = [], int $status = 200, bool $flash = true): JsonResponse|RedirectResponse
+    private function simpanFoto(Produk $produk, UploadedFile $file): void
     {
-        if ($request->expectsJson()) {
-            if ($flash) {
-                session()->flash('sukses', $pesan); // tampil setelah halaman dimuat ulang
-            }
+        $produk->foto()->create([
+            'path'   => $file->store('produk', 'public'),
+            'urutan' => 0,
+        ]);
+    }
 
-            return response()->json(['message' => $pesan] + $data, $status);
+    private function hapusFoto(Produk $produk): void
+    {
+        foreach ($produk->foto as $foto) {
+            Storage::disk('public')->delete($foto->path);
+            $foto->delete();
         }
+    }
 
-        return redirect()->route('petani.produk')->with('sukses', $pesan);
+    private function dataForm(Request $request, Produk $produk): array
+    {
+        return [
+            'produk'          => $produk,
+            'kategori'        => Kategori::orderBy('nama')->get(),
+            'kabupatenPetani' => $this->kabupaten($request),
+        ];
+    }
+
+    private function kabupaten(Request $request): string
+    {
+        return $request->user()->alamatUtama?->kabupaten ?? '';
+    }
+
+    // Samakan dengan kondisi verifikasi di pengendali lama kalau nilainya beda.
+    private function terverifikasi(Request $request): bool
+    {
+        return $request->user()->status_verifikasi === 'terverifikasi';
+    }
+
+    private function tolakBelumVerifikasi(): RedirectResponse
+    {
+        return redirect()->route('petani.produk.index')
+            ->with('gagal', 'Akun belum terverifikasi. Produk belum bisa ditambah atau diubah.');
+    }
+
+    private function pastikanMilik(Request $request, Produk $produk): void
+    {
+        abort_unless($produk->petani_id === $request->user()->id, 403);
     }
 }

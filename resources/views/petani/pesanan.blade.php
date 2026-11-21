@@ -18,7 +18,7 @@
     $tabIds = array_column($tabs, 'id');
 @endphp
 
-<div class="mx-auto w-full max-w-xl py-4" x-data="{
+<div class="mx-auto w-full max-w-4xl pb-4" x-data="{
     tab: @js($tabAwal),
     tabIds: @js($tabIds),
     pesan: @js(session('sukses') ?? session('gagal') ?? ($errors->any() ? $errors->first() : '')),
@@ -39,7 +39,7 @@
     }
 }" @hashchange.window="const h = window.location.hash.slice(1); tab = tabIds.includes(h) ? h : 'semua'">
 
-    <h1 class="text-xl font-bold">Pesanan Masuk</h1>
+    <x-page-header judul="Pesanan masuk" :kembali="false" lebar="max-w-4xl"/>
 
     {{-- Tab filter (tidak ada tab "Menunggu Verifikasi Pembayaran") --}}
     <div class="-mx-1 mb-1 flex gap-2 overflow-x-auto px-1 py-4" role="tablist" aria-label="Filter pesanan">
