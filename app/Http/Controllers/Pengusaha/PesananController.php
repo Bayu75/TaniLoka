@@ -172,14 +172,10 @@ class PesananController extends Controller
                     ];
 
                     $ambilSendiri = ($pilihan['metode'] ?? 'diantar') === 'ambil';
-                    $kurir = $pilihan['kurir'] ?? 'kendaraan';
 
                     if ($ambilSendiri) {
                         $labelPengiriman = 'ambil';
                         $ongkir = 0;
-                    } elseif ($kurir === 'jnt') {
-                        $labelPengiriman = 'jnt';
-                        $ongkir = 12000;
                     } else {
                         $labelPengiriman = 'kendaraan';
                         $ongkir = 15000;
@@ -198,7 +194,11 @@ class PesananController extends Controller
                         fn ($item) => $item->subtotal
                     );
 
-                    $total = $subtotal + $ongkir;
+                    // PPN 10% dari subtotal produk
+                    $ppn = (int) round($subtotal * 0.10);
+
+                    // Total pesanan = subtotal + ongkir + PPN
+                    $total = $subtotal + $ongkir + $ppn;
 
                     $alamatLengkap = implode(', ', array_filter([
                         $alamat->alamat_lengkap,
@@ -216,6 +216,7 @@ class PesananController extends Controller
                         'catatan' => null,
                         'subtotal' => $subtotal,
                         'ongkir' => $ongkir,
+                        'ppn' => $ppn,
                         'biaya_layanan' => 0,
                         'total' => $total,
                         'metode_pengiriman' => $labelPengiriman,
@@ -272,7 +273,7 @@ class PesananController extends Controller
             );
     }
 
-    
+
     public function uploadBukti(Request $request, int $id)
     {
         $request->validate([

@@ -5,22 +5,11 @@
 
 @section('content')
 
-    {{-- Judul halaman --}}
-    <div class="relative left-1/2 -mt-4 w-screen -translate-x-1/2 border-b border-green-200 bg-white">
-        <div class="mx-auto max-w-4xl px-4 py-4">
-            <div class="flex items-center gap-5">
-                <a href="{{ route('pengusaha.keranjang') }}"
-                    class="flex items-center gap-2 text-sm font-semibold text-primary hover:text-green-800">
-                    <span class="text-2xl leading-none">‹</span>
-                    Kembali
-                </a>
-
-                <h1 class="text-xl font-extrabold text-gray-800">
-                    Checkout
-                </h1>
-            </div>
-        </div>
-    </div>
+    <x-page-header
+        judul="Checkout"
+        :kembali="route('pengusaha.keranjang')"
+        lebar="max-w-4xl"
+    />
 
     {{-- Tahapan checkout --}}
     <div class="relative left-1/2 w-screen -translate-x-1/2 border-b border-green-200 bg-white">
@@ -81,7 +70,6 @@
                 // Tarif pengiriman
                 ongkosKirim: {
                     kendaraan: 15000,
-                    jnt: 12000,
                     ambil: 0,
                 },
 
@@ -104,9 +92,14 @@
                     );
                 },
 
-                // Total pembayaran
+                // Menghitung PPN 10% dari subtotal produk
+                get totalPPN() {
+                    return @js($subtotal) * 0.10;
+                },
+
+                // Total pembayaran (subtotal + ongkir + PPN)
                 get totalPembayaran() {
-                    return @js($subtotal) + this.totalOngkir;
+                    return @js($subtotal) + this.totalOngkir + this.totalPPN;
                 },
 
                 // Data alamat
@@ -388,43 +381,6 @@
                                     </span>
                                 </button>
 
-                                {{-- J&T Express --}}
-                                <button
-                                    type="button"
-                                    @click="pengiriman['{{ $petaniId }}'].kurir = 'jnt'"
-                                    :class="pengiriman['{{ $petaniId }}'].kurir === 'jnt'
-                                        ? 'border-2 border-green-700 bg-green-50'
-                                        : 'border-2 border-green-100 bg-white'"
-                                    class="flex w-full items-center gap-3 rounded-xl p-3 text-left"
-                                >
-                                    <span
-                                        class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gray-400"
-                                        :class="pengiriman['{{ $petaniId }}'].kurir === 'jnt'
-                                            ? 'border-green-700'
-                                            : ''"
-                                    >
-                                        <span
-                                            x-show="pengiriman['{{ $petaniId }}'].kurir === 'jnt'"
-                                            class="h-3 w-3 rounded-full bg-green-700"
-                                        ></span>
-                                    </span>
-
-                                    <span class="text-xl">📦</span>
-
-                                    <span class="flex-1">
-                                        <span class="block text-sm font-bold text-gray-800">
-                                            J&T Express
-                                        </span>
-                                        <span class="block text-xs text-gray-500">
-                                            Estimasi 1–2 hari kerja
-                                        </span>
-                                    </span>
-
-                                    <span class="text-sm font-bold text-green-700">
-                                        Rp 12.000
-                                    </span>
-                                </button>
-
                             </div>
 
                             {{-- Jika Memilih Ambil Sendiri --}}
@@ -502,6 +458,15 @@
                                 x-text="totalOngkir === 0
                                     ? 'Gratis'
                                     : 'Rp ' + totalOngkir.toLocaleString('id-ID')"
+                            ></span>
+                        </div>
+
+                        {{-- PPN 10% --}}
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">PPN (10%)</span>
+                            <span
+                                class="text-gray-600"
+                                x-text="'Rp ' + totalPPN.toLocaleString('id-ID')"
                             ></span>
                         </div>
                     </div>

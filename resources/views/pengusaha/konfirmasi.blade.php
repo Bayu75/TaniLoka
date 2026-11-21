@@ -12,7 +12,6 @@
 
     $labelPengiriman = [
         'kendaraan' => 'Kendaraan Petani',
-        'jnt' => 'J&T Express',
     ];
 
     $formatRupiah = fn ($nilai) => 'Rp' . number_format($nilai, 0, ',', '.');
@@ -20,27 +19,17 @@
 
 @section('content')
 
+<x-page-header
+    judul="Konfirmasi Pesanan"
+    :kembali="route('pengusaha.pembayaran', [
+        'alamat_id' => $alamatAktif->id,
+        'pengiriman' => json_encode($pengiriman),
+        'pembayaran' => $metodeBayar,
+    ])"
+    lebar="max-w-4xl"
+/>
+
 <div class="mx-auto w-full max-w-4xl">
-
-    {{-- Header Halaman --}}
-    <div class="relative left-1/2 -mt-4 w-screen -translate-x-1/2 border-b border-green-200 bg-white">
-        <div class="mx-auto max-w-4xl px-4 py-5">
-            <div class="flex items-center gap-5">
-                <a href="{{ route('pengusaha.pembayaran', [
-                    'alamat_id' => $alamatAktif->id,
-                    'pengiriman' => json_encode($pengiriman),
-                    'pembayaran' => $metodeBayar,
-                ]) }}"
-                class="font-semibold text-primary hover:text-green-700">
-                    ‹ Kembali
-                </a>
-
-                <h1 class="text-xl font-extrabold text-gray-900">
-                    Konfirmasi Pesanan
-                </h1>
-            </div>
-        </div>
-    </div>
 
     {{-- Progress Tahapan --}}
     <div class="relative left-1/2 w-screen -translate-x-1/2 border-b border-green-200 bg-white">
@@ -84,11 +73,8 @@
                     ];
 
                     $ambilSendiri = ($pilihan['metode'] ?? 'diantar') === 'ambil';
-                    $kurir = $pilihan['kurir'] ?? 'kendaraan';
 
-                    $ongkirPetani = $ambilSendiri
-                        ? 0
-                        : ($kurir === 'jnt' ? 12000 : 15000);
+                    $ongkirPetani = $ambilSendiri ? 0 : 15000;
                 @endphp
 
                 <div class="overflow-hidden rounded-2xl border border-green-200 bg-white">
@@ -166,7 +152,7 @@
                         <div class="flex justify-between">
                             <span class="text-gray-600">Pengiriman</span>
                             <span class="font-medium text-gray-900">
-                                {{ $ambilSendiri ? 'Ambil Sendiri' : ($labelPengiriman[$kurir] ?? 'Kendaraan Petani') }}
+                                {{ $ambilSendiri ? 'Ambil Sendiri' : 'Kendaraan Petani' }}
                             </span>
                         </div>
                     </div>
@@ -258,6 +244,7 @@
                 </div>
 
                 <div class="mt-3 space-y-2 border-t border-gray-200 pt-3 text-sm">
+                    {{-- Subtotal --}}
                     <div class="flex justify-between">
                         <span class="text-gray-600">Subtotal</span>
                         <span class="text-gray-700">
@@ -265,10 +252,19 @@
                         </span>
                     </div>
 
+                    {{-- Ongkos kirim --}}
                     <div class="flex justify-between">
                         <span class="text-gray-600">Ongkos kirim</span>
                         <span class="text-gray-700">
                             {{ $totalOngkir === 0 ? 'Gratis' : $formatRupiah($totalOngkir) }}
+                        </span>
+                    </div>
+
+                    {{-- PPN 10% --}}
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">PPN (10%)</span>
+                        <span class="text-gray-700">
+                            {{ $formatRupiah($totalPPN) }}
                         </span>
                     </div>
                 </div>

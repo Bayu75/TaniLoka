@@ -185,7 +185,6 @@ class CheckoutController extends Controller
 
         $ongkosKirim = [
             'kendaraan' => 15000,
-            'jnt' => 12000,
             'ambil' => 0,
         ];
 
@@ -206,7 +205,11 @@ class CheckoutController extends Controller
             $totalOngkir += $ongkosKirim[$kurir] ?? 0;
         }
 
-        $totalPembayaran = $subtotal + $totalOngkir;
+        // Hitung PPN 10% dari subtotal produk
+        $totalPPN = $subtotal * 0.10;
+
+        // Total pembayaran (subtotal + ongkir + PPN)
+        $totalPembayaran = $subtotal + $totalOngkir + $totalPPN;
 
         return compact(
             'items',
@@ -216,6 +219,7 @@ class CheckoutController extends Controller
             'alamatAktif',
             'pengiriman',
             'totalOngkir',
+            'totalPPN',
             'totalPembayaran'
         );
     }

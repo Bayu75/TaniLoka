@@ -104,26 +104,13 @@
 <div class="mx-auto flex w-full max-w-[760px] flex-col gap-5">
 
     {{-- Judul --}}
-    <div class="relative left-1/2 -mt-4 w-screen -translate-x-1/2 border-b border-green-200 bg-white">
-        <div class="mx-auto flex max-w-[760px] items-center gap-4 px-4 py-4">
+    <x-page-header
+    judul="Detail Pesanan"
+    :kembali="route('pengusaha.pesanan')"
+    lebar="max-w-[760px]"
+/>
 
-            <a href="{{ route('pengusaha.pesanan') }}"
-               class="inline-flex shrink-0 items-center gap-2 font-semibold text-green-800 hover:text-green-600">
-                <span class="text-2xl">‹</span>
-                Kembali
-            </a>
-
-            <div>
-                <h1 class="text-lg font-bold text-gray-800">
-                    Detail Pesanan
-                </h1>
-                <p class="text-sm text-gray-500">
-                    #{{ $pesanan->kode }}
-                </p>
-            </div>
-
-        </div>
-    </div>
+<div class="mx-auto flex w-full max-w-[760px] flex-col gap-5">
 
     {{-- Notifikasi Status --}}
     <div class="rounded-2xl border p-5 {{ $warnaBorder }}">
@@ -133,9 +120,17 @@
             </div>
 
             <div>
+                {{-- Judul Status --}}
                 <h2 class="font-bold">
                     {{ $info['label'] }}
                 </h2>
+
+                {{-- Kode Pesanan --}}
+                <p class="mt-1 text-sm font-medium text-gray-500">
+                    #{{ $pesanan->kode }}
+                </p>
+
+                {{-- Deskripsi Status --}}
                 <p class="mt-1 text-sm">
                     {{ $info['deskripsi'] }}
                 </p>
@@ -690,7 +685,6 @@
 
             $labelMetodePengiriman = match ($metodePengirimanRaw) {
                 'kendaraan', 'kendaraan sendiri', 'kendaraan petani' => 'Kendaraan Petani',
-                'jnt', 'j&t', 'j&t express' => 'J&T Express',
                 'ambil', 'ambil sendiri' => 'Ambil Sendiri',
                 default => $pesanan->metode_pengiriman ?? 'Belum ditentukan',
             };
@@ -792,12 +786,19 @@
 </div>
 
     {{-- Rincian Biaya --}}
+    @php
+        $ppn = $pesanan->ppn;
+        $totalDenganPPN = $pesanan->total;
+    @endphp
+
     <div class="rounded-2xl border border-green-200 bg-white p-5">
         <h2 class="mb-3 text-lg font-bold text-gray-900">
             Rincian Biaya
         </h2>
 
         <div class="space-y-3 text-base">
+
+            {{-- Subtotal Produk --}}
             <div class="flex justify-between gap-4">
                 <span class="text-green-800">Subtotal produk</span>
                 <span class="text-gray-900">
@@ -805,6 +806,7 @@
                 </span>
             </div>
 
+            {{-- Ongkos Kirim --}}
             <div class="flex justify-between gap-4">
                 <span class="text-green-800">Ongkos kirim</span>
                 <span class="text-gray-900">
@@ -812,12 +814,22 @@
                 </span>
             </div>
 
+            {{-- PPN 10% --}}
+            <div class="flex justify-between gap-4">
+                <span class="text-green-800">PPN (10%)</span>
+                <span class="text-gray-900">
+                    Rp {{ number_format($ppn, 0, ',', '.') }}
+                </span>
+            </div>
+
+            {{-- Total --}}
             <div class="flex justify-between border-t border-green-100 pt-3">
                 <span class="font-bold text-gray-900">Total</span>
                 <span class="font-extrabold text-green-700">
-                    Rp {{ number_format($pesanan->total, 0, ',', '.') }}
+                    Rp {{ number_format($totalDenganPPN, 0, ',', '.') }}
                 </span>
             </div>
+
         </div>
     </div>
 

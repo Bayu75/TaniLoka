@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
  *   menunggu_konfirmasi --(petani terima)--> menunggu_pembayaran
  *   menunggu_konfirmasi --(petani tolak + alasan)--> ditolak
  *   menunggu_pembayaran --(pembeli upload bukti bayar, otomatis)--> diproses
- *   diproses --(petani: Siap Dikirim)--> dikirim          (kurir, mis. J&T)
+ *   diproses --(petani: Siap Dikirim)--> dikirim          (kurir, mis.)
  *   diproses --(petani: Siap Diambil)--> siap_diambil     (Kendaraan Sendiri)
  *   dikirim / siap_diambil --(petani)--> terkirim
  *   terkirim --(pengusaha konfirmasi)--> selesai
