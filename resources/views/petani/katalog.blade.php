@@ -492,7 +492,7 @@
                 <div class="max-w-4xl mx-auto px-4 py-3">
                     <div x-show="pilih.petani === namaSaya" class="flex gap-3">
                         <p class="flex-1 bg-green-50 rounded-xl px-4 py-3 text-sm text-gray-700">Ini produk Anda. Ubah lewat Kelola Produk.</p>
-                        <a href="{{ url('/petani/produk') }}" class="bg-yellow-400 hover:bg-yellow-500 rounded-xl px-5 py-3 text-sm font-semibold">Kelola Produk</a>
+                        <a href="{{ route('petani.produk.index') }}" class="bg-yellow-400 hover:bg-yellow-500 rounded-xl px-5 py-3 text-sm font-semibold">Kelola Produk</a>
                     </div>
                     <div x-show="pilih.petani !== namaSaya" class="flex gap-3">
                         <p class="flex-1 bg-green-50 rounded-xl px-4 py-3 text-sm text-gray-700">Produk milik <span x-text="pilih.petani"></span>.</p>
@@ -543,7 +543,7 @@
                         </div>
                     </div>
                     <div class="mt-4">
-                        <a x-show="toko === namaSaya" href="{{ url('/petani/produk') }}" class="inline-block bg-yellow-400 hover:bg-yellow-500 rounded-xl px-5 py-3 text-sm font-semibold">Kelola Produk</a>
+                        <a x-show="toko === namaSaya" href="{{ route('petani.produk.index') }}" class="inline-block bg-yellow-400 hover:bg-yellow-500 rounded-xl px-5 py-3 text-sm font-semibold">Kelola Produk</a>
                     </div>
                 </div>
             </div>

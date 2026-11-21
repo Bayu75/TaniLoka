@@ -23,11 +23,9 @@
 @if (! $percakapanAktif)
 
     {{-- DAFTAR PERCAKAPAN --}}
-    <div class="max-w-3xl mx-auto px-4 py-6 space-y-4 pb-24">
+    <div class="max-w-4xl mx-auto px-4 space-y-4 pb-24">
 
-        <header class="mb-4">
-            <h1 class="text-2xl font-extrabold">Pesan</h1>
-        </header>
+        <x-page-header judul="Pesan" :kembali="false" lebar="max-w-4xl" />
 
         <p class="text-sm text-text-muted -mt-2">
             Percakapan dan negosiasi harga dengan pembeli.
@@ -223,16 +221,10 @@
 
         {{-- HEADER CHAT --}}
         <div class="fixed left-0 right-0 top-[65px] z-40 w-full border-b border-green-100 bg-white">
-            <div class="mx-auto flex w-full max-w-3xl items-center gap-5 px-4 py-3">
+            <div class="mx-auto flex w-full max-w-3xl items-center gap-5 px-4">
 
-                <a
-                    href="{{ route('petani.pesan') }}"
-                    class="flex shrink-0 items-center gap-2 font-semibold text-green-700 transition hover:text-green-800"
-                >
-                    <span class="text-2xl leading-none">‹</span>
-                    <span>Kembali</span>
-                </a>
-
+                <x-page-header judul="Percakapan dengan pembeli" :kembali="route('petani.pesan')" lebar="max-w-4xl" />
+                
                 <div class="min-w-0">
                     <h1 class="text-lg font-bold text-gray-900">
                         {{ $namaPengusaha }}
@@ -277,14 +269,14 @@
             :style="tampilkanPenawaran
                 ? 'height: calc(100dvh - 424px)'
                 : 'height: calc(100dvh - 198px)'"
-            class="fixed left-1/2 top-[124px] z-10 flex w-full max-w-3xl -translate-x-1/2 flex-col overflow-hidden border-x border-green-100 bg-white"
+            class="fixed left-1/2 top-[124px] z-10 flex w-full max-w-4xl -translate-x-1/2 flex-col overflow-hidden border-x border-green-100 bg-white"
         >
 
             {{-- AREA SCROLL PESAN --}}
             <div
                 x-ref="areaPesan"
                 x-init="scrollKeBawah()"
-                class="h-0 min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain p-4"
+                class="h-0 min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-4 py-6"
                 style="scroll-behavior: auto;"
             >
 

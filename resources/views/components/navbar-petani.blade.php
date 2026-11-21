@@ -1,7 +1,7 @@
 @php
     $menu = [
         ['petani.dashboard', 'Dashboard', 'beranda'],
-        ['petani.produk', 'Produk', 'produk'],
+        ['petani.produk.index', 'Produk', 'produk'],
         ['petani.katalog', 'Katalog', 'katalog'],
         ['petani.pesan', 'Pesan', 'pesan'],
         ['petani.pesanan', 'Pesanan', 'pesanan'],

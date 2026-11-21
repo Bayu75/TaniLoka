@@ -15,6 +15,7 @@ class Produk extends Model
         'stok_kg' => 'decimal:2',
         'min_order_kg' => 'decimal:2',
         'tanggal_panen' => 'date',
+        'tersedia_sampai' => 'date',
         'aktif' => 'boolean',
     ];
 

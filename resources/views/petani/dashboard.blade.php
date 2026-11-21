@@ -21,7 +21,7 @@
         <div class="max-w-4xl mx-auto px-4 -mt-14 space-y-6">
         @include('petani.partials.banner-flash-sale')
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <a href="{{ url('/petani/produk') }}" class="bg-white border border-gray-200 rounded-2xl p-3 shadow-sm hover:border-green-600">
+            <a href="{{ route('petani.produk.index') }}" class="bg-white border border-gray-200 rounded-2xl p-3 shadow-sm hover:border-green-600">
                 <div class="text-lg">📦</div>
                 <p class="text-lg font-bold mt-1">{{ $statistik['produkAktif'] }}</p>
                 <p class="text-sm text-gray-500">Produk Aktif</p>
@@ -44,7 +44,7 @@
         </div>
 
         <div class="grid grid-cols-3 gap-3">
-            <a href="{{ url('/petani/produk') }}" class="bg-white border border-gray-200 rounded-2xl p-3 shadow-sm hover:border-green-600">
+            <a href="{{ route('petani.produk.index') }}" class="bg-white border border-gray-200 rounded-2xl p-3 shadow-sm hover:border-green-600">
                 <p class="text-lg font-bold">{{ $kg($statistik['totalStok']) }} kg</p>
                 <p class="text-sm text-gray-500">Total Stok</p>
             </a>
@@ -61,7 +61,7 @@
         <div>
             <h2 class="font-semibold mb-3">Aksi Cepat</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <a href="{{ url('/petani/produk') }}" class="bg-yellow-400 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 font-semibold text-sm text-gray-900 hover:bg-yellow-500">
+                <a href="{{ route('petani.produk.index') }}" class="bg-yellow-400 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 font-semibold text-sm text-gray-900 hover:bg-yellow-500">
                     <span class="text-2xl">➕</span>Tambah Produk
                 </a>
                 <a href="{{ url('/petani/pesanan') }}" class="bg-white border border-gray-200 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 font-semibold text-sm hover:border-green-600">
