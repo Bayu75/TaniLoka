@@ -35,8 +35,10 @@ Route::middleware('guest')->group(function () {
     Route::get('/daftar', [AuthController::class, 'formRegister'])->name('daftar');
     Route::post('/daftar', [AuthController::class, 'register'])->name('daftar.proses');
 
-    // ini untuk demo masuk/login cepat
-    Route::post('/masuk/demo', [AuthController::class, 'masukDemo'])->name('masuk.demo');
+    // ini untuk demo masuk/login cepat (cuma aktif di local)
+    if (app()->environment('local')) {
+        Route::post('/masuk/demo', [AuthController::class, 'masukDemo'])->name('masuk.demo');
+    }
 });
 
 Route::post('/keluar', [AuthController::class, 'logout'])->middleware('auth')->name('keluar');
@@ -71,11 +73,12 @@ Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengu
     Route::post('/pesan/{id}/penawaran/{pesan}/tolak', [ChatController::class, 'tolakPenawaran'])
         ->name('pesan.penawaran.tolak');
 
-    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
-    Route::get('/pembayaran', [CheckoutController::class, 'pembayaran'])->name('pembayaran');
-
-    Route::get('/konfirmasi', [CheckoutController::class, 'konfirmasi'])->name('konfirmasi');
-    Route::post('/konfirmasi', [PesananController::class, 'store'])->name('konfirmasi.store');
+    Route::middleware('terverifikasi')->group(function () {
+        Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
+        Route::get('/pembayaran', [CheckoutController::class, 'pembayaran'])->name('pembayaran');
+        Route::get('/konfirmasi', [CheckoutController::class, 'konfirmasi'])->name('konfirmasi');
+        Route::post('/konfirmasi', [PesananController::class, 'store'])->name('konfirmasi.store');
+    });
 
     Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan');
     Route::get('/pesanan/{id}', [PesananController::class, 'show'])->name('pesanan.detail');

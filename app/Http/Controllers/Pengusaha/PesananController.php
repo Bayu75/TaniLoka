@@ -99,6 +99,12 @@ class PesananController extends Controller
 
         $user = $request->user();
 
+        if (! $user->terverifikasi()) {
+            return redirect()
+                ->route('pengusaha.keranjang')
+                ->with('error', 'Akun harus terverifikasi sebelum checkout.');
+        }
+
         $alamat = $user->alamat()
             ->whereKey($request->alamat_id)
             ->first();
