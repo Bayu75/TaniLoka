@@ -12,6 +12,15 @@ class Pesanan extends Model
 
     protected $guarded = ['id'];
 
+    protected static function booted(): void
+    {
+        static::updated(function (Pesanan $pesanan) {
+            if ($pesanan->wasChanged('status')) {
+                Pencairan::sinkronDenganStatus($pesanan);
+            }
+        });
+    }
+
     public function pengusaha()
     {
         return $this->belongsTo(User::class, 'pengusaha_id');
