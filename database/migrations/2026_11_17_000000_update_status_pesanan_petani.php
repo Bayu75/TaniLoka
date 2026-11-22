@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
  * Milik Gede (feat/petani-backend), disetujui Bayu 17 Nov 2026.
  *
  * 1. Menambah nilai status pesanan "terkirim" dan "siap_diambil".
- *    Nilai lama TIDAK dihapus, migration 2026_01_01_000005 tidak diubah.
+ *    Nilai lama TIDAK dihapus, migration 2026_11_12_043406_buat_tabel_pesanan tidak diubah.
  * 2. Menambah kolom metode_pengiriman (nullable) setelah alamat_pengiriman.
  *    Nama kolom masih menunggu konfirmasi Ayudia (checkout). Kalau namanya
  *    berubah, cukup ganti di sini + konstanta KOLOM_METODE di

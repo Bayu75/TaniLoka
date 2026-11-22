@@ -20,8 +20,12 @@ return new class extends Migration
         });
     }
 
-    public function down(): void
+        public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropUnique(['no_wa']);
+        });
+
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn(['peran', 'no_wa', 'foto', 'status_verifikasi', 'terverifikasi_pada']);
         });
