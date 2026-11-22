@@ -2,9 +2,16 @@
 
 @section('title', 'Katalog Produk - TaniLoka')
 
-@section('main-class', 'pb-24 pt-1 md:pb-10 md:pt-16')
+@section('main-class', 'mx-auto max-w-6xl px-4 pb-24 pt-1 md:pb-10 md:pt-16')
 
 @section('content')
+@if (! empty($pilihProduk))
+    @include('petani.partials.katalog-detail', [
+        'produk' => $pilihProduk,
+        'produkSemua' => $produk,
+        'idSaya' => $idSaya ?? 0,
+    ])
+@else
 @php
     $ikonKategori = [
         'sayuran' => '🥬',
@@ -64,7 +71,7 @@
       banner: @js($banner),
       namaSaya: @js($namaSaya),
       idSaya: @js($idSaya ?? 0),
-      produk: @js($produk),
+      produk: (function () { const raw = @js($produk); return Array.isArray(raw) ? raw : Object.values(raw || {}); })(),
       updateKategoriScroll() {
         const track = this.$refs.kategoriTrack;
         if (!track || !track.clientWidth) return;
@@ -101,7 +108,8 @@
       },
       infoToko() { return this.produkToko()[0] || {}; },
       produkById(id) {
-        return this.produk.find(p => Number(p.id) === Number(id)) || null;
+        const list = Array.isArray(this.produk) ? this.produk : Object.values(this.produk || {});
+        return list.find(p => Number(p.id) === Number(id)) || null;
       },
       daftarFoto(p) {
         if (p && Array.isArray(p.foto) && p.foto.length) return p.foto.filter(Boolean);
@@ -170,6 +178,12 @@
       }
     };
   }
+  window.katalogPage = katalogPage;
+  document.addEventListener('alpine:init', function () {
+    if (window.Alpine && typeof Alpine.data === 'function') {
+      Alpine.data('katalogPage', window.katalogPage);
+    }
+  });
 </script>
 <div class="pb-10" x-data="katalogPage()">
 
@@ -184,34 +198,30 @@
     <div class="mx-auto max-w-6xl px-4 py-5 md:py-6">
 
 
-<div class="mx-auto max-w-6xl px-8 pt-6 pb-8">
-
     {{-- PENCARIAN --}}
-    <section class="mb-4">
-        <p class="mb-4 text-sm text-[#5A7A5A]">Temukan hasil pertanian segar langsung dari petani Bali.</p>
+    <section class="mb-5">
+        <p class="mb-3 text-sm text-[#5A7A5A]">Temukan hasil pertanian segar langsung dari petani Bali.</p>
 
-        <form action="{{ route('petani.katalog') }}" method="GET">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <form action="{{ route('pengusaha.katalog') }}" method="GET">
+            <div class="flex flex-col gap-2 sm:flex-row">
 
                 {{-- INPUT PENCARIAN (penuh di HP) --}}
                 <div class="relative w-full min-w-0 sm:flex-1">
-                    <label class="sr-only" for="tl-katalog-search">Cari produk, petani, lokasi</label>
-                    <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-[#8C948C]">🔍</span>
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#5A7A5A]">🔍</span>
                     <input
-                        id="tl-katalog-search"
-                        type="search"
+                        type="text"
                         name="q"
                         value="{{ $q }}"
                         placeholder="Cari produk, petani, lokasi..."
-                        class="h-10 w-full rounded-xl border border-[#D4E8D0] bg-white pr-4 pl-11 text-sm text-[#1A2A1A] outline-none placeholder:text-[#8C948C] focus:border-[#2E7D32] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2E7D32]"
+                        class="min-h-12 w-full rounded-xl border-2 border-[#D4E8D0] bg-white pl-11 pr-4 outline-none focus:border-[#2E7D32]"
                     >
                 </div>
 
                 {{-- TOMBOL CARI & SARING (di bawah input saat HP) --}}
-                <div class="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
+                <div class="grid grid-cols-2 gap-2 sm:flex">
                     <button
                         type="submit"
-                        class="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#F4B400] px-5 text-sm font-bold text-[#1A2A00] transition hover:bg-[#E6A800]"
+                        class="flex min-h-12 items-center justify-center rounded-xl bg-[#F4B400] px-5 font-bold text-[#1A2A00] transition hover:bg-[#E6A800]"
                     >
                         🔍 Cari
                     </button>
@@ -219,15 +229,25 @@
                     <button
                         type="button"
                         @click="filterOpen = true"
-                        class="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-[#D4E8D0] bg-white px-4 text-sm font-bold text-[#1A2A1A] hover:bg-[#EBF5EB]"
+                        class="flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-[#D4E8D0] bg-white px-4 font-bold text-[#1A2A1A] hover:bg-[#EBF5EB]"
                     >
-                        ☷ Saring
+                        <span>☷</span>
+                        Saring
                         @if ($activeCount > 0)
                             <span class="rounded-full bg-[#F4B400] px-2 py-0.5 text-xs">{{ $activeCount }}</span>
                         @endif
                     </button>
                 </div>
             </div>
+
+            {{-- MEMPERTAHANKAN FILTER SAAT SEARCH --}}
+            <input type="hidden" name="cat" value="{{ $cat }}">
+            <input type="hidden" name="district" value="{{ $district }}">
+            <input type="hidden" name="min_price" value="{{ $minPrice }}">
+            <input type="hidden" name="max_price" value="{{ $maxPrice }}">
+            <input type="hidden" name="sort" value="{{ $sort }}">
+        </form>
+    </section>
 
             {{-- MEMPERTAHANKAN FILTER SAAT SEARCH --}}
             <input type="hidden" name="cat" value="{{ $cat }}">
@@ -624,7 +644,7 @@
 
                 <div x-show="Number(pilih.petani_id) === Number(idSaya)" class="mt-7 rounded-2xl border border-[#D4E8D0] bg-white p-4">
                     <p class="text-sm text-[#435343]">Ini produk Anda. Ubah stok, harga, atau ketersediaan lewat Kelola Produk.</p>
-                    <a href="{{ route('petani.produk') }}" class="mt-3 inline-flex min-h-12 items-center justify-center rounded-xl bg-[#F4B400] px-5 font-bold text-[#1A2A00] transition hover:bg-[#E6A800]">Kelola Produk</a>
+                    <a href="{{ (\Illuminate\Support\Facades\Route::has('petani.produk.index') ? route('petani.produk.index') : url('/petani/produk')) }}" class="mt-3 inline-flex min-h-12 items-center justify-center rounded-xl bg-[#F4B400] px-5 font-bold text-[#1A2A00] transition hover:bg-[#E6A800]">Kelola Produk</a>
                 </div>
 
                 <div x-show="sudahKedaluwarsa(pilih)" class="mt-7 rounded-2xl border border-gray-200 bg-gray-50 p-5">
@@ -699,7 +719,7 @@
                         </div>
                     </div>
                     <div class="mt-4">
-                        <a x-show="toko === namaSaya" href="{{ route('petani.produk.index') }}" class="inline-block bg-yellow-400 hover:bg-yellow-500 rounded-xl px-5 py-3 text-sm font-semibold">Kelola Produk</a>
+                        <a x-show="toko === namaSaya" href="{{ url('/petani/produk') }}" class="inline-block bg-yellow-400 hover:bg-yellow-500 rounded-xl px-5 py-3 text-sm font-semibold">Kelola Produk</a>
                     </div>
                 </div>
             </div>
@@ -748,4 +768,5 @@
         </div>
     </template>
 </div>
+@endif
 @endsection
