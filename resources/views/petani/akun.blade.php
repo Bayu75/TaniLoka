@@ -22,6 +22,7 @@
         ['url' => route('petani.produk.index'),  'ikon' => '🌱', 'judul' => 'Kelola Produk', 'ket' => 'Tambah dan ubah produk jualan'],
         ['url' => route('petani.pesanan'), 'ikon' => '📦', 'judul' => 'Pesanan Masuk', 'ket' => 'Pesanan dari pengusaha kuliner'],
         ['url' => route('petani.pesan'),   'ikon' => '💬', 'judul' => 'Pesan', 'ket' => 'Negosiasi harga dan percakapan'],
+                ['url' => route('petani.rating'),  'ikon' => '⭐', 'judul' => 'Rating Saya', 'ket' => 'Rating dan ulasan dari pembeli'],
     ];
     $menuBantuan = [
         ['url' => route('petani.bantuan'), 'ikon' => '❓', 'judul' => 'Bantuan & Informasi', 'ket' => 'WhatsApp, pertanyaan umum, kontak'],
