@@ -4,6 +4,12 @@
 
 @section('content')
 
+<x-page-header
+    judul="Pesan"
+    :kembali="false"
+    lebar="max-w-2xl"
+/>
+
 <div
     x-data="{
         kataKunci: '',
@@ -20,21 +26,8 @@
             });
         }
     }"
-    class="mx-auto max-w-2xl space-y-4"
+    class="mx-auto max-w-2xl space-y-4 pt-3"
 >
-    {{-- JUDUL HALAMAN --}}
-    <div class="relative left-1/2 -mt-4 w-screen -translate-x-1/2 border-b border-green-200 bg-white">
-        <div class="mx-auto max-w-7xl px-4 py-5">
-            <div class="mx-auto max-w-2xl">
-                <h1 class="text-2xl font-extrabold text-gray-900">
-                    Pesan
-                </h1>
-                <p class="mt-1 text-sm text-gray-500">
-                    Percakapan dan negosiasi harga dengan petani.
-                </p>
-            </div>
-        </div>
-    </div>
 
     {{-- KOLOM PENCARIAN --}}
     <div>

@@ -1,52 +1,49 @@
-
 @extends('layouts.pengusaha')
 
 @section('title', 'Pesanan Saya - TaniLoka')
 
 @section('content')
 
-<div class="w-full space-y-5"
-     x-data="{ filter: 'semua' }">
+<x-page-header
+    judul="Pesanan"
+    :kembali="false"
+    lebar="max-w-[600px]"
+/>
 
+<div class="w-full space-y-5" x-data="{ filter: 'semua' }">
 
-    {{-- Judul dan Filter --}}
-    <div class="-mt-4 w-full border-b border-green-200 bg-white">
-        <div class="mx-auto max-w-[600px] space-y-4 px-4 py-5">
+    {{-- Deskripsi --}}
+    <div class="mx-auto max-w-[600px] px-4 pt-2">
+        <p class="text-sm text-gray-500">
+            Pantau status dan riwayat pesanan produk Anda.
+        </p>
+    </div>
 
-            <div>
-                <h1 class="text-2xl font-extrabold text-gray-900">
-                    Pesanan
-                </h1>
-                <p class="mt-1 text-sm text-gray-500">
-                    Pantau status dan riwayat pesanan produk Anda.
-                </p>
-            </div>
+    {{-- Filter --}}
+    <div class="mx-auto max-w-[600px] px-4">
+        <div class="flex items-center gap-3 overflow-x-auto pb-3">
+            @php
+                $filterList = [
+                    'semua' => 'Semua',
+                    'menunggu' => 'Menunggu',
+                    'diproses' => 'Diproses',
+                    'dikirim' => 'Dikirim',
+                    'selesai' => 'Selesai',
+                    'dibatalkan' => 'Dibatalkan',
+                ];
+            @endphp
 
-            <div class="flex items-center gap-3 overflow-x-auto pb-3">
-                @php
-                    $filterList = [
-                        'semua' => 'Semua',
-                        'menunggu' => 'Menunggu',
-                        'diproses' => 'Diproses',
-                        'dikirim' => 'Dikirim',
-                        'selesai' => 'Selesai',
-                        'dibatalkan' => 'Dibatalkan',
-                    ];
-                @endphp
-
-                @foreach ($filterList as $key => $label)
-                    <button
-                        type="button"
-                        @click="filter = '{{ $key }}'"
-                        :class="filter === '{{ $key }}'
-                            ? 'bg-green-700 text-white border-green-700'
-                            : 'bg-white text-gray-800 border-green-200 hover:bg-green-50'"
-                        class="shrink-0 rounded-full border px-5 py-2.5 text-sm font-bold transition">
-                        {{ $label }} ({{ $jumlahPesanan[$key] ?? 0 }})
-                    </button>
-                @endforeach
-            </div>
-
+            @foreach ($filterList as $key => $label)
+                <button
+                    type="button"
+                    @click="filter = '{{ $key }}'"
+                    :class="filter === '{{ $key }}'
+                        ? 'bg-green-700 text-white border-green-700'
+                        : 'bg-white text-gray-800 border-green-200 hover:bg-green-50'"
+                    class="shrink-0 rounded-full border px-5 py-2.5 text-sm font-bold transition">
+                    {{ $label }} ({{ $jumlahPesanan[$key] ?? 0 }})
+                </button>
+            @endforeach
         </div>
     </div>
 

@@ -201,6 +201,7 @@
             <dl class="space-y-3">
                 <div class="flex justify-between gap-3"><dt class="text-gray-500">Subtotal produk</dt><dd>{{ $rp($o['subtotalProduk']) }}</dd></div>
                 <div class="flex justify-between gap-3"><dt class="text-gray-500">Ongkos kirim</dt><dd>{{ $o['ongkir'] === 0 ? 'Gratis' : $rp($o['ongkir']) }}</dd></div>
+                <div class="flex justify-between gap-3"><dt class="text-gray-500">PPN (10%)</dt><dd>{{ $rp($o['ppn']) }}</dd></div>
                 @if ($o['biayaLayanan'] > 0)
                     <div class="flex justify-between gap-3"><dt class="text-gray-500">Biaya layanan</dt><dd>{{ $rp($o['biayaLayanan']) }}</dd></div>
                 @endif

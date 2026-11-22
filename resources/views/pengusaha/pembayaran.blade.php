@@ -1,4 +1,3 @@
-
 @extends('layouts.pengusaha')
 
 @section('title', 'Pembayaran - TaniLoka')
@@ -20,21 +19,11 @@
 
 @section('content')
 
-<div class="relative left-1/2 -mt-4 w-screen -translate-x-1/2 border-b border-green-200 bg-white">
-    <div class="mx-auto max-w-4xl px-4 py-5">
-        <div class="flex items-center gap-5">
-            <a href="{{ route('pengusaha.checkout') }}"
-                class="flex items-center gap-2 text-sm font-semibold text-primary hover:text-green-800">
-                <span class="text-2xl leading-none">‹</span>
-                Kembali
-            </a>
-
-            <h1 class="text-xl font-extrabold text-gray-800">
-                Pembayaran
-            </h1>
-        </div>
-    </div>
-</div>
+<x-page-header
+    judul="Pembayaran"
+    :kembali="route('pengusaha.checkout')"
+    lebar="max-w-4xl"
+/>
 
 <div class="mx-auto w-full max-w-4xl space-y-6">
 
@@ -196,8 +185,10 @@
                     @endforeach
                 </div>
 
-                {{-- Subtotal dan Ongkir --}}
+                {{-- Subtotal, Ongkir, dan PPN --}}
                 <div class="mt-3 space-y-2 text-sm">
+
+                    {{-- Subtotal --}}
                     <div class="flex justify-between">
                         <span class="text-gray-600">Subtotal</span>
                         <span class="text-gray-700">
@@ -205,12 +196,22 @@
                         </span>
                     </div>
 
+                    {{-- Ongkos Kirim --}}
                     <div class="flex justify-between">
                         <span class="text-gray-600">Ongkos kirim</span>
                         <span class="text-gray-700">
                             {{ $totalOngkir === 0 ? 'Gratis' : 'Rp ' . number_format($totalOngkir, 0, ',', '.') }}
                         </span>
                     </div>
+
+                    {{-- PPN 10% --}}
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">PPN (10%)</span>
+                        <span class="text-gray-700">
+                            Rp {{ number_format($totalPPN, 0, ',', '.') }}
+                        </span>
+                    </div>
+
                 </div>
 
                 {{-- Total --}}

@@ -322,6 +322,7 @@ class PesananController extends PetaniController
             'items' => $produk,
             'subtotalProduk' => (int) $o->item->sum('subtotal'),
             'ongkir' => (int) $o->ongkir,
+            'ppn' => (int) $o->ppn,
             'biayaLayanan' => (int) $o->biaya_layanan,
             'metodePengiriman' => AlurPesanan::metodePengiriman($o),
             'penerima' => $o->nama_penerima,
