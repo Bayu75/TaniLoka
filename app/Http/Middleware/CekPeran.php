@@ -13,7 +13,7 @@ class CekPeran
         $user = $request->user();
 
         if (! $user) {
-            return redirect()->route('login');
+            return redirect()->route('masuk');
         }
 
         if (! in_array($user->peran, $peran)) {
