@@ -65,6 +65,9 @@
     ];
 
     $info = $statusInfo[$status] ?? $statusInfo['menunggu_konfirmasi'];
+        if ($status === 'diproses' && $pesanan->pembayaran?->metode === 'cod') {
+        $info['deskripsi'] = 'Pesanan diterima petani dan sedang disiapkan. Bayar tunai saat barang diterima (COD).';
+    }
 
     $warnaBorder = [
         'yellow' => 'border-yellow-200 bg-yellow-50 text-yellow-800',
@@ -149,7 +152,7 @@
             </p>
         </div>
 
-    @elseif ($status === 'menunggu_pembayaran')
+    @elseif ($status === 'menunggu_pembayaran' && $metode !== 'cod')
         <div
             class="rounded-2xl border border-orange-200 bg-white p-4"
             x-data="{
@@ -423,10 +426,7 @@
 
                             @endif
 
-                            @if (
-                                $statusAktif &&
-                                in_array($statusSekarang, ['dikirim', 'siap_diambil', 'terkirim'])
-                            )
+                                                       @if ($statusAktif && $statusSekarang === 'terkirim')
                                 <form
                                     action="{{ route('pengusaha.pesanan.selesai', $pesanan->id) }}"
                                     method="POST"
@@ -609,24 +609,39 @@
 
 
     {{-- Bukti Pembayaran --}}
-    @if ($status === 'menunggu_pembayaran' || $bukti)
+    @if (($status === 'menunggu_pembayaran' && $metode !== 'cod') || $bukti)
         <div class="rounded-2xl border border-green-200 bg-white p-5">
             <h2 class="mb-3 text-lg font-bold text-gray-900">
                 Bukti Pembayaran
             </h2>
 
-            @if ($bukti)
+                       @if ($bukti)
+                @php
+                    $buktiUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($bukti);
+                    $buktiPdf = \Illuminate\Support\Str::endsWith(strtolower($bukti), '.pdf');
+                @endphp
+
                 <div class="rounded-xl bg-green-50 p-4">
                     <p class="text-sm font-semibold text-green-800">
-                        Bukti pembayaran berhasil diunggah.
+                        Bukti pembayaran berhasil diunggah ✓
                     </p>
 
-                    <a
-                        href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($bukti) }}"
-                        target="_blank"
-                        class="mt-2 inline-block text-sm font-semibold text-green-700 underline">
-                        Lihat Bukti Pembayaran
-                    </a>
+                    @if ($buktiPdf)
+                        <a
+                            href="{{ $buktiUrl }}"
+                            target="_blank"
+                            class="mt-3 inline-flex items-center gap-2 rounded-xl border border-green-300 bg-white px-4 py-2 text-sm font-semibold text-green-700 hover:bg-green-100">
+                            📄 Buka Bukti Pembayaran (PDF)
+                        </a>
+                    @else
+                        <a href="{{ $buktiUrl }}" target="_blank" class="mt-3 block">
+                            <img
+                                src="{{ $buktiUrl }}"
+                                alt="Bukti pembayaran"
+                                class="max-h-80 w-full rounded-xl border border-green-200 bg-white object-contain">
+                        </a>
+                        <p class="mt-1 text-xs text-gray-500">Klik gambar untuk memperbesar.</p>
+                    @endif
 
                     @if ($pesanan->pembayaran?->status === 'menunggu_verifikasi')
                         <p class="mt-2 text-sm text-orange-700">

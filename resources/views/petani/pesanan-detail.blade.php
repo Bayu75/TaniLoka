@@ -186,15 +186,35 @@
             @endif
         </section>
 
-        {{-- Pembayaran --}}
+               {{-- Pembayaran --}}
         <section class="rounded-xl border border-green-200 bg-white p-4 text-xs">
             <h2 class="text-sm font-bold">Metode Pembayaran</h2>
             <p class="mt-2 font-medium">{{ $o['metodeBayar'] ?? '-' }}</p>
-            @if ($o['buktiBayar'])
+
+            @if ($o['dibayarPada'])
+                <p class="mt-1 text-gray-500">Dibayar {{ $o['dibayarPada'] }}</p>
+            @endif
+
+            @if ($o['buktiBayar'] && $o['buktiBayarUrl'])
+                <div class="mt-3">
+                    @if ($o['buktiBayarPdf'])
+                        <a href="{{ $o['buktiBayarUrl'] }}" target="_blank" rel="noopener"
+                           class="inline-flex font-semibold text-green-700 underline">
+                            Lihat bukti pembayaran (PDF)
+                        </a>
+                    @else
+                        <a href="{{ $o['buktiBayarUrl'] }}" target="_blank" rel="noopener" class="mt-1 block">
+                            <img src="{{ $o['buktiBayarUrl'] }}" alt="Bukti pembayaran"
+                                 class="max-h-48 w-auto rounded-lg border border-green-100 object-contain">
+                        </a>
+                        <p class="mt-1 text-gray-500">Ketuk gambar untuk membuka ukuran penuh.</p>
+                    @endif
+                </div>
+            @elseif ($o['buktiBayar'])
                 <p class="mt-2 font-semibold text-green-700">Bukti pembayaran sudah dikirim ✓</p>
             @endif
         </section>
-
+        
         {{-- Rincian biaya --}}
         <section class="rounded-xl border border-green-200 bg-white p-4 text-xs">
             <h2 class="mb-3 text-sm font-bold">Rincian Biaya</h2>

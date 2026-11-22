@@ -111,7 +111,10 @@ class CheckoutController extends Controller
             return $data;
         }
 
-        $data['metodeBayar'] = $request->input('pembayaran', 'transfer');
+            $metodeBayar = $request->input('pembayaran', 'transfer');
+             $data['metodeBayar'] = in_array($metodeBayar, ['transfer', 'gopay', 'ovo'], true)
+            ? $metodeBayar
+            : 'transfer';
 
         return view('pengusaha.konfirmasi', $data);
     }
