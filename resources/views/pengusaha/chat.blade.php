@@ -492,8 +492,8 @@
 
                         <input
                             type="hidden"
-                            name="harga_per_kg"
-                            :value="penawaranDiterima?.harga"
+                            name="penawaran_id"
+                            :value="penawaranDiterima?.id"
                         >
 
                         <input type="hidden" name="aksi" value="beli">
