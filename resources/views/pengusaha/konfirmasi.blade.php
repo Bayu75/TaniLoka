@@ -121,7 +121,7 @@
                                     <p class="mt-1 text-sm text-gray-500">
                                         {{ number_format($item->jumlah_kg, 0, ',', '.') }} kg
                                         ×
-                                        {{ $formatRupiah($item->harga_per_kg ?? $produk->harga_per_kg) }}
+                                        {{ $formatRupiah($item->harga_per_kg ?? $produk->hargaAktif()) }}
                                     </p>
                                 </div>
                             </div>

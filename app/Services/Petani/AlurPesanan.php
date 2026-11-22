@@ -6,6 +6,7 @@ use App\Models\Pesanan;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use App\Models\Produk;
 
 /**
  * Aturan alur status Pesanan Masuk (milik Gede, feat/petani-backend).
@@ -204,6 +205,11 @@ class AlurPesanan
     private static function catat(Pesanan $pesanan, string $ke, ?string $keterangan, ?int $olehId): void
     {
         $pesanan->update(['status' => $ke]);
+
+        if (in_array($ke, ['dibatalkan', 'ditolak'], true)) {
+            self::kembalikanStok($pesanan);
+        }
+
         $pesanan->riwayat()->create([
             'status' => $ke,
             'keterangan' => $keterangan !== null ? mb_substr($keterangan, 0, 255) : null,
@@ -212,6 +218,18 @@ class AlurPesanan
             'created_at' => now(),
         ]);
         $pesanan->unsetRelation('riwayat');
+    }
+
+    public static function kembalikanStok(Pesanan $pesanan): void
+    {
+        $pesanan->loadMissing('item');
+        foreach ($pesanan->item as $item) {
+            if ($item->produk_id) {
+                Produk::withTrashed()
+                    ->whereKey($item->produk_id)
+                    ->increment('stok_kg', $item->jumlah_kg);
+            }
+        }
     }
 
     /**

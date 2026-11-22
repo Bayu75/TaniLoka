@@ -7,6 +7,7 @@ use App\Models\Pesanan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Models\Produk;
 use App\Services\Petani\AlurPesanan;
 
 class PesananController extends Controller
@@ -152,16 +153,20 @@ class PesananController extends Controller
                 }
 
                 foreach ($keranjang as $item) {
-                    $produk = $item->produk;
-
+                    // Kunci baris produk supaya dua checkout bersamaan nggak bikin stok minus
+                    $produk = Produk::whereKey($item->produk_id)->lockForUpdate()->first();
+                    $item->setRelation('produk', $produk);
+                    $lewatMasa = $produk?->tersedia_sampai
+                        && $produk->tersedia_sampai->copy()->endOfDay()->isPast();
                     if (
                         !$produk ||
                         !$produk->aktif ||
+                        $lewatMasa ||
                         $item->jumlah_kg <= 0 ||
                         $item->jumlah_kg > $produk->stok_kg
                     ) {
                         throw ValidationException::withMessages([
-                            'keranjang' => 'Ada produk yang tidak tersedia atau stoknya berubah. Periksa keranjang.',
+                            'keranjang' => 'Ada produk yang tidak tersedia, masa tersedianya habis, atau stoknya berubah. Periksa keranjang.',
                         ]);
                     }
                 }
@@ -231,20 +236,17 @@ class PesananController extends Controller
                     ]);
 
                     foreach ($items as $item) {
-                        $harga = (int) (
-                            $item->harga_per_kg
-                            ?? $item->produk->harga_per_kg
-                        );
-
+                        // Sama dengan subtotal keranjang: harga nego, atau harga aktif (flash sale kalau ada)
+                        $harga = (int) ($item->harga_per_kg ?? $item->produk->hargaAktif());
                         $pesanan->item()->create([
                             'produk_id' => $item->produk_id,
                             'nama_produk' => $item->produk->nama,
                             'harga_per_kg' => $harga,
                             'jumlah_kg' => $item->jumlah_kg,
-                            'subtotal' => (int) round(
-                                $harga * $item->jumlah_kg
-                            ),
+                            'subtotal' => (int) round($harga * $item->jumlah_kg),
                         ]);
+                        // Kurangi stok begitu pesanan dibuat
+                        $item->produk->decrement('stok_kg', $item->jumlah_kg);
                     }
 
                     $pesanan->pembayaran()->create([
@@ -465,6 +467,8 @@ class PesananController extends Controller
             $pesanan->update([
                 'status' => 'dibatalkan',
             ]);
+
+            AlurPesanan::kembalikanStok($pesanan);
 
             $pesanan->riwayat()->create([
                 'status' => 'dibatalkan',
