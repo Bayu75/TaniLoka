@@ -1,0 +1,312 @@
+
+@extends('layouts.pengusaha')
+
+@section('title', 'Katalog Produk - TaniLoka')
+
+@section('content')
+
+
+<x-page-header judul="Katalog Produk" :kembali="false" lebar="max-w-6xl" />
+
+<div class="pb-10" x-data="{ filterOpen: false }">
+{{-- HEADER PUTIH KATALOG --}}
+<div class="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-[#D4E8D0] bg-white">
+    <div class="mx-auto max-w-6xl px-4 py-5 md:py-6">
+
+    {{-- PENCARIAN --}}
+    <section class="mb-5">
+        <p class="mb-3 text-sm text-[#5A7A5A]">Temukan hasil pertanian segar langsung dari petani Bali.</p>
+
+        <form action="{{ route('pengusaha.katalog') }}" method="GET">
+            <div class="flex flex-col gap-2 sm:flex-row">
+
+                {{-- INPUT PENCARIAN (penuh di HP) --}}
+                <div class="relative w-full min-w-0 sm:flex-1">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#5A7A5A]">🔍</span>
+                    <input
+                        type="text"
+                        name="q"
+                        value="{{ $q }}"
+                        placeholder="Cari produk, petani, lokasi..."
+                        class="min-h-12 w-full rounded-xl border-2 border-[#D4E8D0] bg-white pl-11 pr-4 outline-none focus:border-[#2E7D32]"
+                    >
+                </div>
+
+                {{-- TOMBOL CARI & SARING (di bawah input saat HP) --}}
+                <div class="grid grid-cols-2 gap-2 sm:flex">
+                    <button
+                        type="submit"
+                        class="flex min-h-12 items-center justify-center rounded-xl bg-[#F4B400] px-5 font-bold text-[#1A2A00] transition hover:bg-[#E6A800]"
+                    >
+                        🔍 Cari
+                    </button>
+
+                    <button
+                        type="button"
+                        @click="filterOpen = true"
+                        class="flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-[#D4E8D0] bg-white px-4 font-bold text-[#1A2A1A] hover:bg-[#EBF5EB]"
+                    >
+                        <span>☷</span>
+                        Saring
+                        @if ($activeCount > 0)
+                            <span class="rounded-full bg-[#F4B400] px-2 py-0.5 text-xs">{{ $activeCount }}</span>
+                        @endif
+                    </button>
+                </div>
+            </div>
+
+            {{-- MEMPERTAHANKAN FILTER SAAT SEARCH --}}
+            <input type="hidden" name="cat" value="{{ $cat }}">
+            <input type="hidden" name="district" value="{{ $district }}">
+            <input type="hidden" name="min_price" value="{{ $minPrice }}">
+            <input type="hidden" name="max_price" value="{{ $maxPrice }}">
+            <input type="hidden" name="sort" value="{{ $sort }}">
+        </form>
+    </section>
+
+  
+{{-- FILTER KATEGORI --}}
+<section class="mb-5">
+    <div class="flex gap-2 overflow-x-auto pb-2">
+
+        <a
+            href="{{ route('pengusaha.katalog', request()->except('cat')) }}"
+            class="flex min-h-11 shrink-0 items-center rounded-full border-2 px-4 font-semibold {{ $cat === '' ? 'border-[#2E7D32] bg-[#2E7D32] text-white' : 'border-[#D4E8D0] bg-white text-[#1A2A1A]' }}"
+        >
+            Semua
+        </a>
+
+        @php
+            $ikonKategori = [
+                'sayuran' => '🥬',
+                'buah' => '🍅',
+                'bumbu' => '🌶️',
+                'umbi' => '🥕',
+                'beras-biji' => '🌾',
+            ];
+        @endphp
+
+        @foreach ($kategoriList as $item)
+            <a
+                href="{{ route('pengusaha.katalog', array_merge(request()->query(), ['cat' => $item->slug])) }}"
+                class="flex min-h-11 shrink-0 items-center gap-2 rounded-full border-2 px-4 font-semibold {{ $cat === $item->slug ? 'border-[#2E7D32] bg-[#2E7D32] text-white' : 'border-[#D4E8D0] bg-white text-[#1A2A1A]' }}"
+            >
+                {{ $ikonKategori[$item->slug] ?? '🌱' }}
+                {{ $item->nama }}
+            </a>
+        @endforeach
+
+    </div>
+</section>
+
+
+    {{-- HASIL DAN PENGURUTAN --}}
+    <section>
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div class="text-sm text-[#5A7A5A]">
+                <strong class="text-[#1A2A1A]">{{ $produkList->count() }}</strong>
+                produk ditemukan
+            </div>
+
+            <form method="GET" action="{{ route('pengusaha.katalog') }}">
+                @foreach (request()->except('sort') as $key => $value)
+                    <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                @endforeach
+
+                <select
+                    name="sort"
+                    onchange="this.form.submit()"
+                    class="min-h-11 rounded-xl border border-[#D4E8D0] bg-white px-3 text-sm font-semibold text-[#1A2A1A] outline-none focus:border-[#2E7D32]"
+                >
+                    <option value="newest" @selected($sort === 'newest')>Terbaru</option>
+                    <option value="price-asc" @selected($sort === 'price-asc')>Harga Termurah</option>
+                    <option value="price-desc" @selected($sort === 'price-desc')>Harga Termahal</option>
+                </select>
+            </form>
+        </div>
+
+        @if ($q || $activeCount > 0)
+            <div class="mb-4 flex flex-wrap items-center gap-2">
+                <span class="text-sm text-[#5A7A5A]">Penyaringan aktif:</span>
+
+                @if ($q)
+                    <span class="rounded-full bg-[#EBF5EB] px-3 py-1 text-xs font-semibold text-[#1E5F3E]">
+                        "{{ $q }}"
+                    </span>
+                @endif
+
+                @if ($cat)
+                    <span class="rounded-full bg-[#EBF5EB] px-3 py-1 text-xs font-semibold text-[#1E5F3E]">
+                        {{ $kategoriList->firstWhere('slug', $cat)?->nama ?? $cat }}
+                    </span>
+                @endif
+
+                <a
+                    href="{{ route('pengusaha.katalog') }}"
+                    class="px-2 py-2 text-sm font-bold text-[#2E7D32] hover:underline"
+                >
+                    Hapus semua
+                </a>
+            </div>
+        @endif
+
+       
+{{-- GRID PRODUK --}}
+@if ($produkList->count() > 0)
+
+    <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+
+        @foreach ($produkList as $produk)
+            <x-pengusaha.product-card :produk="$produk" />
+        @endforeach
+
+    </div>
+
+@else
+
+    {{-- EMPTY STATE --}}
+    <div class="rounded-2xl border-2 border-dashed border-[#D4E8D0] bg-white px-5 py-12 text-center">
+
+        <div class="mb-4 text-5xl">🔍</div>
+
+        <h2 class="mb-2 text-xl font-extrabold text-[#1A2A1A]">
+            Produk tidak ditemukan
+        </h2>
+
+        <p class="mx-auto mb-5 max-w-sm text-sm text-[#5A7A5A]">
+            Coba ubah kata kunci pencarian atau hapus beberapa filter.
+        </p>
+
+        <a
+            href="{{ route('pengusaha.katalog') }}"
+            class="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#2E7D32] px-5 font-bold text-white hover:bg-[#1E5F3E]"
+        >
+            Hapus Pencarian & Filter
+        </a>
+
+    </div>
+
+@endif
+
+    </section>
+
+    {{-- MODAL FILTER --}}
+    <div
+        x-cloak
+        x-show="filterOpen"
+        x-transition.opacity
+        @keydown.escape.window="filterOpen = false"
+        class="fixed inset-0 z-[80] flex items-end justify-center bg-black/50 md:items-center"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Saring produk"
+    >
+        <div
+            @click.outside="filterOpen = false"
+            x-transition
+            class="relative max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 md:max-w-lg md:rounded-3xl"
+        >
+            <div class="mb-5 flex items-center justify-between border-b border-[#D4E8D0] pb-4">
+                <h2 class="text-xl font-extrabold text-[#1A2A1A]">
+                    Saring Produk
+                </h2>
+
+                <button
+                    type="button"
+                    @click="filterOpen = false"
+                    class="min-h-11 rounded-xl px-3 font-bold text-[#2E7D32] hover:bg-[#EBF5EB]"
+                >
+                    Tutup
+                </button>
+            </div>
+
+            <form method="GET" action="{{ route('pengusaha.katalog') }}" class="space-y-5">
+
+                <div>
+                    <label class="mb-2 block font-semibold text-[#1A2A1A]">
+                        Kategori
+                    </label>
+
+                    <select name="cat" class="min-h-12 w-full rounded-xl border-2 border-[#D4E8D0] bg-white px-3">
+                        <option value="">Semua kategori</option>
+                      @foreach ($kategoriList as $item)
+                        <option value="{{ $item->slug }}" @selected($cat === $item->slug)>
+                            {{ $item->nama }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="mb-2 block font-semibold text-[#1A2A1A]">
+                        Kabupaten
+                    </label>
+
+                    <select name="district" class="min-h-12 w-full rounded-xl border-2 border-[#D4E8D0] bg-white px-3">
+                        <option value="">Semua kabupaten</option>
+                        @foreach ($kabupatenList as $kabupaten)
+                            <option value="{{ $kabupaten }}" @selected($district === $kabupaten)>
+                                {{ $kabupaten }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="mb-2 block font-semibold text-[#1A2A1A]">
+                        Rentang Harga (Rp/kg)
+                    </label>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <span class="mb-1 block text-xs text-[#5A7A5A]">Harga terendah</span>
+                            <input
+                                type="number"
+                                name="min_price"
+                                min="0"
+                                step="1000"
+                                value="{{ $minPrice }}"
+                                class="min-h-12 w-full rounded-xl border-2 border-[#D4E8D0] px-3"
+                            >
+                        </div>
+
+                        <div>
+                            <span class="mb-1 block text-xs text-[#5A7A5A]">Harga tertinggi</span>
+                            <input
+                                type="number"
+                                name="max_price"
+                                min="0"
+                                step="1000"
+                                value="{{ $maxPrice }}"
+                                class="min-h-12 w-full rounded-xl border-2 border-[#D4E8D0] px-3"
+                            >
+                        </div>
+                    </div>
+                </div>
+
+
+                <input type="hidden" name="q" value="{{ $q }}">
+                <input type="hidden" name="sort" value="{{ $sort }}">
+
+                <div class="flex gap-3 border-t border-[#D4E8D0] pt-4">
+                    <a
+                        href="{{ route('pengusaha.katalog') }}"
+                        class="flex min-h-12 flex-1 items-center justify-center rounded-xl border-2 border-[#D4E8D0] font-bold text-[#1A2A1A]"
+                    >
+                        Atur Ulang
+                    </a>
+
+                    <button
+                        type="submit"
+                        class="min-h-12 flex-1 rounded-xl bg-[#F4B400] font-bold text-[#1A2A00] hover:bg-[#E6A800]"
+                    >
+                        Terapkan Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+@endsection

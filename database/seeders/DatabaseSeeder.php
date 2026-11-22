@@ -2,24 +2,32 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+/**
+ * Data awal untuk pengembangan dan demo.
+ *
+ * Akun masuk (kata sandi semua: "password"):
+ *   admin@taniloka.test   admin
+ *   made@taniloka.test    petani terverifikasi   (tombol Demo Petani)
+ *   ketut@taniloka.test   petani terverifikasi
+ *   wayan@taniloka.test   petani, menunggu verifikasi
+ *   resto@taniloka.test   pengusaha terverifikasi (tombol Demo Pengusaha)
+ *   kafe@taniloka.test    pengusaha, menunggu verifikasi
+ *
+ * Aman dijalankan berulang (php artisan db:seed) tanpa error unique.
+ */
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            AkunSeeder::class,
+            KategoriSeeder::class,
+            ProdukSeeder::class,
+            KeranjangSeeder::class,
+            PesananSeeder::class,
+            PercakapanSeeder::class,
         ]);
     }
 }

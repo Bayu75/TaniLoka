@@ -11,8 +11,18 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        //
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->alias([
+            'peran' => \App\Http\Middleware\CekPeran::class,
+            'terverifikasi' => \App\Http\Middleware\CekVerifikasi::class,
+        ]);
+
+        $middleware->redirectGuestsTo(fn () => route('masuk'));
+        $middleware->redirectUsersTo(fn (\Illuminate\Http\Request $request) => match ($request->user()?->peran) {
+            'petani' => route('petani.dashboard'),
+            'admin' => route('admin.verifikasi'),
+            default => route('pengusaha.beranda'),
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
