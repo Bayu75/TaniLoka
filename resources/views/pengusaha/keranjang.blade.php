@@ -71,7 +71,10 @@
                                         {{ $produk->nama }}
                                     </a>
                                     <p class="mt-1 text-sm text-text-muted">
-                                                                               @if ($produk->sedangFlashSale())
+                                        @if (! is_null($item->harga_per_kg))
+                                            <span class="font-semibold text-primary">Rp{{ number_format($item->harga_per_kg, 0, ',', '.') }} / kg</span>
+                                            <span class="ml-1 rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-700">HARGA NEGO</span>
+                                        @elseif ($produk->sedangFlashSale())
                                             <span class="mr-1 text-gray-400 line-through">Rp{{ number_format($produk->harga_per_kg, 0, ',', '.') }}</span>
                                             <span class="font-semibold text-red-600">Rp{{ number_format($produk->harga_flash_sale, 0, ',', '.') }} / kg</span>
                                             <span class="ml-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600">⚡ FLASH SALE</span>
