@@ -97,7 +97,13 @@ class KatalogController extends PetaniController
             ->values()
             ->all();
 
+        $pilihId = (int) $request->query('produk', 0);
+        $pilihProduk = $pilihId > 0
+            ? $produk->first(fn (array $row) => (int) $row['id'] === $pilihId)
+            : null;
+
         return view('petani.katalog', [
+
             'produk' => $produk,
             'produkList' => $produkList,
             'daftarKategori' => $daftarKategori,
@@ -114,6 +120,7 @@ class KatalogController extends PetaniController
             'maxPrice' => $maxPrice,
             'sort' => $sort,
             'activeCount' => $activeCount,
+            'pilihProduk' => $pilihProduk,
         ]);
     }
 

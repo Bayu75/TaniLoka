@@ -18,12 +18,10 @@
     $teksHarga = $kedaluwarsa ? 'text-[#B0B8C4]' : 'text-[#2E7D32]';
     $chipKategori = $kedaluwarsa ? 'bg-[#F3F4F6] text-[#9CA3AF]' : 'bg-[#EBF5EB] text-[#1E5F3E]';
 @endphp
-<div
+<a
+    href="{{ route('petani.katalog', array_merge(request()->except('produk'), ['produk' => $p['id']])) }}"
     role="button"
-    tabindex="0"
-    @click="buka(produkById({{ (int) $p['id'] }}))"
-    @keydown.enter.prevent="buka(produkById({{ (int) $p['id'] }}))"
-    class="flex h-full cursor-pointer flex-col overflow-hidden rounded-xl border border-[#D4E8D0] bg-white transition hover:shadow-md"
+    class="flex h-full cursor-pointer flex-col overflow-hidden rounded-xl border border-[#D4E8D0] bg-white no-underline transition hover:shadow-md"
 >
     <div class="relative aspect-[234/140] w-full overflow-hidden bg-[#DDDDDD]">
         @if (empty($p['gambar']) && ! $overlay)
@@ -74,4 +72,4 @@
             @endif
         </div>
     </div>
-</div>
+</a>
