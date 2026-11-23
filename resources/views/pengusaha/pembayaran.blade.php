@@ -3,16 +3,8 @@
 @section('title', 'Pembayaran - TaniLoka')
 
 @php
-    $bolehCod = $perPetani->keys()->every(function ($petaniId) use ($pengiriman) {
-        $pilihan = $pengiriman[$petaniId] ?? [];
-
-        return ($pilihan['metode'] ?? 'diantar') === 'diantar'
-            && ($pilihan['kurir'] ?? 'kendaraan') === 'kendaraan';
-    });
-
     $metodeAwal = request('pembayaran', 'transfer');
-
-    if (!$bolehCod && $metodeAwal === 'cod') {
+    if (! in_array($metodeAwal, ['transfer', 'gopay', 'ovo'], true)) {
         $metodeAwal = 'transfer';
     }
 @endphp
@@ -113,28 +105,6 @@
                             <span class="block text-sm text-gray-500">Bayar dengan saldo OVO</span>
                         </span>
                     </button>
-
-                    @if ($bolehCod)
-                        {{-- COD --}}
-                        <button
-                            type="button"
-                            @click="metodeBayar = 'cod'"
-                            :class="metodeBayar === 'cod' ? 'border-green-700 bg-green-50' : 'border-green-100 bg-white'"
-                            class="flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left"
-                        >
-                            <span class="flex h-6 w-6 items-center justify-center rounded-full border border-gray-400">
-                                <span x-show="metodeBayar === 'cod'" class="h-3 w-3 rounded-full bg-green-700"></span>
-                            </span>
-
-                            <span class="text-xl">💵</span>
-
-                            <span class="flex-1">
-                                <span class="block font-bold text-gray-800">COD (Bayar di Tempat)</span>
-                                <span class="block text-sm text-gray-500">Khusus pengiriman yang diantarkan petani</span>
-                            </span>
-                        </button>
-                    @endif
-
                 </div>
             </div>
 

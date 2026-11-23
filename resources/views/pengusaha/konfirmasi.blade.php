@@ -7,7 +7,6 @@
         'transfer' => 'Transfer Bank',
         'gopay' => 'GoPay',
         'ovo' => 'OVO',
-        'cod' => 'COD (Bayar di Tempat)',
     ];
 
     $labelPengiriman = [

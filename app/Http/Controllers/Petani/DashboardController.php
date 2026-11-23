@@ -27,7 +27,10 @@ class DashboardController extends PetaniController
         $totalStok = (float) $user->produk()->sum('stok_kg');
 
         $pesananBaru = $user->pesananMasuk()->where('status', 'menunggu_konfirmasi')->count();
-        $pesananDiproses = $user->pesananMasuk()->where('status', 'diproses')->count();
+               // Masih jadi tugas petani: disiapkan, dikirim, atau menunggu diambil pembeli.
+        $pesananDiproses = $user->pesananMasuk()
+            ->whereIn('status', ['diproses', 'dikirim', 'siap_diambil'])
+            ->count();
 
         // Waktu selesai = riwayat status "selesai" terakhir; kalau tidak ada, pakai updated_at pesanan.
         $waktuSelesai = RiwayatStatusPesanan::query()
