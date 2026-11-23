@@ -19,8 +19,18 @@ class ProsesPembayaran
     /** Status Midtrans yang membatalkan pesanan (lewat AlurPesanan, stok ikut kembali). */
     public const BATALKAN_PESANAN = ['cancel', 'expire'];
 
-    public static function pesananIdDariOrderId(string $orderId): ?int
+      public static function pesananIdDariOrderId(string $orderId): ?int
     {
+        // Format baru: {kode pesanan}-{timestamp}, mis. TL-261123-AB12C-1732321234
+        if (preg_match('/^(.+)-\d{9,}$/', $orderId, $m)) {
+            $id = Pesanan::query()->where('kode', $m[1])->value('id');
+
+            if ($id) {
+                return (int) $id;
+            }
+        }
+
+        // Format lama: TL-{id}-{timestamp}, untuk transaksi yang sudah terlanjur dibuat
         return preg_match('/^TL-(\d+)-\d+$/', $orderId, $m) ? (int) $m[1] : null;
     }
 

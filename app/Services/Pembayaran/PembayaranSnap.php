@@ -73,7 +73,10 @@ class PembayaranSnap
                 throw ValidationException::withMessages(['pembayaran' => 'Sisa waktu pembayaran terlalu singkat untuk membuat transaksi baru.']);
             }
 
-            $orderId = 'TL-'.$pesanan->id.'-'.now()->timestamp;
+            // order_id = kode pesanan + timestamp, supaya tetap unik tiap percobaan bayar
+            // tapi awalannya sama dengan #kode yang dilihat pembeli.
+            $kodeAman = preg_replace('/[^A-Za-z0-9\-_.~]/', '', (string) $pesanan->kode);
+            $orderId = $kodeAman.'-'.now()->timestamp;
             $hasil = Midtrans::buatToken($pesanan, $pembeli, $orderId, $menit);
             $kedaluwarsa = now()->addMinutes($menit);
 
@@ -87,5 +90,60 @@ class PembayaranSnap
 
             return ['token' => $hasil['token'], 'order_id' => $orderId, 'kedaluwarsa' => $kedaluwarsa];
         });
+    }
+
+        /**
+     * Dipanggil sebelum siapkan() saat pembeli ingin ganti metode bayar.
+     * Melepas transaksi lama (pending) supaya siapkan() membuat token + order_id baru.
+     */
+    public static function lepasTransaksiLama(int $pesananId, User $pembeli): void
+    {
+        $pesanan = Pesanan::query()
+            ->where('id', $pesananId)
+            ->where('pengusaha_id', $pembeli->id)
+            ->firstOrFail();
+
+        $pembayaran = Pembayaran::query()->where('pesanan_id', $pesanan->id)->first();
+
+        if (! $pembayaran?->midtrans_order_id || $pembayaran->status === 'lunas') {
+            return;
+        }
+
+        $lama = $pembayaran->midtrans_order_id;
+
+        // Jangan sampai bayar dobel: cek dulu apakah transaksi lama ternyata sudah dibayar.
+        $status = Midtrans::status($lama); // null = token belum pernah dipakai memilih metode
+        $transaksi = $status['transaction_status'] ?? null;
+
+        if (in_array($transaksi, ['settlement', 'capture'], true)) {
+            ProsesPembayaran::terapkan($status);
+
+            throw ValidationException::withMessages([
+                'pembayaran' => 'Pembayaran sebelumnya sudah masuk, jadi metode tidak perlu diganti. Silakan muat ulang halaman.',
+            ]);
+        }
+
+        // Lepas dulu dari pesanan, BARU batalkan di Midtrans. Notifikasi "cancel" dari
+        // order_id lama nanti dianggap bukan transaksi terkini, jadi pesanan tidak ikut batal.
+        DB::transaction(function () use ($pesanan, $lama) {
+            Pesanan::query()->whereKey($pesanan->id)->lockForUpdate()->first();
+
+            Pembayaran::query()
+                ->where('pesanan_id', $pesanan->id)
+                ->where('midtrans_order_id', $lama)
+                ->where('status', '!=', 'lunas')
+                ->lockForUpdate()
+                ->first()
+                ?->update([
+                    'midtrans_order_id' => null,
+                    'snap_token' => null,
+                    'snap_kedaluwarsa' => null,
+                    'status_midtrans' => null,
+                ]);
+        });
+
+        if ($transaksi === 'pending') {
+            Midtrans::batalkan($lama);
+        }
     }
 }
