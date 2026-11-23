@@ -65,7 +65,11 @@
                         <span class="flex h-6 w-6 items-center justify-center rounded-full border border-green-700">
                             <span x-show="metodeBayar === 'transfer'" class="h-3 w-3 rounded-full bg-green-700"></span>
                         </span>
-                        <span class="text-xl">🏦</span>
+                                                                       <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#005BAA] text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10l9-6 9 6M5 10v8m4-8v8m6-8v8m4-8v8M3 20h18" />
+                            </svg>
+                        </span>
                         <span class="flex-1">
                             <span class="block font-bold text-gray-800">Transfer Bank</span>
                             <span class="block text-sm text-gray-500">BCA, Mandiri, BRI, BNI</span>
@@ -82,7 +86,12 @@
                         <span class="flex h-6 w-6 items-center justify-center rounded-full border border-gray-400">
                             <span x-show="metodeBayar === 'gopay'" class="h-3 w-3 rounded-full bg-green-700"></span>
                         </span>
-                        <span class="text-xl">💚</span>
+                                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#00AED6] text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h12a2 2 0 012 2v1h1a1 1 0 011 1v6a1 1 0 01-1 1h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                                <circle cx="16" cy="12" r="1.2" fill="currentColor" />
+                            </svg>
+                        </span>
                         <span class="flex-1">
                             <span class="block font-bold text-gray-800">GoPay</span>
                             <span class="block text-sm text-gray-500">Bayar dengan saldo GoPay</span>
@@ -99,7 +108,9 @@
                         <span class="flex h-6 w-6 items-center justify-center rounded-full border border-gray-400">
                             <span x-show="metodeBayar === 'ovo'" class="h-3 w-3 rounded-full bg-green-700"></span>
                         </span>
-                        <span class="text-xl">💜</span>
+                                               <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#4C3494] text-xs font-extrabold tracking-wide text-white">
+                            OVO
+                        </span>
                         <span class="flex-1">
                             <span class="block font-bold text-gray-800">OVO</span>
                             <span class="block text-sm text-gray-500">Bayar dengan saldo OVO</span>
