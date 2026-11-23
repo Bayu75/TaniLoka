@@ -13,6 +13,7 @@ use App\Http\Controllers\Petani\KatalogController as PetaniKatalogController;
 use App\Http\Controllers\Petani\PesanController as PetaniPesanController;
 use App\Http\Controllers\Petani\ProfilController as ProfilPetaniController;
 use App\Http\Controllers\Petani\VerifikasiController as VerifikasiPetaniController;
+use App\Http\Controllers\Petani\RatingController as PetaniRatingController;
 
 
 use Illuminate\Support\Facades\Route;
@@ -135,7 +136,9 @@ Route::middleware(['auth', 'peran:petani'])->prefix('petani')->name('petani.')->
         ->name('pesan.penawaran.tolak');
     Route::post('/pesanan/{pesanan}/hubungi', [PetaniPesananController::class, 'hubungi'])->whereNumber('pesanan')->name('pesanan.hubungi');
 
+    Route::get('/rating', [PetaniRatingController::class, 'index'])->name('rating');
     Route::view('/bantuan', 'petani.bantuan')->name('bantuan');
+
 
     // Pesanan Masuk
     Route::get('/pesanan', [PetaniPesananController::class, 'index'])->name('pesanan');
