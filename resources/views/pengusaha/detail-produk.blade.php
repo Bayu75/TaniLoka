@@ -181,7 +181,7 @@
             </div>
 
             {{-- DESKRIPSI DAN DETAIL --}}
-            <div class="{{ $redup }}">
+            <div class="rounded-2xl border border-[#D4E8D0] bg-white p-4 {{ $redup }}">
                 <div class="border-b border-[#D4E8D0] pb-2">
                     <span class="border-b-2 border-[#2E7D32] pb-2 text-sm font-bold text-[#2E7D32]">Informasi Produk</span>
                 </div>
