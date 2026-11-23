@@ -532,6 +532,7 @@
                                 x-text="rating ? rating + '/5' : ''"
                             ></span>
                         </div>
+                    </div>  
 
                     <div>
                         <label class="mb-2 block text-sm font-semibold text-gray-800">
@@ -655,19 +656,63 @@
                     Silakan unggah bukti transfer atau pembayaran Anda.
                 </p>
 
-                <form
+                                               <form
                     action="{{ route('pengusaha.pesanan.bukti.upload', $pesanan->id) }}"
                     method="POST"
-                    enctype="multipart/form-data">
+                    enctype="multipart/form-data"
+                    x-data="{
+                        preview: null,
+                        namaFile: '',
+                        isPdf: false,
+                        pilih(e) {
+                            const file = e.target.files[0];
+                            if (this.preview) URL.revokeObjectURL(this.preview);
+                            if (!file) { this.preview = null; this.namaFile = ''; return; }
+                            this.namaFile = file.name;
+                            this.isPdf = file.type === 'application/pdf';
+                            this.preview = URL.createObjectURL(file);
+                        },
+                        hapus() {
+                            if (this.preview) URL.revokeObjectURL(this.preview);
+                            this.preview = null; this.namaFile = ''; this.isPdf = false;
+                            this.$refs.input.value = '';
+                        }
+                    }">
 
                     @csrf
 
                     <input
+                        x-ref="input"
                         type="file"
                         name="bukti_pembayaran"
                         accept=".jpg,.jpeg,.png,.pdf"
                         required
+                        @change="pilih($event)"
                         class="block w-full rounded-xl border border-gray-300 p-3 text-sm">
+
+                    {{-- Pratinjau sebelum dikirim --}}
+                    <div x-show="preview" x-cloak class="mt-3 rounded-xl border border-green-200 bg-green-50 p-3">
+                        <div class="mb-2 flex items-center justify-between gap-2">
+                            <p class="truncate text-sm font-semibold text-green-800">
+                                Pratinjau: <span x-text="namaFile"></span>
+                            </p>
+                            <button type="button" @click="hapus()" class="shrink-0 text-xs font-semibold text-red-600 hover:underline">
+                                Ganti / Hapus
+                            </button>
+                        </div>
+
+                        <template x-if="preview && !isPdf">
+                            <img :src="preview" alt="Pratinjau bukti pembayaran"
+                                 class="max-h-80 w-full rounded-lg border border-green-200 bg-white object-contain">
+                        </template>
+
+                        <template x-if="preview && isPdf">
+                            <a :href="preview" target="_blank"
+                               class="inline-flex items-center gap-2 rounded-lg border border-green-300 bg-white px-3 py-2 text-sm font-semibold text-green-700 hover:bg-green-100">
+                                📄 Buka PDF untuk dicek
+                            </a>
+                        </template>
+                    </div>
 
                     @error('bukti_pembayaran')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
