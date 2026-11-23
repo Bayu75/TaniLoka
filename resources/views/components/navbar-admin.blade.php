@@ -1,6 +1,7 @@
 @php
     $menu = [
         ['admin.verifikasi', 'Verifikasi', 'verifikasi'],
+        ['admin.pencairan', 'Pencairan', 'pencairan'],
     ];
 @endphp
 

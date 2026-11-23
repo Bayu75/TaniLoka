@@ -1,5 +1,5 @@
 <?php
-// app/Models/Pembayaran.php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -8,7 +8,11 @@ class Pembayaran extends Model
 {
     protected $table = 'pembayaran';
     protected $guarded = ['id'];
-    protected $casts = ['dibayar_pada' => 'datetime'];
+    protected $casts = [
+        'dibayar_pada' => 'datetime',
+        'snap_kedaluwarsa' => 'datetime',
+        'payload' => 'array',
+    ];
 
     public function pesanan() { return $this->belongsTo(Pesanan::class); }
 }

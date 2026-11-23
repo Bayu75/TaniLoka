@@ -3,12 +3,6 @@
 @section('title', 'Konfirmasi Pesanan - TaniLoka')
 
 @php
-    $namaPembayaran = [
-        'transfer' => 'Transfer Bank',
-        'gopay' => 'GoPay',
-        'ovo' => 'OVO',
-    ];
-
     $labelPengiriman = [
         'kendaraan' => 'Kendaraan Petani',
     ];
@@ -23,7 +17,6 @@
     :kembali="route('pengusaha.pembayaran', [
         'alamat_id' => $alamatAktif->id,
         'pengiriman' => json_encode($pengiriman),
-        'pembayaran' => $metodeBayar,
     ])"
     lebar="max-w-4xl"
 />
@@ -191,7 +184,7 @@
                 <p class="mt-3 text-sm text-gray-600">
                     Metode bayar:
                     <span class="font-medium text-gray-900">
-                        {{ $namaPembayaran[$metodeBayar] ?? 'Transfer Bank' }}
+                        Pembayaran Online (Midtrans)
                     </span>
                 </p>
 
@@ -207,7 +200,6 @@
 
                 <input type="hidden" name="alamat_id" value="{{ $alamatAktif->id }}">
                 <input type="hidden" name="pengiriman" value="{{ json_encode($pengiriman) }}">
-                <input type="hidden" name="pembayaran" value="{{ $metodeBayar }}">
 
                 <button
                     type="submit"

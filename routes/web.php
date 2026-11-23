@@ -15,7 +15,6 @@ use App\Http\Controllers\Petani\ProfilController as ProfilPetaniController;
 use App\Http\Controllers\Petani\VerifikasiController as VerifikasiPetaniController;
 use App\Http\Controllers\Petani\RatingController as PetaniRatingController;
 
-
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\VerifikasiController;
 use App\Http\Controllers\Pengusaha\VerifikasiController as VerifikasiPengusahaController;
@@ -27,7 +26,14 @@ use App\Http\Controllers\Pengusaha\ChatController;
 use App\Http\Controllers\Pengusaha\CheckoutController;
 use App\Http\Controllers\Pengusaha\PesananController;
 
+use App\Http\Controllers\MidtransController;
+use App\Http\Controllers\Admin\PencairanController;
+use App\Http\Controllers\Pengusaha\PembayaranController;
+
 Route::view('/', 'auth.landing')->name('landing');
+
+// Webhook Midtrans: tanpa auth, dikecualikan dari CSRF di bootstrap/app.php.
+Route::post('/midtrans/notifikasi', [MidtransController::class, 'notifikasi'])->name('midtrans.notifikasi');
 
 Route::middleware('guest')->group(function () {
     Route::get('/masuk', [AuthController::class, 'formLogin'])->name('masuk');
@@ -47,6 +53,9 @@ Route::middleware(['auth', 'peran:admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/verifikasi', [VerifikasiController::class, 'index'])->name('verifikasi');
     Route::get('/verifikasi/{verifikasi}', [VerifikasiController::class, 'show'])->name('verifikasi.show');
     Route::patch('/verifikasi/{verifikasi}', [VerifikasiController::class, 'putuskan'])->name('verifikasi.putuskan');
+    Route::get('/pencairan', [PencairanController::class, 'index'])->name('pencairan');
+    Route::patch('/pencairan/{pencairan}/transfer', [PencairanController::class, 'transfer'])->whereNumber('pencairan')->name('pencairan.transfer');
+    Route::patch('/pencairan/{pencairan}/refund', [PencairanController::class, 'refund'])->whereNumber('pencairan')->name('pencairan.refund');
 });
 
 Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengusaha.')->group(function () {
@@ -83,8 +92,12 @@ Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengu
     Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan');
     Route::get('/pesanan/{id}', [PesananController::class, 'show'])->name('pesanan.detail');
     Route::post('/pesanan/{id}/batalkan', [PesananController::class, 'cancel'])->name('pesanan.cancel');
-    Route::post('/pesanan/{id}/bukti', [PesananController::class, 'uploadBukti'])
-    ->name('pesanan.bukti.upload');
+    Route::post('/pesanan/{id}/bayar', [PembayaranController::class, 'bayar'])
+        ->middleware('throttle:20,1')
+        ->name('pesanan.bayar');
+    Route::post('/pesanan/{id}/cek-pembayaran', [PembayaranController::class, 'cekStatus'])
+        ->middleware('throttle:20,1')
+        ->name('pesanan.bayar.cek');
     Route::post('/pesanan/{id}/selesai', [PesananController::class, 'konfirmasiSelesai'])
     ->name('pesanan.selesai');
     Route::post('/pesanan/{id}/ulasan', [PesananController::class, 'simpanUlasan'])
