@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(at: '*');
 
+        // Webhook Midtrans datang dari server Midtrans, tidak punya token CSRF.
+        $middleware->validateCsrfTokens(except: ['midtrans/notifikasi']);
+
         $middleware->alias([
             'peran' => \App\Http\Middleware\CekPeran::class,
             'terverifikasi' => \App\Http\Middleware\CekVerifikasi::class,

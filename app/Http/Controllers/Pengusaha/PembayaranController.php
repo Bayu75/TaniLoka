@@ -17,6 +17,9 @@ class PembayaranController extends Controller
     public function bayar(Request $request, int $id)
     {
         try {
+            if ($request->boolean('ganti')) {
+                PembayaranSnap::lepasTransaksiLama($id, $request->user());
+            }
             $hasil = PembayaranSnap::siapkan($id, $request->user());
         } catch (MidtransException $e) {
             report($e);

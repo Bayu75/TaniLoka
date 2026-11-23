@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use App\Models\Produk;
 use App\Services\Petani\AlurPesanan;
+use App\Models\Pembayaran;
+use App\Services\Pembayaran\Midtrans;
 
 class PesananController extends Controller
 {
@@ -96,7 +98,6 @@ class PesananController extends Controller
         $request->validate([
             'alamat_id' => ['required', 'integer'],
             'pengiriman' => ['required'],
-            'pembayaran' => ['required', 'in:transfer,gopay,ovo,cod'],
         ]);
 
         $user = $request->user();
@@ -126,20 +127,12 @@ class PesananController extends Controller
         if (!is_array($pengiriman)) {
             return back()->with('error', 'Pilihan pengiriman tidak valid.');
         }
-
-        $metodePembayaran = [
-            'transfer' => 'transfer_bank',
-            'gopay' => 'gopay',
-            'ovo' => 'ovo',
-            'cod' => 'cod',
-        ][$request->pembayaran];
-
+    
         try {
             $daftarPesanan = DB::transaction(function () use (
                 $user,
                 $alamat,
-                $pengiriman,
-                $metodePembayaran
+                $pengiriman
             ) {
                 $keranjang = $user->keranjang()
                     ->with('produk.petani')
@@ -193,15 +186,6 @@ class PesananController extends Controller
                         $ongkir = 15000;
                     }
 
-                    if (
-                        $metodePembayaran === 'cod' &&
-                        $ambilSendiri
-                    ) {
-                        throw ValidationException::withMessages([
-                            'pembayaran' => 'COD hanya tersedia untuk pengiriman yang diantarkan petani.',
-                        ]);
-                    }
-
                     $subtotal = (int) $items->sum(
                         fn ($item) => $item->subtotal
                     );
@@ -250,7 +234,7 @@ class PesananController extends Controller
                     }
 
                     $pesanan->pembayaran()->create([
-                        'metode' => $metodePembayaran,
+                        'metode' => null,
                         'jumlah' => $total,
                         'status' => 'belum_bayar',
                     ]);
@@ -281,77 +265,6 @@ class PesananController extends Controller
                 count($daftarPesanan) . ' pesanan berhasil dibuat dan dikirim ke petani.'
             );
     }
-
-
-       public function uploadBukti(Request $request, int $id)
-    {
-        $request->validate([
-            'bukti_pembayaran' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
-        ]);
-
-        $userId = $request->user()->id;
-        $fileLama = null;
-
-        $hasil = DB::transaction(function () use ($request, $id, $userId, &$fileLama) {
-            $pesanan = Pesanan::with('pembayaran')
-                ->where('id', $id)
-                ->where('pengusaha_id', $userId)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            if ($pesanan->status !== 'menunggu_pembayaran') {
-                return ['ok' => false, 'alasan' => 'status'];
-            }
-
-            $pembayaran = $pesanan->pembayaran;
-
-            if (! $pembayaran) {
-                return ['ok' => false, 'alasan' => 'tanpa_pembayaran'];
-            }
-
-            // COD dibayar saat barang diterima, tidak perlu bukti transfer.
-            if ($pembayaran->metode === 'cod') {
-                return ['ok' => false, 'alasan' => 'cod'];
-            }
-
-            // Cek tenggat 24 jam + pindah ke "diproses" + riwayat dengan created_at = now().
-            $hasil = AlurPesanan::buktiBayarDiunggah($pesanan->id, $userId);
-
-            if (! $hasil['ok']) {
-                return $hasil;
-            }
-
-            $fileLama = $pembayaran->bukti_path;
-
-            $path = $request->file('bukti_pembayaran')->store('bukti-pembayaran', 'public');
-
-            $pembayaran->update([
-                'bukti_path' => $path,
-                'status' => 'lunas',
-                'dibayar_pada' => now(),
-            ]);
-
-            return $hasil;
-        });
-
-        if (! $hasil['ok']) {
-            $pesan = match ($hasil['alasan']) {
-                'kedaluwarsa' => 'Batas waktu pembayaran sudah lewat. Pesanan dibatalkan otomatis.',
-                'cod' => 'Pesanan COD dibayar saat barang diterima, tidak perlu unggah bukti.',
-                'tanpa_pembayaran' => 'Data pembayaran tidak ditemukan.',
-                default => 'Pesanan tidak sedang menunggu pembayaran.',
-            };
-
-            return redirect()->route('pengusaha.pesanan.detail', $id)->with('error', $pesan);
-        }
-
-        if ($fileLama) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($fileLama);
-        }
-
-        return back()->with('success', 'Bukti pembayaran berhasil diunggah. Pesanan sedang diproses.');
-    }
-
 
         public function konfirmasiSelesai($id)
     {
@@ -477,6 +390,13 @@ class PesananController extends Controller
                 'created_at' => now(),
             ]);
         });
+
+        // Matikan transaksi Midtrans yang masih menggantung supaya tidak bisa dibayar setelah pesanan batal.
+        $pembayaran = Pembayaran::where('pesanan_id', $id)->first();
+
+        if ($pembayaran?->midtrans_order_id && $pembayaran->status !== 'lunas') {
+            Midtrans::batalkan($pembayaran->midtrans_order_id);
+        }
 
         return redirect()
             ->route('pengusaha.pesanan.detail', $id)

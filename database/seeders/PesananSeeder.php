@@ -26,7 +26,7 @@ class PesananSeeder extends Seeder
             ['kode' => 'TL-SEED-02', 'petani' => $made, 'items' => [['Kol Bedugul', 20]],
              'status' => 'diproses', 'metode_pembayaran' => 'gopay', 'status_pembayaran' => 'lunas'],
             ['kode' => 'TL-SEED-03', 'petani' => $made, 'items' => [['Kentang Granola', 15]],
-             'status' => 'terkirim', 'metode_pembayaran' => 'cod', 'status_pembayaran' => 'lunas'],
+             'status' => 'terkirim', 'metode_pembayaran' => 'bank_transfer', 'status_pembayaran' => 'lunas'],
             ['kode' => 'TL-SEED-04', 'petani' => $ketut, 'items' => [['Bawang Merah', 5], ['Tomat', 5]],
              'status' => 'selesai', 'metode_pembayaran' => 'transfer_bank', 'status_pembayaran' => 'lunas',
              'ulasan' => ['rating' => 5, 'komentar' => 'Bawang segar, tomat sedikit lewat masak tapi masih layak. Pengiriman tepat waktu.']],
