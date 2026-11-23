@@ -13,7 +13,7 @@ use App\Http\Controllers\Petani\KatalogController as PetaniKatalogController;
 use App\Http\Controllers\Petani\PesanController as PetaniPesanController;
 use App\Http\Controllers\Petani\ProfilController as ProfilPetaniController;
 use App\Http\Controllers\Petani\VerifikasiController as VerifikasiPetaniController;
-
+use App\Http\Controllers\Petani\RatingController as PetaniRatingController;
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\VerifikasiController;
@@ -26,7 +26,14 @@ use App\Http\Controllers\Pengusaha\ChatController;
 use App\Http\Controllers\Pengusaha\CheckoutController;
 use App\Http\Controllers\Pengusaha\PesananController;
 
+use App\Http\Controllers\MidtransController;
+use App\Http\Controllers\Admin\PencairanController;
+use App\Http\Controllers\Pengusaha\PembayaranController;
+
 Route::view('/', 'auth.landing')->name('landing');
+
+// Webhook Midtrans: tanpa auth, dikecualikan dari CSRF di bootstrap/app.php.
+Route::post('/midtrans/notifikasi', [MidtransController::class, 'notifikasi'])->name('midtrans.notifikasi');
 
 Route::middleware('guest')->group(function () {
     Route::get('/masuk', [AuthController::class, 'formLogin'])->name('masuk');
@@ -34,8 +41,10 @@ Route::middleware('guest')->group(function () {
     Route::get('/daftar', [AuthController::class, 'formRegister'])->name('daftar');
     Route::post('/daftar', [AuthController::class, 'register'])->name('daftar.proses');
 
-    // ini untuk demo masuk/login cepat
-    Route::post('/masuk/demo', [AuthController::class, 'masukDemo'])->name('masuk.demo');
+    // ini untuk demo masuk/login cepat (cuma aktif di local)
+    if (app()->environment('local')) {
+        Route::post('/masuk/demo', [AuthController::class, 'masukDemo'])->name('masuk.demo');
+    }
 });
 
 Route::post('/keluar', [AuthController::class, 'logout'])->middleware('auth')->name('keluar');
@@ -44,6 +53,9 @@ Route::middleware(['auth', 'peran:admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/verifikasi', [VerifikasiController::class, 'index'])->name('verifikasi');
     Route::get('/verifikasi/{verifikasi}', [VerifikasiController::class, 'show'])->name('verifikasi.show');
     Route::patch('/verifikasi/{verifikasi}', [VerifikasiController::class, 'putuskan'])->name('verifikasi.putuskan');
+    Route::get('/pencairan', [PencairanController::class, 'index'])->name('pencairan');
+    Route::patch('/pencairan/{pencairan}/transfer', [PencairanController::class, 'transfer'])->whereNumber('pencairan')->name('pencairan.transfer');
+    Route::patch('/pencairan/{pencairan}/refund', [PencairanController::class, 'refund'])->whereNumber('pencairan')->name('pencairan.refund');
 });
 
 Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengusaha.')->group(function () {
@@ -70,17 +82,22 @@ Route::middleware(['auth', 'peran:pengusaha'])->prefix('pengusaha')->name('pengu
     Route::post('/pesan/{id}/penawaran/{pesan}/tolak', [ChatController::class, 'tolakPenawaran'])
         ->name('pesan.penawaran.tolak');
 
-    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
-    Route::get('/pembayaran', [CheckoutController::class, 'pembayaran'])->name('pembayaran');
-
-    Route::get('/konfirmasi', [CheckoutController::class, 'konfirmasi'])->name('konfirmasi');
-    Route::post('/konfirmasi', [PesananController::class, 'store'])->name('konfirmasi.store');
+    Route::middleware('terverifikasi')->group(function () {
+        Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
+        Route::get('/pembayaran', [CheckoutController::class, 'pembayaran'])->name('pembayaran');
+        Route::get('/konfirmasi', [CheckoutController::class, 'konfirmasi'])->name('konfirmasi');
+        Route::post('/konfirmasi', [PesananController::class, 'store'])->name('konfirmasi.store');
+    });
 
     Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan');
     Route::get('/pesanan/{id}', [PesananController::class, 'show'])->name('pesanan.detail');
     Route::post('/pesanan/{id}/batalkan', [PesananController::class, 'cancel'])->name('pesanan.cancel');
-    Route::post('/pesanan/{id}/bukti', [PesananController::class, 'uploadBukti'])
-    ->name('pesanan.bukti.upload');
+    Route::post('/pesanan/{id}/bayar', [PembayaranController::class, 'bayar'])
+        ->middleware('throttle:20,1')
+        ->name('pesanan.bayar');
+    Route::post('/pesanan/{id}/cek-pembayaran', [PembayaranController::class, 'cekStatus'])
+        ->middleware('throttle:20,1')
+        ->name('pesanan.bayar.cek');
     Route::post('/pesanan/{id}/selesai', [PesananController::class, 'konfirmasiSelesai'])
     ->name('pesanan.selesai');
     Route::post('/pesanan/{id}/ulasan', [PesananController::class, 'simpanUlasan'])
@@ -135,7 +152,9 @@ Route::middleware(['auth', 'peran:petani'])->prefix('petani')->name('petani.')->
         ->name('pesan.penawaran.tolak');
     Route::post('/pesanan/{pesanan}/hubungi', [PetaniPesananController::class, 'hubungi'])->whereNumber('pesanan')->name('pesanan.hubungi');
 
+    Route::get('/rating', [PetaniRatingController::class, 'index'])->name('rating');
     Route::view('/bantuan', 'petani.bantuan')->name('bantuan');
+
 
     // Pesanan Masuk
     Route::get('/pesanan', [PetaniPesananController::class, 'index'])->name('pesanan');

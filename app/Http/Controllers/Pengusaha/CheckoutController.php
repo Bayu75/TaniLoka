@@ -111,8 +111,6 @@ class CheckoutController extends Controller
             return $data;
         }
 
-        $data['metodeBayar'] = $request->input('pembayaran', 'transfer');
-
         return view('pengusaha.konfirmasi', $data);
     }
 

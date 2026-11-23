@@ -9,13 +9,6 @@
 <div class="mx-auto max-w-5xl px-4">
     <p class="pt-6 text-sm text-[#6B806B]">Periksa produk dan jumlahnya sebelum melanjutkan pesanan.</p>
 
-    {{-- PESAN SUKSES / ERROR --}}
-    @if (session('sukses'))
-        <div class="mt-6 rounded-xl border border-[#D4E8D0] bg-[#EAF5E8] px-4 py-3 text-sm text-[#087C3E]">
-            {{ session('sukses') }}
-        </div>
-    @endif
-
     @if ($errors->any())
         <div class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
             {{ $errors->first() }}
@@ -78,7 +71,10 @@
                                         {{ $produk->nama }}
                                     </a>
                                     <p class="mt-1 text-sm text-text-muted">
-                                                                               @if ($produk->sedangFlashSale())
+                                        @if (! is_null($item->harga_per_kg))
+                                            <span class="font-semibold text-primary">Rp{{ number_format($item->harga_per_kg, 0, ',', '.') }} / kg</span>
+                                            <span class="ml-1 rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-700">HARGA NEGO</span>
+                                        @elseif ($produk->sedangFlashSale())
                                             <span class="mr-1 text-gray-400 line-through">Rp{{ number_format($produk->harga_per_kg, 0, ',', '.') }}</span>
                                             <span class="font-semibold text-red-600">Rp{{ number_format($produk->harga_flash_sale, 0, ',', '.') }} / kg</span>
                                             <span class="ml-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600">⚡ FLASH SALE</span>
@@ -97,41 +93,47 @@
                                 {{-- AKSI PRODUK --}}
                                 <div class="flex w-full flex-col gap-3 sm:w-40 sm:shrink-0">
 
-                                    {{-- FORM UBAH JUMLAH --}}
-                                    <form action="{{ route('pengusaha.keranjang.ubah', $item) }}" method="POST"
-                                          class="flex w-full flex-col gap-2">
-                                        @csrf
-                                        @method('PATCH')
+                                  {{-- FORM UBAH JUMLAH --}}
+@php
+    $minKg = (int) ceil($produk->min_order_kg);
+    $maxKg = (int) floor($produk->stok_kg);
+    $nowKg = (int) round($item->jumlah_kg);
+@endphp
+<form action="{{ route('pengusaha.keranjang.ubah', $item) }}" method="POST"
+      class="flex w-full flex-col gap-2">
+    @csrf
+    @method('PATCH')
 
-                                        <div class="w-full">
-                                            <label class="mb-1 block text-xs font-medium text-text-muted">Jumlah (kg)</label>
-                                            <input
-                                                type="number"
-                                                name="jumlah_kg"
-                                                step="0.01"
-                                                value="{{ (float) $item->jumlah_kg }}"
-                                                min="{{ (float) $produk->min_order_kg }}"
-                                                max="{{ (float) $produk->stok_kg }}"
-                                                required
-                                                oninvalid="
-                                                    if (this.validity.valueMissing) {
-                                                        this.setCustomValidity('Jumlah pembelian wajib diisi.');
-                                                    } else if (this.validity.rangeUnderflow) {
-                                                        this.setCustomValidity('Jumlah pembelian minimal {{ (float) $produk->min_order_kg }} kg.');
-                                                    } else if (this.validity.rangeOverflow) {
-                                                        this.setCustomValidity('Jumlah pembelian maksimal {{ (float) $produk->stok_kg }} kg sesuai stok tersedia.');
-                                                    }
-                                                "
-                                                oninput="this.setCustomValidity('')"
-                                                class="h-10 w-full rounded-lg border border-border px-3 text-sm outline-none focus:border-primary"
-                                            >
-                                        </div>
+    <label class="block text-xs font-medium text-text-muted">Jumlah (kg)</label>
 
-                                        <button type="submit"
-                                                class="flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary-dark">
-                                            Ubah Jumlah
-                                        </button>
-                                    </form>
+    <div class="flex h-10 w-full items-center overflow-hidden rounded-lg border border-border">
+        <button type="submit" name="jumlah_kg" value="{{ $nowKg - 1 }}"
+                @disabled($nowKg <= $minKg)
+                class="h-full w-10 shrink-0 text-lg font-bold text-primary hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300">−</button>
+
+        <input type="number" step="1" min="{{ $minKg }}" max="{{ $maxKg }}"
+               value="{{ $nowKg }}"
+               onchange="
+                   let v = Math.round(this.value);
+                   if (v < {{ $minKg }} || v > {{ $maxKg }}) {
+                       alert('Jumlah harus antara {{ $minKg }} – {{ $maxKg }} kg.');
+                       this.value = {{ $nowKg }};
+                       return;
+                   }
+                   this.form.querySelector('[name=jumlah_kg_ketik]').value = v;
+                   this.form.querySelector('[name=jumlah_kg_ketik]').name = 'jumlah_kg';
+                   this.form.submit();
+               "
+               class="h-full w-full border-x border-border text-center text-sm outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
+        <input type="hidden" name="jumlah_kg_ketik">
+
+        <button type="submit" name="jumlah_kg" value="{{ $nowKg + 1 }}"
+                @disabled($nowKg >= $maxKg)
+                class="h-full w-10 shrink-0 text-lg font-bold text-primary hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300">+</button>
+    </div>
+
+    <p class="text-[11px] text-text-muted">Min {{ $minKg }} kg · Maks {{ $maxKg }} kg</p>
+</form>
 
                                     {{-- FORM HAPUS --}}
                                     <form action="{{ route('pengusaha.keranjang.hapus', $item) }}" method="POST"
@@ -185,7 +187,19 @@
                 </div>
 
                                 <div class="mt-6">
-                    @if ($bisaCheckout)
+                                        @php
+                        $jumlahTidakValid = $items->contains(fn ($i) =>
+                            $i->jumlah_kg < $i->produk->min_order_kg || $i->jumlah_kg > $i->produk->stok_kg
+                        );
+                    @endphp
+
+                    @if ($jumlahTidakValid)
+                        <div class="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-xs text-red-700">
+                            Ada produk dengan jumlah di bawah minimal atau melebihi stok. Perbaiki dulu sebelum melanjutkan.
+                        </div>
+                    @endif
+
+                    @if ($bisaCheckout && ! $jumlahTidakValid)
                         <a href="{{ route('pengusaha.checkout') }}"
                            class="block w-full rounded-xl bg-primary px-5 py-3 text-center text-sm font-semibold text-white hover:bg-primary-dark">
                             Lanjutkan Pesanan

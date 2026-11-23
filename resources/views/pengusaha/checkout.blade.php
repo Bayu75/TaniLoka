@@ -286,7 +286,7 @@
 
                                             <p class="text-xs text-gray-500">
                                                 Rp {{ number_format(
-                                                    $item->harga_per_kg ?? $item->produk->harga_per_kg,
+                                                    $item->harga_per_kg ?? $item->produk->hargaAktif(),
                                                     0,
                                                     ',',
                                                     '.'

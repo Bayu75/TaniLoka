@@ -153,7 +153,7 @@ public function katalog(Request $request)
     ));
     }
 
-    // Detail produk
+// Detail produk
 public function detail(Produk $produk)
 {
     abort_unless($produk->aktif, 404);
@@ -172,7 +172,16 @@ public function detail(Produk $produk)
         ->where('produk_id', $produk->id)
         ->first();
 
-    return view('pengusaha.detail-produk', compact('produk', 'produkLain', 'sudahDiKeranjang'));
+    // Ulasan dari pesanan yang berisi produk ini
+    $dasarUlasan = \App\Models\Ulasan::whereHas('pesanan.item', fn ($q) => $q->where('produk_id', $produk->id));
+    $jumlahUlasanProduk = (clone $dasarUlasan)->count();
+    $rataUlasanProduk = $jumlahUlasanProduk ? round((float) (clone $dasarUlasan)->avg('rating'), 1) : 0;
+    $ulasanProduk = (clone $dasarUlasan)->with('pengusaha')->latest()->take(5)->get();
+
+    return view('pengusaha.detail-produk', compact(
+        'produk', 'produkLain', 'sudahDiKeranjang',
+        'jumlahUlasanProduk', 'rataUlasanProduk', 'ulasanProduk'
+    ));
 }
 
 public function toko(User $petani)
@@ -187,6 +196,16 @@ public function toko(User $petani)
             ->latest()
             ->get();
 
-        return view('pengusaha.toko-petani', compact('petani', 'produkToko'));
+        // Rating & ulasan toko
+        $dasarUlasan = \App\Models\Ulasan::where('petani_id', $petani->id);
+        $jumlahUlasan = (clone $dasarUlasan)->count();
+        $rataRating = $jumlahUlasan ? round((float) (clone $dasarUlasan)->avg('rating'), 1) : 0;
+        $ulasanToko = (clone $dasarUlasan)
+            ->with(['pengusaha', 'pesanan.item.produk'])
+            ->latest()
+            ->take(5)
+            ->get();
+
+        return view('pengusaha.toko-petani', compact('petani', 'produkToko', 'jumlahUlasan', 'rataRating', 'ulasanToko'));
     }
 }

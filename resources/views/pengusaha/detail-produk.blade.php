@@ -168,7 +168,9 @@
                         @if ($kabupaten)
                             <p class="text-xs text-[#5A7A5A]">📍 {{ $kabupaten }}, Bali</p>
                         @endif
-                        <p class="mt-1 text-xs text-[#5A7A5A]">Petani lokal</p>
+                                                <p class="mt-1 text-xs text-[#5A7A5A]">
+                            ⭐ {{ number_format($rataUlasanProduk, 1) }} ({{ $jumlahUlasanProduk }} ulasan produk ini)
+                        </p>
                     </div>
 
                     <a href="{{ route('pengusaha.toko', $petani) }}"
@@ -179,7 +181,7 @@
             </div>
 
             {{-- DESKRIPSI DAN DETAIL --}}
-            <div class="{{ $redup }}">
+            <div class="rounded-2xl border border-[#D4E8D0] bg-white p-4 {{ $redup }}">
                 <div class="border-b border-[#D4E8D0] pb-2">
                     <span class="border-b-2 border-[#2E7D32] pb-2 text-sm font-bold text-[#2E7D32]">Informasi Produk</span>
                 </div>
@@ -268,7 +270,47 @@
         </form>
 
     @endif
-
+{{-- ULASAN PRODUK --}}
+    <div class="mt-8 rounded-2xl border border-[#D4E8D0] bg-white p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5EEE2] pb-4">
+            <h2 class="text-lg font-bold text-[#1A2A1A]">Ulasan Produk</h2>
+            <div class="flex items-center gap-2">
+                <span class="text-xl font-extrabold text-[#1A2A1A]">{{ number_format($rataUlasanProduk, 1) }}</span>
+                <div class="flex">
+                    @for ($i = 1; $i <= 5; $i++)
+                        <span class="{{ $i <= round($rataUlasanProduk) ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
+                    @endfor
+                </div>
+                <span class="text-sm text-[#6B806B]">({{ $jumlahUlasanProduk }} ulasan)</span>
+            </div>
+        </div>
+        @forelse ($ulasanProduk as $u)
+            <div class="border-b border-[#E5EEE2] py-4 last:border-b-0">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-semibold text-[#1A2A1A]">{{ $u->pengusaha->name ?? 'Pembeli' }}</p>
+                        <p class="text-xs text-[#6B806B]">{{ $u->created_at->translatedFormat('d M Y') }}</p>
+                    </div>
+                    <div class="flex shrink-0">
+                        @for ($i = 1; $i <= 5; $i++)
+                            <span class="{{ $i <= $u->rating ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
+                        @endfor
+                    </div>
+                </div>
+                @if ($u->komentar)
+                    <p class="mt-2 text-sm text-gray-700">{{ $u->komentar }}</p>
+                @endif
+            </div>
+        @empty
+            <p class="py-6 text-center text-sm text-[#6B806B]">Belum ada ulasan untuk produk ini.</p>
+        @endforelse
+        @if ($jumlahUlasanProduk > 0)
+            <a href="{{ route('pengusaha.toko', $petani) }}"
+               class="mt-3 block text-center text-sm font-semibold text-primary hover:underline">
+                Lihat semua ulasan toko →
+            </a>
+        @endif
+    </div>
     {{-- PRODUK LAIN DARI PETANI INI --}}
     @if ($produkLain->isNotEmpty())
         <div class="mt-10">

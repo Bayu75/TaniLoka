@@ -6,6 +6,7 @@ use App\Models\Pesanan;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use App\Models\Produk;
 
 /**
  * Aturan alur status Pesanan Masuk (milik Gede, feat/petani-backend).
@@ -35,7 +36,11 @@ class AlurPesanan
     public const KOLOM_METODE = 'metode_pengiriman';
 
     /** Nilai metode yang berarti pembeli mengambil sendiri, langkah ke-5 jadi "Siap Diambil". */
-    public const METODE_AMBIL_SENDIRI = ['Kendaraan Sendiri', 'kendaraan_sendiri'];
+       /**
+     * Nilai metode yang berarti pembeli mengambil sendiri, langkah ke-5 jadi "Siap Diambil".
+     * 'ambil' = nilai yang disimpan checkout. 'kendaraan' (diantar petani) SENGAJA tidak masuk.
+     */
+    public const METODE_AMBIL_SENDIRI = ['ambil', 'ambil sendiri', 'ambil_sendiri', 'Kendaraan Sendiri', 'kendaraan_sendiri'];
 
     public const JAM_TENGGAT_AWAL = 24;
     public const JAM_TENGGAT_PROSES = 24;
@@ -44,7 +49,8 @@ class AlurPesanan
 
     /** Semua perpindahan status yang sah: dari => [ke...]. */
     public const TRANSISI = [
-        'menunggu_konfirmasi' => ['menunggu_pembayaran', 'ditolak', 'dibatalkan'],
+        // 'diproses' langsung dari konfirmasi hanya dipakai pesanan COD (bayar saat barang diterima).
+        'menunggu_konfirmasi' => ['menunggu_pembayaran', 'diproses', 'ditolak', 'dibatalkan'],
         'menunggu_pembayaran' => ['diproses', 'dibatalkan'],
         'diproses' => ['dikirim', 'siap_diambil', 'dibatalkan'],
         'dikirim' => ['terkirim'],
@@ -199,6 +205,11 @@ class AlurPesanan
     private static function catat(Pesanan $pesanan, string $ke, ?string $keterangan, ?int $olehId): void
     {
         $pesanan->update(['status' => $ke]);
+
+        if (in_array($ke, ['dibatalkan', 'ditolak'], true)) {
+            self::kembalikanStok($pesanan);
+        }
+
         $pesanan->riwayat()->create([
             'status' => $ke,
             'keterangan' => $keterangan !== null ? mb_substr($keterangan, 0, 255) : null,
@@ -207,6 +218,18 @@ class AlurPesanan
             'created_at' => now(),
         ]);
         $pesanan->unsetRelation('riwayat');
+    }
+
+    public static function kembalikanStok(Pesanan $pesanan): void
+    {
+        $pesanan->loadMissing('item');
+        foreach ($pesanan->item as $item) {
+            if ($item->produk_id) {
+                Produk::withTrashed()
+                    ->whereKey($item->produk_id)
+                    ->increment('stok_kg', $item->jumlah_kg);
+            }
+        }
     }
 
     /**

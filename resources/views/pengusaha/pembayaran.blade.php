@@ -2,21 +2,6 @@
 
 @section('title', 'Pembayaran - TaniLoka')
 
-@php
-    $bolehCod = $perPetani->keys()->every(function ($petaniId) use ($pengiriman) {
-        $pilihan = $pengiriman[$petaniId] ?? [];
-
-        return ($pilihan['metode'] ?? 'diantar') === 'diantar'
-            && ($pilihan['kurir'] ?? 'kendaraan') === 'kendaraan';
-    });
-
-    $metodeAwal = request('pembayaran', 'transfer');
-
-    if (!$bolehCod && $metodeAwal === 'cod') {
-        $metodeAwal = 'transfer';
-    }
-@endphp
-
 @section('content')
 
 <x-page-header
@@ -54,87 +39,26 @@
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_266px]">
 
-        {{-- Kolom Kiri: Metode Pembayaran --}}
-        <div class="min-w-0" x-data="{ metodeBayar: @js($metodeAwal) }">
+        {{-- Kolom Kiri: Info Pembayaran (Midtrans) --}}
+        <div class="min-w-0">
             <div class="rounded-2xl border border-green-100 bg-white p-5">
                 <h2 class="text-lg font-bold text-gray-800">
                     Metode Pembayaran
                 </h2>
 
-                <div class="mt-5 space-y-2">
-
-                    {{-- Transfer Bank --}}
-                    <button
-                        type="button"
-                        @click="metodeBayar = 'transfer'"
-                        :class="metodeBayar === 'transfer' ? 'border-green-700 bg-green-50' : 'border-green-100 bg-white'"
-                        class="flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left"
-                    >
-                        <span class="flex h-6 w-6 items-center justify-center rounded-full border border-green-700">
-                            <span x-show="metodeBayar === 'transfer'" class="h-3 w-3 rounded-full bg-green-700"></span>
+                <div class="mt-4 flex items-start gap-3 rounded-xl border-2 border-green-700 bg-green-50 p-4">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-700 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2zm2 9h4" />
+                        </svg>
+                    </span>
+                    <span class="flex-1">
+                        <span class="block font-bold text-gray-800">Pembayaran Online (Midtrans)</span>
+                        <span class="mt-1 block text-sm text-gray-500">
+                            Virtual Account (BCA, Mandiri, BRI, BNI), QRIS, GoPay, ShopeePay, kartu kredit/debit, dan lainnya.
+                            Metode dipilih saat membayar.
                         </span>
-                        <span class="text-xl">🏦</span>
-                        <span class="flex-1">
-                            <span class="block font-bold text-gray-800">Transfer Bank</span>
-                            <span class="block text-sm text-gray-500">BCA, Mandiri, BRI, BNI</span>
-                        </span>
-                    </button>
-
-                    {{-- GoPay --}}
-                    <button
-                        type="button"
-                        @click="metodeBayar = 'gopay'"
-                        :class="metodeBayar === 'gopay' ? 'border-green-700 bg-green-50' : 'border-green-100 bg-white'"
-                        class="flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left"
-                    >
-                        <span class="flex h-6 w-6 items-center justify-center rounded-full border border-gray-400">
-                            <span x-show="metodeBayar === 'gopay'" class="h-3 w-3 rounded-full bg-green-700"></span>
-                        </span>
-                        <span class="text-xl">💚</span>
-                        <span class="flex-1">
-                            <span class="block font-bold text-gray-800">GoPay</span>
-                            <span class="block text-sm text-gray-500">Bayar dengan saldo GoPay</span>
-                        </span>
-                    </button>
-
-                    {{-- OVO --}}
-                    <button
-                        type="button"
-                        @click="metodeBayar = 'ovo'"
-                        :class="metodeBayar === 'ovo' ? 'border-green-700 bg-green-50' : 'border-green-100 bg-white'"
-                        class="flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left"
-                    >
-                        <span class="flex h-6 w-6 items-center justify-center rounded-full border border-gray-400">
-                            <span x-show="metodeBayar === 'ovo'" class="h-3 w-3 rounded-full bg-green-700"></span>
-                        </span>
-                        <span class="text-xl">💜</span>
-                        <span class="flex-1">
-                            <span class="block font-bold text-gray-800">OVO</span>
-                            <span class="block text-sm text-gray-500">Bayar dengan saldo OVO</span>
-                        </span>
-                    </button>
-
-                    @if ($bolehCod)
-                        {{-- COD --}}
-                        <button
-                            type="button"
-                            @click="metodeBayar = 'cod'"
-                            :class="metodeBayar === 'cod' ? 'border-green-700 bg-green-50' : 'border-green-100 bg-white'"
-                            class="flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left"
-                        >
-                            <span class="flex h-6 w-6 items-center justify-center rounded-full border border-gray-400">
-                                <span x-show="metodeBayar === 'cod'" class="h-3 w-3 rounded-full bg-green-700"></span>
-                            </span>
-
-                            <span class="text-xl">💵</span>
-
-                            <span class="flex-1">
-                                <span class="block font-bold text-gray-800">COD (Bayar di Tempat)</span>
-                                <span class="block text-sm text-gray-500">Khusus pengiriman yang diantarkan petani</span>
-                            </span>
-                        </button>
-                    @endif
-
+                    </span>
                 </div>
             </div>
 
@@ -142,21 +66,20 @@
             <div class="mt-4 rounded-2xl border border-green-200 bg-green-50 p-4">
                 <p class="text-sm leading-relaxed text-green-800">
                     <span class="font-bold">Kapan saya membayar?</span>
-                    Pembayaran dilakukan setelah petani mengonfirmasi pesanan.
-                    Instruksi dan unggah bukti ada di Detail Pesanan.
+                    Pembayaran dilakukan setelah petani mengonfirmasi pesanan (maks. 24 jam).
+                    Tombol <span class="font-semibold">Bayar Sekarang</span> akan muncul di Detail Pesanan.
                 </p>
             </div>
 
             <a
-                :href="'{{ route('pengusaha.konfirmasi', [
+                href="{{ route('pengusaha.konfirmasi', [
                     'alamat_id' => request('alamat_id'),
                     'pengiriman' => request('pengiriman'),
-                ]) }}&pembayaran=' + encodeURIComponent(metodeBayar)"
+                ]) }}"
                 class="mt-4 block w-full rounded-xl bg-amber-500 px-4 py-4 text-center font-bold text-gray-900 transition hover:bg-amber-600"
             >
                 Tinjau Pesanan
             </a>
-
         </div>
 
 

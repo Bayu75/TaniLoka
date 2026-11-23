@@ -27,7 +27,10 @@ class Produk extends Model
     // Produk::aktif()->get() hanya menampilkan produk aktif yang masih ada stoknya
     public function scopeAktif($query)
     {
-        return $query->where('aktif', true)->where('stok_kg', '>', 0);
+        return $query->where('aktif', true)
+            ->where('stok_kg', '>', 0)
+            ->where(fn ($q) => $q->whereNull('tersedia_sampai')
+                ->orWhereDate('tersedia_sampai', '>=', today()));
     }
 
         public function sedangFlashSale(): bool

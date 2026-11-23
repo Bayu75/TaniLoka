@@ -10,8 +10,19 @@ class CekVerifikasi
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user()?->terverifikasi()) {
-            return back()->with('peringatan', 'Akunmu belum terverifikasi. Ajukan verifikasi di halaman Akun.');
+        $user = $request->user();
+
+        if (! $user?->terverifikasi()) {
+            $pesan = 'Akunmu belum terverifikasi. Ajukan verifikasi di halaman Akun.';
+
+            if ($user?->peran === 'pengusaha') {
+                return redirect()
+                    ->route('pengusaha.keranjang')
+                    ->with('error', $pesan)
+                    ->with('peringatan', $pesan);
+            }
+
+            return back()->with('error', $pesan)->with('peringatan', $pesan);
         }
 
         return $next($request);

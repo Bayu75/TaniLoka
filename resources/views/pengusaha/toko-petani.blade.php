@@ -57,6 +57,14 @@
             <div class="mt-5 flex flex-wrap gap-3">
 
                 <div class="rounded-xl bg-[#F1F7F1] px-4 py-3">
+                    <p class="text-xs text-[#789078]">Rating Toko</p>
+                    <p class="mt-1 font-bold text-[#2E7D32]">
+                        ⭐ {{ number_format($rataRating, 1) }}
+                        <span class="text-xs font-normal text-[#789078]">({{ $jumlahUlasan }} ulasan)</span>
+                    </p>
+                </div>
+
+                <div class="rounded-xl bg-[#F1F7F1] px-4 py-3">
                     <p class="text-xs text-[#789078]">Jumlah Produk</p>
                     <p class="mt-1 font-bold text-[#2E7D32]">{{ $produkToko->count() }} Produk</p>
                 </div>

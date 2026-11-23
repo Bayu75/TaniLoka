@@ -7,6 +7,10 @@ use App\Models\Pesanan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Models\Produk;
+use App\Services\Petani\AlurPesanan;
+use App\Models\Pembayaran;
+use App\Services\Pembayaran\Midtrans;
 
 class PesananController extends Controller
 {
@@ -94,10 +98,15 @@ class PesananController extends Controller
         $request->validate([
             'alamat_id' => ['required', 'integer'],
             'pengiriman' => ['required'],
-            'pembayaran' => ['required', 'in:transfer,gopay,ovo,cod'],
         ]);
 
         $user = $request->user();
+
+        if (! $user->terverifikasi()) {
+            return redirect()
+                ->route('pengusaha.keranjang')
+                ->with('error', 'Akun harus terverifikasi sebelum checkout.');
+        }
 
         $alamat = $user->alamat()
             ->whereKey($request->alamat_id)
@@ -118,20 +127,12 @@ class PesananController extends Controller
         if (!is_array($pengiriman)) {
             return back()->with('error', 'Pilihan pengiriman tidak valid.');
         }
-
-        $metodePembayaran = [
-            'transfer' => 'transfer_bank',
-            'gopay' => 'gopay',
-            'ovo' => 'ovo',
-            'cod' => 'cod',
-        ][$request->pembayaran];
-
+    
         try {
             $daftarPesanan = DB::transaction(function () use (
                 $user,
                 $alamat,
-                $pengiriman,
-                $metodePembayaran
+                $pengiriman
             ) {
                 $keranjang = $user->keranjang()
                     ->with('produk.petani')
@@ -145,16 +146,20 @@ class PesananController extends Controller
                 }
 
                 foreach ($keranjang as $item) {
-                    $produk = $item->produk;
-
+                    // Kunci baris produk supaya dua checkout bersamaan nggak bikin stok minus
+                    $produk = Produk::whereKey($item->produk_id)->lockForUpdate()->first();
+                    $item->setRelation('produk', $produk);
+                    $lewatMasa = $produk?->tersedia_sampai
+                        && $produk->tersedia_sampai->copy()->endOfDay()->isPast();
                     if (
                         !$produk ||
                         !$produk->aktif ||
+                        $lewatMasa ||
                         $item->jumlah_kg <= 0 ||
                         $item->jumlah_kg > $produk->stok_kg
                     ) {
                         throw ValidationException::withMessages([
-                            'keranjang' => 'Ada produk yang tidak tersedia atau stoknya berubah. Periksa keranjang.',
+                            'keranjang' => 'Ada produk yang tidak tersedia, masa tersedianya habis, atau stoknya berubah. Periksa keranjang.',
                         ]);
                     }
                 }
@@ -179,15 +184,6 @@ class PesananController extends Controller
                     } else {
                         $labelPengiriman = 'kendaraan';
                         $ongkir = 15000;
-                    }
-
-                    if (
-                        $metodePembayaran === 'cod' &&
-                        $ambilSendiri
-                    ) {
-                        throw ValidationException::withMessages([
-                            'pembayaran' => 'COD hanya tersedia untuk pengiriman yang diantarkan petani.',
-                        ]);
                     }
 
                     $subtotal = (int) $items->sum(
@@ -224,24 +220,21 @@ class PesananController extends Controller
                     ]);
 
                     foreach ($items as $item) {
-                        $harga = (int) (
-                            $item->harga_per_kg
-                            ?? $item->produk->harga_per_kg
-                        );
-
+                        // Sama dengan subtotal keranjang: harga nego, atau harga aktif (flash sale kalau ada)
+                        $harga = (int) ($item->harga_per_kg ?? $item->produk->hargaAktif());
                         $pesanan->item()->create([
                             'produk_id' => $item->produk_id,
                             'nama_produk' => $item->produk->nama,
                             'harga_per_kg' => $harga,
                             'jumlah_kg' => $item->jumlah_kg,
-                            'subtotal' => (int) round(
-                                $harga * $item->jumlah_kg
-                            ),
+                            'subtotal' => (int) round($harga * $item->jumlah_kg),
                         ]);
+                        // Kurangi stok begitu pesanan dibuat
+                        $item->produk->decrement('stok_kg', $item->jumlah_kg);
                     }
 
                     $pesanan->pembayaran()->create([
-                        'metode' => $metodePembayaran,
+                        'metode' => null,
                         'jumlah' => $total,
                         'status' => 'belum_bayar',
                     ]);
@@ -273,75 +266,7 @@ class PesananController extends Controller
             );
     }
 
-
-    public function uploadBukti(Request $request, int $id)
-    {
-        $request->validate([
-            'bukti_pembayaran' => [
-                'required',
-                'file',
-                'mimes:jpg,jpeg,png,pdf',
-                'max:5120',
-            ],
-        ]);
-
-        $userId = $request->user()->id;
-
-        DB::transaction(function () use ($request, $id, $userId) {
-            $pesanan = Pesanan::where('id', $id)
-                ->where('pengusaha_id', $userId)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            if ($pesanan->status !== 'menunggu_pembayaran') {
-                throw ValidationException::withMessages([
-                    'bukti_pembayaran' => 'Pesanan tidak sedang menunggu pembayaran.',
-                ]);
-            }
-
-            $pembayaran = $pesanan->pembayaran;
-
-            if (!$pembayaran) {
-                throw ValidationException::withMessages([
-                    'bukti_pembayaran' => 'Data pembayaran tidak ditemukan.',
-                ]);
-            }
-
-            $fileLama = $pembayaran->bukti_path;
-
-            $path = $request->file('bukti_pembayaran')
-                ->store('bukti-pembayaran', 'public');
-
-            $pembayaran->update([
-                'bukti_path' => $path,
-                'status' => 'lunas',
-                'dibayar_pada' => now(),
-            ]);
-
-            $pesanan->update([
-                'status' => 'diproses',
-            ]);
-
-            $pesanan->riwayat()->create([
-                'status' => 'diproses',
-                'keterangan' => 'Bukti pembayaran berhasil diunggah pembeli.',
-                'diubah_oleh' => $userId,
-            ]);
-
-            if ($fileLama) {
-                \Illuminate\Support\Facades\Storage::disk('public')
-                    ->delete($fileLama);
-            }
-        });
-
-        return back()->with(
-            'success',
-            'Bukti pembayaran berhasil diunggah. Pesanan sedang diproses.'
-        );
-    }
-
-
-    public function konfirmasiSelesai($id)
+        public function konfirmasiSelesai($id)
     {
         $userId = auth()->id();
 
@@ -351,13 +276,12 @@ class PesananController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if (!in_array($pesanan->status, ['dikirim', 'siap_diambil', 'terkirim'])) {
+            // Hanya boleh setelah petani menandai "terkirim" / "sudah diambil".
+            if ($pesanan->status !== 'terkirim') {
                 return false;
             }
 
-            $pesanan->update([
-                'status' => 'selesai',
-            ]);
+            $pesanan->update(['status' => 'selesai']);
 
             $pesanan->riwayat()->create([
                 'status' => 'selesai',
@@ -369,14 +293,12 @@ class PesananController extends Controller
             return true;
         });
 
-        if (!$berhasil) {
-            return redirect()
-                ->route('pengusaha.pesanan.detail', $id)
-                ->with('error', 'Pesanan belum dapat diselesaikan atau statusnya sudah berubah.');
+        if (! $berhasil) {
+            return redirect()->route('pengusaha.pesanan.detail', $id)
+                ->with('error', 'Pesanan baru bisa diselesaikan setelah petani menandai pesanan terkirim.');
         }
 
-        return redirect()
-            ->route('pengusaha.pesanan.detail', $id)
+        return redirect()->route('pengusaha.pesanan.detail', $id)
             ->with('success', 'Pesanan berhasil dikonfirmasi selesai. Silakan berikan ulasan.');
     }
 
@@ -459,6 +381,8 @@ class PesananController extends Controller
                 'status' => 'dibatalkan',
             ]);
 
+            AlurPesanan::kembalikanStok($pesanan);
+
             $pesanan->riwayat()->create([
                 'status' => 'dibatalkan',
                 'keterangan' => 'Pesanan dibatalkan oleh pembeli.',
@@ -466,6 +390,13 @@ class PesananController extends Controller
                 'created_at' => now(),
             ]);
         });
+
+        // Matikan transaksi Midtrans yang masih menggantung supaya tidak bisa dibayar setelah pesanan batal.
+        $pembayaran = Pembayaran::where('pesanan_id', $id)->first();
+
+        if ($pembayaran?->midtrans_order_id && $pembayaran->status !== 'lunas') {
+            Midtrans::batalkan($pembayaran->midtrans_order_id);
+        }
 
         return redirect()
             ->route('pengusaha.pesanan.detail', $id)

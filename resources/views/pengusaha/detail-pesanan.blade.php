@@ -65,7 +65,7 @@
     ];
 
     $info = $statusInfo[$status] ?? $statusInfo['menunggu_konfirmasi'];
-
+        
     $warnaBorder = [
         'yellow' => 'border-yellow-200 bg-yellow-50 text-yellow-800',
         'orange' => 'border-orange-200 bg-orange-50 text-orange-800',
@@ -75,10 +75,18 @@
     ][$info['warna']];
 
     $metodePembayaran = [
-        'transfer_bank' => 'Transfer Bank',
+        'bank_transfer' => 'Transfer Bank (Virtual Account)',
+        'echannel' => 'Mandiri Bill',
         'gopay' => 'GoPay',
+        'shopeepay' => 'ShopeePay',
+        'qris' => 'QRIS',
+        'credit_card' => 'Kartu Kredit/Debit',
+        'cstore' => 'Minimarket',
+        'akulaku' => 'Akulaku',
+        'kredivo' => 'Kredivo',
+        // nilai lama sebelum Midtrans
+        'transfer_bank' => 'Transfer Bank',
         'ovo' => 'OVO',
-        'cod' => 'COD',
     ];
 
     $metode = $pesanan->pembayaran?->metode;
@@ -109,8 +117,6 @@
     :kembali="route('pengusaha.pesanan')"
     lebar="max-w-[760px]"
 />
-
-<div class="mx-auto flex w-full max-w-[760px] flex-col gap-5">
 
     {{-- Notifikasi Status --}}
     <div class="rounded-2xl border p-5 {{ $warnaBorder }}">
@@ -154,7 +160,7 @@
             class="rounded-2xl border border-orange-200 bg-white p-4"
             x-data="{
                 sisa: {{ $sisaWaktuPembayaran }},
-                sudahUpload: {{ $bukti ? 'true' : 'false' }},
+                sudahUpload: {{ $pesanan->pembayaran?->status === 'lunas' ? 'true' : 'false' }},
                 timer: null,
 
                 mulai() {
@@ -183,7 +189,7 @@
             x-cloak
         >
             <p class="text-sm font-semibold text-orange-800">
-                Silakan lakukan pembayaran dan unggah bukti pembayaran.
+                Silakan lakukan pembayaran lewat tombol Bayar Sekarang di bawah.
             </p>
 
             <div class="mt-4 rounded-xl bg-orange-50 p-4">
@@ -423,10 +429,7 @@
 
                             @endif
 
-                            @if (
-                                $statusAktif &&
-                                in_array($statusSekarang, ['dikirim', 'siap_diambil', 'terkirim'])
-                            )
+                                                       @if ($statusAktif && $statusSekarang === 'terkirim')
                                 <form
                                     action="{{ route('pengusaha.pesanan.selesai', $pesanan->id) }}"
                                     method="POST"
@@ -532,6 +535,7 @@
                                 x-text="rating ? rating + '/5' : ''"
                             ></span>
                         </div>
+                    </div>  
 
                     <div>
                         <label class="mb-2 block text-sm font-semibold text-gray-800">
@@ -608,66 +612,171 @@
     </div>
 
 
-    {{-- Bukti Pembayaran --}}
-    @if ($status === 'menunggu_pembayaran' || $bukti)
+    {{-- Pembayaran (Midtrans Snap) --}}
+    @php
+        $statusBayar = $pesanan->pembayaran?->status;
+    @endphp
+
+    @if ($status === 'menunggu_pembayaran' || in_array($statusBayar, ['lunas', 'perlu_refund', 'dikembalikan'], true) || $bukti)
         <div class="rounded-2xl border border-green-200 bg-white p-5">
             <h2 class="mb-3 text-lg font-bold text-gray-900">
-                Bukti Pembayaran
+                Pembayaran
             </h2>
 
-            @if ($bukti)
+            @if ($statusBayar === 'lunas')
                 <div class="rounded-xl bg-green-50 p-4">
                     <p class="text-sm font-semibold text-green-800">
-                        Bukti pembayaran berhasil diunggah.
+                        Pembayaran diterima ✓
+                        @if ($pesanan->pembayaran?->dibayar_pada)
+                            pada {{ $pesanan->pembayaran->dibayar_pada->format('d M Y, H.i') }}
+                        @endif
                     </p>
+                </div>
 
-                    <a
-                        href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($bukti) }}"
-                        target="_blank"
-                        class="mt-2 inline-block text-sm font-semibold text-green-700 underline">
+            @elseif ($statusBayar === 'perlu_refund')
+                <div class="rounded-xl bg-orange-50 p-4">
+                    <p class="text-sm font-semibold text-orange-800">
+                        Pesanan dibatalkan setelah pembayaran. Dana kamu akan dikembalikan oleh admin TaniLoka.
+                    </p>
+                </div>
+
+            @elseif ($statusBayar === 'dikembalikan')
+                <div class="rounded-xl bg-green-50 p-4">
+                    <p class="text-sm font-semibold text-green-800">
+                        Dana pembayaran sudah dikembalikan.
+                    </p>
+                </div>
+
+            @elseif ($bukti)
+                {{-- Pesanan lama (sebelum Midtrans) yang pernah upload bukti --}}
+                @php
+                    $buktiUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($bukti);
+                @endphp
+                <div class="rounded-xl bg-green-50 p-4">
+                    <p class="text-sm font-semibold text-green-800">
+                        Bukti pembayaran berhasil diunggah ✓
+                    </p>
+                    <a href="{{ $buktiUrl }}" target="_blank"
+                       class="mt-2 inline-block text-sm font-semibold text-green-700 underline">
                         Lihat Bukti Pembayaran
                     </a>
-
-                    @if ($pesanan->pembayaran?->status === 'menunggu_verifikasi')
-                        <p class="mt-2 text-sm text-orange-700">
-                            Menunggu verifikasi petani.
-                        </p>
-                    @endif
                 </div>
 
             @elseif ($status === 'menunggu_pembayaran')
                 <p class="mb-4 text-sm text-gray-600">
-                    Silakan unggah bukti transfer atau pembayaran Anda.
+                    Bayar dengan transfer bank (VA), QRIS, GoPay, kartu, atau metode lain.
+                    Status pesanan otomatis berubah setelah pembayaran diterima.
                 </p>
 
-                <form
-                    action="{{ route('pengusaha.pesanan.bukti.upload', $pesanan->id) }}"
-                    method="POST"
-                    enctype="multipart/form-data">
-
-                    @csrf
-
-                    <input
-                        type="file"
-                        name="bukti_pembayaran"
-                        accept=".jpg,.jpeg,.png,.pdf"
-                        required
-                        class="block w-full rounded-xl border border-gray-300 p-3 text-sm">
-
-                    @error('bukti_pembayaran')
-                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-
-                    <p class="mt-2 text-xs text-gray-500">
-                        Format JPG, JPEG, PNG, atau PDF. Maksimal 5 MB.
+                @if (! \App\Services\Pembayaran\Midtrans::clientKey())
+                    <p class="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+                        Pembayaran belum dikonfigurasi (MIDTRANS_CLIENT_KEY kosong). Hubungi admin.
                     </p>
+                @elseif ($pembayaranKadaluarsa)
+                    <p class="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+                        Batas waktu pembayaran sudah lewat. Pesanan akan dibatalkan otomatis.
+                    </p>
+                @else
+                    <script
+                        src="{{ \App\Services\Pembayaran\Midtrans::urlSnapJs() }}"
+                        data-client-key="{{ \App\Services\Pembayaran\Midtrans::clientKey() }}"></script>
 
-                    <button
-                        type="submit"
-                        class="mt-4 w-full rounded-xl bg-green-700 px-4 py-3 font-bold text-white transition hover:bg-green-800">
-                        Unggah Bukti Pembayaran
-                    </button>
-                </form>
+                    <div
+                        x-data="{
+                            memuat: false,
+                            pesan: '',
+                            csrf: @js(csrf_token()),
+
+                            async kirim(url, body = {}) {
+                                const respons = await fetch(url, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': this.csrf,
+                                        'Accept': 'application/json',
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify(body),
+                                });
+                                const data = await respons.json().catch(() => ({}));
+                                return { ok: respons.ok, data };
+                            },
+
+                            // Webhook tetap sumber kebenaran. Ini hanya mempercepat tampilan.
+                            async segarkan() {
+                                try { await this.kirim(@js(route('pengusaha.pesanan.bayar.cek', $pesanan->id))); } catch (e) {}
+                                window.location.reload();
+                            },
+
+                            async bayar(ganti = false) {
+                                if (this.memuat) return;
+                                this.memuat = true;
+                                this.pesan = '';
+
+                                let hasil;
+                                try {
+                                    hasil = await this.kirim(@js(route('pengusaha.pesanan.bayar', $pesanan->id)), ganti ? { ganti: true } : {});
+                                } catch (e) {
+                                    this.pesan = 'Koneksi bermasalah. Coba lagi.';
+                                    this.memuat = false;
+                                    return;
+                                }
+
+                                if (!hasil.ok) {
+                                    const error = hasil.data.errors ? Object.values(hasil.data.errors).flat()[0] : null;
+                                    this.pesan = error || hasil.data.pesan || 'Pembayaran belum bisa dimulai.';
+                                    this.memuat = false;
+                                    return;
+                                }
+
+                                window.snap.pay(hasil.data.token, {
+                                    onSuccess: () => this.segarkan(),
+                                    onPending: () => this.segarkan(),
+                                    onError: () => { this.pesan = 'Pembayaran gagal. Silakan coba lagi.'; this.memuat = false; },
+                                    onClose: () => { this.memuat = false; },
+                                });
+                            },
+
+                            gantiMetode() {
+                                if (confirm('Ganti metode pembayaran? Instruksi pembayaran sebelumnya (nomor VA/QR) akan dibatalkan dan tidak bisa dipakai lagi.')) {
+                                    this.bayar(true);
+                                }
+                            },
+                        }"
+                    >
+                        <p class="mb-3 text-sm font-semibold text-red-600" x-show="pesan" x-text="pesan" x-cloak></p>
+
+                        <button
+                            type="button"
+                            @click="bayar()"
+                            :disabled="memuat"
+                            class="w-full rounded-xl bg-green-700 px-4 py-3 font-bold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60">
+                            <span x-show="!memuat">Bayar Sekarang · Rp {{ number_format($pesanan->total, 0, ',', '.') }}</span>
+                            @if ($pesanan->pembayaran?->midtrans_order_id)
+                            <button
+                                type="button"
+                                @click="gantiMetode()"
+                                :disabled="memuat"
+                                class="mt-3 w-full rounded-xl border border-green-700 bg-white px-4 py-3 text-sm font-bold text-green-700 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-60">
+                                Ganti Metode Pembayaran
+                            </button>
+                        @endif
+                            <span x-show="memuat" x-cloak>Memuat pembayaran...</span>
+                        </button>
+                    </div>
+
+                    @if ($pesanan->pembayaran?->midtrans_order_id)
+                        <form
+                            action="{{ route('pengusaha.pesanan.bayar.cek', $pesanan->id) }}"
+                            method="POST"
+                            class="mt-3 text-center">
+                            @csrf
+                            <p class="text-xs text-gray-500">Sudah bayar tapi status belum berubah?</p>
+                            <button type="submit" class="mt-1 text-sm font-semibold text-green-700 underline">
+                                Cek Status Pembayaran
+                            </button>
+                        </form>
+                    @endif
+                @endif
             @endif
         </div>
     @endif
@@ -700,88 +809,18 @@
         </p>
     </div>
 
-    @php
-        $profilPetani = $pesanan->petani?->profilPetani;
-        $nomorHpPetani = $pesanan->petani?->no_wa;
-
-        $nomorPembayaran = match ($metode) {
-            'gopay', 'ovo' => $nomorHpPetani,
-            'transfer_bank' => $profilPetani?->no_rekening,
-            default => null,
-        };
-    @endphp
-
     <div class="mt-4">
         <h2 class="mb-2 text-lg font-bold text-gray-900">
             Metode Pembayaran
         </h2>
 
         <p class="text-base text-gray-800">
-            {{ $metodePembayaran[$metode] ?? $metode ?? 'Belum tersedia' }}
-        </p>
-
-        @if ($status === 'menunggu_pembayaran')
-
-            @if (in_array($metode, ['gopay', 'ovo']))
-                <div class="mt-3 rounded-xl bg-green-50 p-4">
-                    <p class="mb-2 text-sm text-gray-600">
-                        Nomor {{ strtoupper($metode) }} Petani
-                    </p>
-
-                    @if ($nomorPembayaran)
-                        <div class="flex items-center justify-between gap-3">
-                            <p class="font-bold text-gray-900">
-                                {{ $nomorPembayaran }}
-                            </p>
-
-                            <button
-                                type="button"
-                                x-data="{ disalin: false }"
-                                @click="navigator.clipboard.writeText(@js($nomorPembayaran)).then(() => { disalin = true; setTimeout(() => disalin = false, 2000) })"
-                                class="shrink-0 rounded-lg border border-green-700 px-3 py-2 text-sm font-semibold text-green-700 hover:bg-green-100">
-                                <span x-text="disalin ? 'Tersalin!' : 'Salin'"></span>
-                            </button>
-                        </div>
-                    @else
-                        <p class="text-sm text-red-600">
-                            Nomor HP petani belum tersedia.
-                        </p>
-                    @endif
-                </div>
-
-            @elseif ($metode === 'transfer_bank')
-                <div class="mt-3 rounded-xl bg-green-50 p-4">
-                    <p class="text-sm text-gray-600">
-                        {{ $profilPetani?->nama_bank ?? 'Bank belum tersedia' }}
-                    </p>
-
-                    @if ($nomorPembayaran)
-                        <div class="mt-2 flex items-center justify-between gap-3">
-                            <p class="font-bold text-gray-900">
-                                {{ $nomorPembayaran }}
-                            </p>
-
-                            <button
-                                type="button"
-                                x-data="{ disalin: false }"
-                                @click="navigator.clipboard.writeText(@js($nomorPembayaran)).then(() => { disalin = true; setTimeout(() => disalin = false, 2000) })"
-                                class="shrink-0 rounded-lg border border-green-700 px-3 py-2 text-sm font-semibold text-green-700 hover:bg-green-100">
-                                <span x-text="disalin ? 'Tersalin!' : 'Salin'"></span>
-                            </button>
-                        </div>
-
-                        <p class="mt-2 text-sm text-gray-600">
-                            a.n. {{ $profilPetani?->atas_nama_rekening ?? '-' }}
-                        </p>
-                    @else
-                        <p class="text-sm text-red-600">
-                            Nomor rekening petani belum tersedia.
-                        </p>
-                    @endif
-                </div>
+            @if ($metode)
+                {{ $metodePembayaran[$metode] ?? $metode }}
+            @else
+                Pembayaran Online (Midtrans)
             @endif
-
-        @endif
+        </p>
     </div>
 </div>
 

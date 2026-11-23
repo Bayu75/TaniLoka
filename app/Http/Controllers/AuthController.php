@@ -108,6 +108,8 @@ class AuthController extends Controller
 
     public function masukDemo(Request $request)
     {
+        abort_unless(app()->environment('local'), 404);
+
         $data = $request->validate(['peran' => 'required|in:petani,pengusaha']);
 
         $email = $data['peran'] === 'petani' ? 'made@taniloka.test' : 'resto@taniloka.test';

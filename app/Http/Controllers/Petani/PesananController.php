@@ -48,7 +48,12 @@ class PesananController extends PetaniController
         'ditolak' => 'Ditolak',
     ];
 
-    private const METODE_BAYAR = ['transfer_bank' => 'Transfer Bank', 'qris' => 'QRIS', 'ewallet' => 'E-Wallet'];
+    private const METODE_BAYAR = [
+        'transfer_bank' => 'Transfer Bank', 'qris' => 'QRIS', 'ewallet' => 'E-Wallet',
+        // payment_type dari Midtrans
+        'bank_transfer' => 'Transfer Bank (VA)', 'echannel' => 'Mandiri Bill', 'gopay' => 'GoPay',
+        'shopeepay' => 'ShopeePay', 'credit_card' => 'Kartu Kredit/Debit', 'cstore' => 'Minimarket',
+    ];
 
     public function index(Request $request): View
     {
@@ -92,14 +97,14 @@ class PesananController extends PetaniController
         return view('petani.pesanan-detail', ['o' => $this->detail($model)]);
     }
 
-    public function terima(Request $request, int $pesanan): RedirectResponse
-    {
-        return $this->aksi($request, $pesanan, 'menunggu_pembayaran', ['menunggu_konfirmasi'],
-            'Pesanan diterima penjual', 'Pesanan diterima. Menunggu pembeli membayar.');
-    }
+        public function terima(Request $request, int $pesanan): RedirectResponse
+        {
+            return $this->aksi($request, $pesanan, 'menunggu_pembayaran', ['menunggu_konfirmasi'],
+                'Pesanan diterima penjual', 'Pesanan diterima. Menunggu pembeli membayar.');
+        }
 
-    public function tolak(Request $request, int $pesanan): RedirectResponse
-    {
+        public function tolak(Request $request, int $pesanan): RedirectResponse
+        {
         $user = $this->petani($request);
         $this->pastikanMilik(Pesanan::query()->find($pesanan), $user);
 
@@ -329,8 +334,15 @@ class PesananController extends PetaniController
             'telepon' => $o->no_hp_penerima,
             'alamat' => $o->alamat_pengiriman,
             'catatan' => $o->catatan,
-            'metodeBayar' => $bayar ? (self::METODE_BAYAR[$bayar->metode] ?? $bayar->metode) : null,
+            'metodeBayar' => $bayar ? (self::METODE_BAYAR[$bayar->metode] ?? $bayar->metode) : 'Midtrans',
             'buktiBayar' => (bool) ($bayar?->bukti_path),
+            'buktiBayarUrl' => $this->urlFile($bayar?->bukti_path),
+            'buktiBayarPdf' => $bayar?->bukti_path
+                ? str_ends_with(mb_strtolower($bayar->bukti_path), '.pdf')
+                : false,
+            'dibayarPada' => $bayar?->dibayar_pada
+                ? $this->waktuWita($bayar->dibayar_pada, 'j M Y, H.i').' WITA'
+                : null,
             'ulasan' => $o->ulasan ? ['rating' => (int) $o->ulasan->rating, 'komentar' => $o->ulasan->komentar] : null,
         ];
     }
