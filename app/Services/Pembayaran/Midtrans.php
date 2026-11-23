@@ -80,7 +80,7 @@ class Midtrans
             ($data['order_id'] ?? '')
             .($data['status_code'] ?? '')
             .($data['gross_amount'] ?? '')
-            .self::serverKey()
+            .(config('services.midtrans.signature_key') ?: self::serverKey())
         );
 
         return hash_equals($seharusnya, $diterima);
